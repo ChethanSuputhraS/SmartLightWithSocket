@@ -1,0 +1,6 @@
+framework module MMParallaxCell {
+  umbrella header "MMParallaxCell-umbrella.h"
+
+  export *
+  module * { export * }
+}

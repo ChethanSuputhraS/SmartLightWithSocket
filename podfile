@@ -1,0 +1,16 @@
+platform :ios, ‘8.0’
+
+target ‘SmartLightApp’ do
+pod "Color-Picker-for-iOS", "~> 2.0"
+pod 'MMParallaxCell'
+pod 'DCAnimationKit'
+pod "SAMultisectorControl"
+pod 'lottie-ios'
+pod 'UIFloatLabelTextField'
+ pod 'Firebase/Core'
+ pod 'Firebase/Auth'
+ pod 'Firebase/Crashlytics'
+ use_frameworks!
+pod 'CocoaMQTT' 
+
+end

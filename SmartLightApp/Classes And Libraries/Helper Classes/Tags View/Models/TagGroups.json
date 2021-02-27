@@ -1,0 +1,149 @@
+[
+	[{
+		"URL": "http:\/\/Color.com",
+		"COLOR": "0xFF8F8F",
+		"ENABLED": true,
+		"CATEGORY": "List of Commands",
+		"TITLE": "On"
+	}, {
+		"URL": "http:\/\/Color.com",
+		"COLOR": "0xFF8F8F",
+		"ENABLED": true,
+		"CATEGORY": "List of Commands",
+		"TITLE": "Off"
+	}, {
+		"URL": "http:\/\/Color.com",
+		"COLOR": "0xFF8F8F",
+		"ENABLED": false,
+		"CATEGORY": "List of Commands",
+		"TITLE": "Turn On"
+	}, {
+		"URL": "http:\/\/Color.com",
+		"COLOR": "0xFF8F8F",
+		"ENABLED": true,
+		"CATEGORY": "List of Commands",
+		"TITLE": "Turn Off"
+     }, {
+     "URL": "http:\/\/Color.com",
+     "COLOR": "0xFF8F8F",
+     "ENABLED": true,
+     "CATEGORY": "List of Commands",
+     "TITLE": "Switch On"
+     }, {
+     "URL": "http:\/\/Color.com",
+     "COLOR": "0xFF8F8F",
+     "ENABLED": true,
+     "CATEGORY": "List of Commands",
+     "TITLE": "Switch Off"
+     }],
+ [{
+  "URL": "http:\/\/pinterest.com",
+  "COLOR": "0xFF8F8F",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Red"
+  }, {
+  "URL": "http:\/\/pinterest.com",
+  "COLOR": "0xFF8F8F",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Green"
+  }, {
+  "URL": "http:\/\/pinterest.com",
+  "COLOR": "0xFF8F8F",
+  "ENABLED": false,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Blue"
+  }, {
+  "URL": "http:\/\/pinterest.com",
+  "COLOR": "0xFF8F8F",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "White"
+  },
+  {
+  "URL": "http:\/\/itunes.com",
+  "COLOR": "0xA08FFF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Yellow"
+  }, {
+  "URL": "http:\/\/itunes.com",
+  "COLOR": "0xA08FFF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Gold"
+  }, {
+  "URL": "http:\/\/itunes.com",
+  "COLOR": "0xA08FFF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Pink"
+  }, {
+  "URL": "http:\/\/itunes.com",
+  "COLOR": "0xA08FFF",
+  "ENABLED": false,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Light Pink"
+  }, {
+  "URL": "http:\/\/itunes.com",
+  "COLOR": "0xA08FFF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Orange"
+  }, {
+  "URL": "http:\/\/itunes.com",
+  "COLOR": "0xA08FFF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Megenta"
+  }, {
+  "URL": "http:\/\/www.spotify.com",
+  "COLOR": "0x8FB6FF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Lavender"
+  }, {
+  "URL": "http:\/\/www.spotify.com",
+  "COLOR": "0x8FB6FF",
+  "ENABLED": false,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Light Blue"
+  }, {
+  "URL": "http:\/\/www.spotify.com",
+  "COLOR": "0x8FB6FF",
+  "ENABLED": false,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Light Green"
+  }, {
+  "URL": "http:\/\/www.spotify.com",
+  "COLOR": "0x8FB6FF",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Sky Blue"
+  },{
+  "URL": "http:\/\/appstore.com",
+  "COLOR": "0x65CDA3",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Purple"
+  }, {
+  "URL": "http:\/\/appstore.com",
+  "COLOR": "0x65CDA3",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Indigo"
+  }, {
+  "URL": "http:\/\/appstore.com",
+  "COLOR": "0x65CDA3",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Lime"
+  }, {
+  "URL": "http:\/\/appstore.com",
+  "COLOR": "0x65CDA3",
+  "ENABLED": true,
+  "CATEGORY": "To Change Color",
+  "TITLE": "Dark Blue"
+  }, ]
+]
