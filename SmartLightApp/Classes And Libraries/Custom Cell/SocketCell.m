@@ -52,7 +52,7 @@
         swSocket.onTintColor = UIColor.greenColor;
         swSocket.clipsToBounds = true;
         [lblBack addSubview:swSocket];
-        /////////
+        /////////viviya 
         btnAlaram = [UIButton buttonWithType:UIButtonTypeCustom];
         btnAlaram.frame = CGRectMake(DEVICE_WIDTH-70, 8.5, 44, 43);
         btnAlaram.backgroundColor = [UIColor clearColor];
