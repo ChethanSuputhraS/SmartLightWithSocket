@@ -47,12 +47,16 @@
         lblDeviceName.text = @"";
 
         swSocket = [[UISwitch alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-150, 15, 44, 44)];
-        swSocket.backgroundColor = UIColor.lightGrayColor;
-        swSocket.tintColor = [UIColor lightGrayColor];
-        swSocket.onTintColor = UIColor.greenColor;
+        swSocket.backgroundColor = UIColor.clearColor;
         swSocket.clipsToBounds = true;
+        swSocket.onTintColor = UIColor.greenColor;
+        swSocket.tintColor = UIColor.lightGrayColor;
+        swSocket.layer.borderWidth = .8;
+        swSocket.layer.borderColor = UIColor.lightGrayColor.CGColor;
+        swSocket.layer.cornerRadius = 15;
         [lblBack addSubview:swSocket];
-        /////////viviya 
+        
+        
         btnAlaram = [UIButton buttonWithType:UIButtonTypeCustom];
         btnAlaram.frame = CGRectMake(DEVICE_WIDTH-70, 8.5, 44, 43);
         btnAlaram.backgroundColor = [UIColor clearColor];

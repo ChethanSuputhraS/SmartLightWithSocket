@@ -9,7 +9,7 @@
 #import "SwitchesCell.h"
 
 @implementation SwitchesCell
-@synthesize lblBack,btnDay,btnon,btnoff,lblAlarms,lblLine,btnTime,lblWifiSetup,btnDelete,btn0,btn1,btn2,btn3,btn4,btn5,btn6,btn7,lbldays,lblON,lblOFF,lblLineParall,lblONtime,lblOFFtime,btnONTimer,btnOFFTimer;
+@synthesize lblBack,btnDay,btnon,btnoff,lblAlarms,lblLine,btnTime,lblWifiSetup,btnDelete,btn0,btn1,btn2,btn3,btn4,btn5,btn6,btn7,lbldays,lblON,lblOFF,lblLineParall,lblONtime,lblOFFtime,btnONTimer,btnOFFTimer,btnRepeate,imgCheck;
 - (void)awakeFromNib
 {
     [super awakeFromNib];
@@ -74,8 +74,29 @@
         lbldays.text = @"Days";
         [self.contentView addSubview:lbldays];
         
+        imgCheck = [[UIImageView alloc] init];
+        imgCheck.image = [UIImage imageNamed:@"checkEmpty.png"];
+        imgCheck.frame = CGRectMake(15, 30, 20, 20);
+        [self.contentView addSubview:imgCheck];
         
-        lblON = [[UILabel alloc] initWithFrame:CGRectMake(0, 110,DEVICE_WIDTH/2,30)];
+        UILabel * lblRepeate =  [[UILabel alloc] init];
+        lblRepeate.frame = CGRectMake(45, 50, DEVICE_WIDTH-30, 30);
+        lblRepeate.textColor = [UIColor whiteColor];
+        lblRepeate.text = @"Repeate alarm";
+        [lblRepeate setFont:[UIFont fontWithName:CGRegular size:textSizes-1]];
+        [self.contentView addSubview:lblRepeate];
+        
+        btnRepeate = [[UIButton alloc] initWithFrame:CGRectMake(50, 50, DEVICE_WIDTH, 44)];
+        [btnRepeate setBackgroundColor:[UIColor clearColor]];
+        btnRepeate.backgroundColor = UIColor.clearColor;
+        btnRepeate.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
+        btnRepeate.titleLabel.textAlignment = NSTextAlignmentRight;
+        [self.contentView addSubview:btnDelete];
+
+        
+        int yy = 130;
+        
+        lblON = [[UILabel alloc] initWithFrame:CGRectMake(0, yy,DEVICE_WIDTH/2,30)];
         lblON.backgroundColor = [UIColor clearColor];
         lblON.textAlignment = NSTextAlignmentCenter;
         lblON.layer.masksToBounds = YES;
@@ -84,16 +105,16 @@
 
         [self.contentView addSubview:lblON];
         
-        lblOFF = [[UILabel alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, 110,DEVICE_WIDTH/2,30)];
+        lblOFF = [[UILabel alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, yy,DEVICE_WIDTH/2,30)];
         lblOFF.backgroundColor = [UIColor clearColor];
         lblOFF.textAlignment = NSTextAlignmentCenter;
         lblOFF.layer.masksToBounds = YES;
         lblOFF.textColor = [UIColor whiteColor];
         lblOFF.text = @"OFF Time";
-
         [self.contentView addSubview:lblOFF];
         
-        lblONtime = [[UILabel alloc] initWithFrame:CGRectMake(0, 130,DEVICE_WIDTH/2,60)];
+        yy = yy +30;
+        lblONtime = [[UILabel alloc] initWithFrame:CGRectMake(0, yy,DEVICE_WIDTH/2,60)];
         lblONtime.backgroundColor = [UIColor clearColor];
         lblONtime.textAlignment = NSTextAlignmentCenter;
         lblONtime.layer.masksToBounds = YES;
@@ -101,7 +122,7 @@
         [lblONtime setFont:[UIFont fontWithName:CGRegular size:textSizes+15]];
         [self.contentView addSubview:lblONtime];
         
-        lblOFFtime = [[UILabel alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, 130,DEVICE_WIDTH/2,50)];
+        lblOFFtime = [[UILabel alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, yy,DEVICE_WIDTH/2,50)];
         lblOFFtime.backgroundColor = [UIColor clearColor];
         lblOFFtime.textAlignment = NSTextAlignmentCenter;
         lblOFFtime.layer.masksToBounds = YES;
@@ -109,11 +130,11 @@
         [lblOFFtime setFont:[UIFont fontWithName:CGRegular size:textSizes+15]];
         [self.contentView addSubview:lblOFFtime];
         
-        btnONTimer = [[UIButton alloc] initWithFrame:CGRectMake(0, 130,DEVICE_WIDTH/2,60)];
+        btnONTimer = [[UIButton alloc] initWithFrame:CGRectMake(0, yy,DEVICE_WIDTH/2,60)];
         [btnONTimer setBackgroundColor:[UIColor clearColor]];
         [self.contentView addSubview:btnONTimer];
         
-        btnOFFTimer = [[UIButton alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, 130,DEVICE_WIDTH/2,60)];
+        btnOFFTimer = [[UIButton alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, yy,DEVICE_WIDTH/2,60)];
         [btnOFFTimer setBackgroundColor:[UIColor clearColor]];
         [self.contentView addSubview:btnOFFTimer];
         

@@ -1554,6 +1554,7 @@
                 globalSocketDetailVC  = [[SocketDetailVC alloc] init];
                 globalSocketDetailVC.deviceDetail = selectedDict;
                 globalSocketDetailVC.delegate = self;
+                
                 if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:[selectedDict objectForKey:@"ble_address"]])
                 {
                     NSInteger foundindex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:[selectedDict objectForKey:@"ble_address"]];

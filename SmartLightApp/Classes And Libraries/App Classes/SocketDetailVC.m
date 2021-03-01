@@ -63,7 +63,7 @@
         [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
     }
 
-    [imgNotConnected removeFromSuperview];
+//    [imgNotConnected removeFromSuperview];
     imgNotConnected = [[UIImageView alloc]init];
     imgNotConnected.image = [UIImage imageNamed:@"notconnect_iconWhite.png"];
     imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
@@ -71,7 +71,7 @@
     imgNotConnected.layer.masksToBounds = true;
     [self.view addSubview:imgNotConnected];
     
-    [imgNotWifiConnected removeFromSuperview];
+//    [imgNotWifiConnected removeFromSuperview];
     imgNotWifiConnected = [[UIImageView alloc]init];
     imgNotWifiConnected.image = [UIImage imageNamed:@"wifigreen.png"];
     imgNotWifiConnected.frame = CGRectMake(DEVICE_WIDTH-60, 32, 30, 22);
@@ -95,7 +95,7 @@
         imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
     }
     
-    if ([[self checkforValidString:strWifiConnect] isEqual:@"0102"])
+    if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
     {
         imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
     }

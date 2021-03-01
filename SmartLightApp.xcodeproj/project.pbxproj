@@ -25,6 +25,12 @@
 		045239EA25AC5B5800F80A2A /* swsocket.png in Resources */ = {isa = PBXBuildFile; fileRef = 045239E925AC5B5800F80A2A /* swsocket.png */; };
 		045239FA25AD6C4100F80A2A /* client.p12 in Resources */ = {isa = PBXBuildFile; fileRef = 045239F925AD6C4100F80A2A /* client.p12 */; };
 		047D2F4C25A060AD003494FC /* DashboardVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 047D2F4B25A060AD003494FC /* DashboardVC.m */; };
+		04F74F8325EA784F009FE7DC /* wifiGreen@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8025EA784E009FE7DC /* wifiGreen@3x.png */; };
+		04F74F8425EA784F009FE7DC /* wifiGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8125EA784E009FE7DC /* wifiGreen.png */; };
+		04F74F8525EA784F009FE7DC /* wifiGreen@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8225EA784E009FE7DC /* wifiGreen@2x.png */; };
+		04F74F8925EA7956009FE7DC /* wifired.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8625EA7956009FE7DC /* wifired.png */; };
+		04F74F8A25EA7956009FE7DC /* wifired@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8725EA7956009FE7DC /* wifired@2x.png */; };
+		04F74F8B25EA7956009FE7DC /* wifired@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8825EA7956009FE7DC /* wifired@3x.png */; };
 		2BBEA6347DEA26BFDDD3510D /* Pods_SmartLightApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95A88A6366A552EDB4008694 /* Pods_SmartLightApp.framework */; };
 		9703E6D421DB90D7004CA364 /* whatsapp@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9703E6C221DB90D4004CA364 /* whatsapp@3x.png */; };
 		9703E6D521DB90D7004CA364 /* linkedin-box@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9703E6C321DB90D4004CA364 /* linkedin-box@3x.png */; };
@@ -669,6 +675,12 @@
 		045239E925AC5B5800F80A2A /* swsocket.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = swsocket.png; sourceTree = "<group>"; };
 		045239F925AD6C4100F80A2A /* client.p12 */ = {isa = PBXFileReference; lastKnownFileType = file; path = client.p12; sourceTree = "<group>"; };
 		047D2F4B25A060AD003494FC /* DashboardVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DashboardVC.m; sourceTree = "<group>"; };
+		04F74F8025EA784E009FE7DC /* wifiGreen@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifiGreen@3x.png"; sourceTree = "<group>"; };
+		04F74F8125EA784E009FE7DC /* wifiGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wifiGreen.png; sourceTree = "<group>"; };
+		04F74F8225EA784E009FE7DC /* wifiGreen@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifiGreen@2x.png"; sourceTree = "<group>"; };
+		04F74F8625EA7956009FE7DC /* wifired.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wifired.png; sourceTree = "<group>"; };
+		04F74F8725EA7956009FE7DC /* wifired@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifired@2x.png"; sourceTree = "<group>"; };
+		04F74F8825EA7956009FE7DC /* wifired@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifired@3x.png"; sourceTree = "<group>"; };
 		2F4BCA447A87051C52C73D43 /* Pods-SmartLightApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SmartLightApp.release.xcconfig"; path = "Pods/Target Support Files/Pods-SmartLightApp/Pods-SmartLightApp.release.xcconfig"; sourceTree = "<group>"; };
 		95A88A6366A552EDB4008694 /* Pods_SmartLightApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SmartLightApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9703E6C221DB90D4004CA364 /* whatsapp@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "whatsapp@3x.png"; path = "Other icons/whatsapp@3x.png"; sourceTree = "<group>"; };
@@ -2129,6 +2141,12 @@
 		AB0139822063DA2200F8E661 /* Other icons */ = {
 			isa = PBXGroup;
 			children = (
+				04F74F8625EA7956009FE7DC /* wifired.png */,
+				04F74F8725EA7956009FE7DC /* wifired@2x.png */,
+				04F74F8825EA7956009FE7DC /* wifired@3x.png */,
+				04F74F8125EA784E009FE7DC /* wifiGreen.png */,
+				04F74F8225EA784E009FE7DC /* wifiGreen@2x.png */,
+				04F74F8025EA784E009FE7DC /* wifiGreen@3x.png */,
 				FAE7E78C25E76A7E00866B11 /* redcross.png */,
 				FAE7E79125E76A7E00866B11 /* redcross@2x.png */,
 				FAE7E79025E76A7E00866B11 /* redcross@3x.png */,
@@ -3032,6 +3050,7 @@
 				AB0138A92063D94700F8E661 /* AcousticModelEnglish.bundle in Resources */,
 				AB013A142063DA2200F8E661 /* Icon-App-57x57@2x.png in Resources */,
 				97FDF87921DC739F0094DD5D /* help@3x.png in Resources */,
+				04F74F8425EA784F009FE7DC /* wifiGreen.png in Resources */,
 				9721D48521E710A4007E4D2B /* helpBlack@3x.png in Resources */,
 				9715058021886A4800359AC4 /* ic_switch_account@3x.png in Resources */,
 				ABBF92472103358900EF45F6 /* 4.png in Resources */,
@@ -3136,6 +3155,7 @@
 				978624E721DB6AF300936385 /* email-plus@3x.png in Resources */,
 				04017DDD2580B481004BD77B /* stripwhite.png in Resources */,
 				AB24BFD32189E60E00A98C09 /* MNMPullToRefresh.strings in Resources */,
+				04F74F8325EA784F009FE7DC /* wifiGreen@3x.png in Resources */,
 				ABF8C155218D95AD0060C786 /* delete@2x.png in Resources */,
 				971E1B84220C02C500D15879 /* youtubeBlue@3x.png in Resources */,
 				AB013A162063DA2200F8E661 /* Icon-App-60x60@2x.png in Resources */,
@@ -3171,6 +3191,7 @@
 				AB7E4B522101F00A0079A47C /* add_group@2x.png in Resources */,
 				FAE7E79425E76A7F00866B11 /* tick@2x.png in Resources */,
 				AB487087207F348F00F41B78 /* active_favorite_icon@3x.png in Resources */,
+				04F74F8925EA7956009FE7DC /* wifired.png in Resources */,
 				9721D4A321E710D4007E4D2B /* active_alarm_iconBlack.png in Resources */,
 				AB08023520E3CBF600219DED /* ic_wheel_six.png in Resources */,
 				AB7E4B542101F00A0079A47C /* add_group.png in Resources */,
@@ -3255,6 +3276,7 @@
 				AB013A702063DA2300F8E661 /* voice_icon@2x.png in Resources */,
 				AB013A4A2063DA2200F8E661 /* info_icon@3x.png in Resources */,
 				9709E1D121CE53A6007C2F35 /* fullBright@3x.png in Resources */,
+				04F74F8525EA784F009FE7DC /* wifiGreen@2x.png in Resources */,
 				ABFE0F702164F27A006E4F47 /* GoogleService-Info.plist in Resources */,
 				AB36F6BD20C00C9600A3F7E1 /* radio-off.png in Resources */,
 				AB01387C2063D67B00F8E661 /* Assets.xcassets in Resources */,
@@ -3319,10 +3341,12 @@
 				AB013A812063DA2300F8E661 /* feedback_icon.png in Resources */,
 				AB3254212143E0FB006B732B /* slider.png in Resources */,
 				97BCB46B220AC54200919BFC /* notconnect_iconWhite@2x.png in Resources */,
+				04F74F8A25EA7956009FE7DC /* wifired@2x.png in Resources */,
 				AB9C681121395C970060CB51 /* intro4.png in Resources */,
 				AB76072320C1117800B452AE /* alert-round.png in Resources */,
 				AB013A6C2063DA2200F8E661 /* voice_bg_icon.png in Resources */,
 				AB537C0C2074EE1A0054C358 /* logo.png in Resources */,
+				04F74F8B25EA7956009FE7DC /* wifired@3x.png in Resources */,
 				978624E221DB6AF300936385 /* web.png in Resources */,
 				9715058221886A4800359AC4 /* ic_switch_account@2x.png in Resources */,
 				9721D4A121E710D4007E4D2B /* fullBrightness@2x.png in Resources */,
