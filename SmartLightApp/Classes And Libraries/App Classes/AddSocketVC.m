@@ -250,7 +250,7 @@
     }
     else
     {
-        [APP_DELEGATE startHudProcess:@"Processing..."];
+        [APP_DELEGATE startHudProcess:@"Connecting..."];
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
         if ([APP_DELEGATE isNetworkreachable])
         {
@@ -297,6 +297,7 @@
 }
 -(void)btnNotNowClick
 {
+    [self.view endEditing:true];
     [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^
      {
     self-> viewTxtfld.frame = CGRectMake(20, DEVICE_HEIGHT, DEVICE_WIDTH-40, 250);
@@ -305,8 +306,6 @@
       {
         [self OnlyAccesswithBluetoothPopup];
     })];
-    
-
 }
 -(void)btnCancelClick
 {
@@ -327,6 +326,7 @@
     alert = [[FCAlertView alloc] init];
     alert.colorScheme = [UIColor blackColor];
     alert.tag = 333;
+    alert.delegate = self;
     [alert makeAlertTypeCaution];
     [alert showAlertInView:self
                        withTitle:@"Vithamas"
@@ -668,16 +668,29 @@
         self->txtDeviceName.returnKeyType = UIReturnKeyNext;
 //    [viewTxtfld addSubview:txtDeviceName];
     
-        yy = yy+60;
+        yy = yy+40;
         UILabel * lblRouterName = [[UILabel alloc] initWithFrame:CGRectMake(10, yy, self->viewTxtfld.frame.size.width-20, 60)];
         lblRouterName.textColor= UIColor.blackColor;
         lblRouterName.textAlignment = NSTextAlignmentCenter;
         lblRouterName.numberOfLines = 0;
         lblRouterName.font = [UIFont fontWithName:CGRegular size:textSizes+1];
-        lblRouterName.text = [NSString stringWithFormat:@"Connected Wi-Fi \n%@",strWIFIname];
+        lblRouterName.text = @"Connected Wi-Fi";
         [self->viewTxtfld addSubview:lblRouterName];
-     
-        yy = yy+80;
+        
+        yy = yy+50;
+        UITextField * txtRouterName = [[UITextField alloc] initWithFrame:CGRectMake(10, yy, self->viewTxtfld.frame.size.width-20, 50)];
+        [self setTextfieldProperties:txtRouterName withPlaceHolderText:@"" withtextSizes:textSizes];
+        txtRouterName.returnKeyType = UIReturnKeyDone;
+        txtRouterName.backgroundColor = UIColor.blackColor;
+        txtRouterName.text = [NSString stringWithFormat:@" %@",strWIFIname];
+        txtRouterName.textColor = UIColor.whiteColor;
+        txtRouterName.alpha = 0.7;
+        txtRouterName.userInteractionEnabled = NO;
+//        txtRouterName.textAlignment = NSTextAlignmentCenter;
+        [viewTxtfld addSubview:txtRouterName];
+        
+        
+        yy = yy+55;
         self->txtRouterPassword = [[UITextField alloc] initWithFrame:CGRectMake(10, yy, self->viewTxtfld.frame.size.width-20, 50)];
         [self setTextfieldProperties:self->txtRouterPassword withPlaceHolderText:@" Enter Wi-Fi Password" withtextSizes:textSizes];
         self->txtRouterPassword.returnKeyType = UIReturnKeyDone;
@@ -686,12 +699,12 @@
         self->txtRouterPassword.alpha = 0.7;
         [self->viewTxtfld addSubview:self->txtRouterPassword];
         
-        btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
-        btnShowPass.frame = CGRectMake(txtRouterPassword.frame.size.width-60, 7.5, 60, 35);
-        btnShowPass.backgroundColor = [UIColor clearColor];
-        [btnShowPass addTarget:self action:@selector(showPassclick) forControlEvents:UIControlEventTouchUpInside];
-        [btnShowPass setImage:[UIImage imageNamed:@"passShow.png"] forState:UIControlStateNormal];
-        [txtRouterPassword addSubview:btnShowPass];
+        self->btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
+        self->btnShowPass.frame = CGRectMake(txtRouterPassword.frame.size.width-50, yy, 50, 50);
+        self->btnShowPass.backgroundColor = [UIColor clearColor];
+        [self->btnShowPass addTarget:self action:@selector(showPassclick) forControlEvents:UIControlEventTouchUpInside];
+        [self->btnShowPass setImage:[UIImage imageNamed:@"passShow.png"] forState:UIControlStateNormal];
+        [self->viewTxtfld addSubview:btnShowPass];
     
         isShowPasswordEye = NO;
         
@@ -865,13 +878,42 @@
         }
         else if(isCurrentDeviceWIFIConfigured == YES)
         {
-            [self.navigationController popViewControllerAnimated:YES];
+            NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '1' where id = '%@'",strSavedTableID];
+            [[DataBaseManager dataBaseManager] execute:strUpdate];
+            [globalDashBoardVC NewSocketAddedWithWIFIConfigured:strCurrentSelectedAddress withPeripheral:classPeripheral];
+
+            if (![IS_USER_SKIPPED isEqualToString:@"YES"])
+            {
+                [self UpdateWifiConfigurationStatustoServer];
+            }
+            else
+            {
+                [self.navigationController popViewControllerAnimated:YES];
+            }
+
         }
     }
-    else if (alertView.tag == 333)
+    else if (alertView.tag == 333 )
     {
         [self.navigationController popViewControllerAnimated:true];
     }
+    else if (alertView.tag == 999 )
+    {
+        [alert removeFromSuperview];
+        alert = [[FCAlertView alloc] init];
+        alert.colorScheme = [UIColor blackColor];
+        [alert makeAlertTypeCaution];
+        alert.delegate = self;
+        alert.tag = 333;
+        [alert showAlertInView:self
+                     withTitle:@"Smart Light"
+                  withSubtitle:@"Device can controleed over Bluetooth. You can configure device over Wi-Fi by going to device setting later."
+               withCustomImage:[UIImage imageNamed:@"logo.png"]
+           withDoneButtonTitle:nil
+                    andButtons:nil];
+
+    }
+
     else if (alertView.tag == 555)
     {
         if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strCurrentSelectedAddress])
@@ -1006,7 +1048,7 @@
     }
     else
     {
-        NSString * requestStr =[NSString stringWithFormat:@"insert into 'Device_Table'('device_id','hex_device_id','real_name','device_name','ble_address','device_type','device_type_name','switch_status','user_id','is_favourite','is_sync',status, 'identifier', 'wifi_configured') values('%@','%@','%@',\"%@\",\"%@\",'%@','%@','Yes','%@','2','0','1', \"%@\", '1')",newDeviceID,strHexDeviceId,@"NA",strDeviceNames,strMckAddress  ,strType,strDeviceType,CURRENT_USER_ID, classPeripheral.identifier];
+        NSString * requestStr =[NSString stringWithFormat:@"insert into 'Device_Table'('device_id','hex_device_id','real_name','device_name','ble_address','device_type','device_type_name','switch_status','user_id','is_favourite','is_sync',status, 'identifier') values('%@','%@','%@',\"%@\",\"%@\",'%@','%@','Yes','%@','2','0','1', \"%@\")",newDeviceID,strHexDeviceId,@"NA",strDeviceNames,strMckAddress  ,strType,strDeviceType,CURRENT_USER_ID, classPeripheral.identifier];
         
         int savedID = [[DataBaseManager dataBaseManager] executeSw:requestStr];
         strSavedTableID = [NSString stringWithFormat:@"%d",savedID];
@@ -1176,7 +1218,7 @@
                 alert.tag = 333;
                 [alert showAlertInView:self
                              withTitle:@"Smart Light"
-                          withSubtitle:@"Wifi has been configured successfully."
+                          withSubtitle:@"You can control Socket with Bluetooth and WIFI as well."
                        withCustomImage:[UIImage imageNamed:@"logo.png"]
                    withDoneButtonTitle:nil
                             andButtons:nil];
@@ -1338,8 +1380,8 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
     alert = [[FCAlertView alloc] init];
     alert.colorScheme = [UIColor blackColor];
     [alert makeAlertTypeCaution];
-    alert.tag = 555;
     alert.delegate = self;
+    alert.tag = 999;
     [alert addButton:@"Yes" withActionBlock:
      ^{
         [APP_DELEGATE startHudProcess:@"Cheking availble Wi-Fi..."];
@@ -1430,7 +1472,7 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
                 alert.tag = 555;
                 alert.delegate = self;
                 alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
-                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wifi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
+                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wi-Fi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
             }
         }
     }

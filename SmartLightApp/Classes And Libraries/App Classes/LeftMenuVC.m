@@ -35,7 +35,7 @@
             [tempDict setValue:@"Home" forKey:@"name"];
             [tempDict setValue:@"active_home_iconBlack.png" forKey:@"image"];
         }else if (i==1) {
-            [tempDict setValue:@"My Routine" forKey:@"name"];
+            [tempDict setValue:@"My Routine for smartlights" forKey:@"name"];
             [tempDict setValue:@"active_alarm_iconBlack.png" forKey:@"image"];
         }else if (i==2) {
             [tempDict setValue:@"Device Settings" forKey:@"name"];

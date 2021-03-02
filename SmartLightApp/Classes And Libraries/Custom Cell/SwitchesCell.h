@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,strong)UIButton  *btn0,*btn1,*btn2,*btn3,*btn4,*btn5,*btn6,*btn7;
 @property(nonatomic,strong)NSMutableArray * dayArr;
 @property(nonatomic,strong)UIImageView * imgCheck;
-
+@property(nonatomic,strong)UIView *dayView;
 -(void)UpdateDaysStatus:(NSMutableDictionary *)dayDict;
 @end
 

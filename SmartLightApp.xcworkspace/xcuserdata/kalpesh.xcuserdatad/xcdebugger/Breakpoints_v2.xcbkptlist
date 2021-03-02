@@ -14,8 +14,8 @@
             filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2448"
-            endingLineNumber = "2448"
+            startingLineNumber = "2461"
+            endingLineNumber = "2461"
             landmarkName = "-getImageName:"
             landmarkType = "7">
          </BreakpointContent>
@@ -62,9 +62,9 @@
             filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1053"
-            endingLineNumber = "1053"
-            landmarkName = "-InsertAndUpdateTheAlaramTable:"
+            startingLineNumber = "1119"
+            endingLineNumber = "1119"
+            landmarkName = "-SendAlarmtoDevice:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -78,8 +78,8 @@
             filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "932"
-            endingLineNumber = "932"
+            startingLineNumber = "998"
+            endingLineNumber = "998"
             landmarkName = "-getStatusOfSavedAlarm:"
             landmarkType = "7">
          </BreakpointContent>
@@ -94,8 +94,8 @@
             filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1071"
-            endingLineNumber = "1071"
+            startingLineNumber = "1137"
+            endingLineNumber = "1137"
             landmarkName = "-InsertAndUpdateTheAlaramTable:"
             landmarkType = "7">
          </BreakpointContent>
@@ -110,8 +110,8 @@
             filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1083"
-            endingLineNumber = "1083"
+            startingLineNumber = "1149"
+            endingLineNumber = "1149"
             landmarkName = "-InsertAndUpdateTheAlaramTable:"
             landmarkType = "7">
          </BreakpointContent>
@@ -119,16 +119,32 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "E953736A-6A68-4A76-A97C-9180772D73E6"
-            shouldBeEnabled = "No"
+            uuid = "030264D0-0537-4D30-8EEC-8AEFED634D19"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketWiFiSetupVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1557"
-            endingLineNumber = "1557"
-            landmarkName = "-tableView:didSelectRowAtIndexPath:"
+            startingLineNumber = "502"
+            endingLineNumber = "502"
+            landmarkName = "-wifiConfigMethod"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "23A77A9D-BD78-466D-8AE5-95A7A3F1B8EF"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/Helper Classes/BLE/BLEService.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1759"
+            endingLineNumber = "1759"
+            landmarkName = "-Socket_peripheral:didUpdateValueForCharacteristic:error:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

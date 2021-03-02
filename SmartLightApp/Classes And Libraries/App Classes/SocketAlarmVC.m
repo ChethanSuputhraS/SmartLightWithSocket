@@ -17,7 +17,7 @@
     NSMutableArray * dayArr, * tmpArray;
     NSInteger totalDayCount, hours, minutes, sentCount,selday;
     int tblY;
-    BOOL isOnPower;
+    BOOL isOnPower, isRepeate;
     NSString * strTimeSelected,*strSelected1,*strSelected2,*strSelected3;
     int totalSyncedCount;
     UILabel * lblTime;
@@ -198,6 +198,8 @@
         [arrTitle addObject:dict];
     }
     
+    [arrTitle setValue:@"0" forKey:@"isExpanded"]; //css added
+
     NSLog(@"All Alarams===>>>>%@",arrAlarmDetail);
     
 //    [self btnSaveClick];
@@ -611,7 +613,16 @@
 }
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return 210;
+    
+    if ([[[arrTitle objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
+    {
+        return 230;
+    }
+    else
+    {
+        return 150;
+    }
+    return 150;
 }
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -630,9 +641,51 @@
     [self setButtonContent:cell.btn4 withTag:indexPath.row withBtnIndex:4];
     [self setButtonContent:cell.btn5 withTag:indexPath.row withBtnIndex:5];
     [self setButtonContent:cell.btn6 withTag:indexPath.row withBtnIndex:6];
-
+    cell.btnRepeate.tag = indexPath.row;
+    
 //    NSMutableDictionary * dict = [arrTitle objectAtIndex:indexPath.row];
 //    [cell UpdateDaysStatus:dict];
+    
+    int yy = 130;
+    
+    if ([[[arrTitle objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
+    {
+        
+        yy = yy +10;
+        
+        cell.imgCheck.image = [UIImage imageNamed:@"checked.png"];
+        cell.dayView.hidden = false;
+        cell.lbldays.hidden = false;
+        cell.lblBack.frame = CGRectMake(0, 0, DEVICE_WIDTH, 220);
+        cell.lblLineParall.frame = CGRectMake(DEVICE_WIDTH/2, yy+20,.8,60);
+
+        cell.lblON.frame = CGRectMake(0, yy,DEVICE_WIDTH/2,30);
+        cell.lblOFF.frame = CGRectMake(DEVICE_WIDTH/2, yy,DEVICE_WIDTH/2,30);
+        cell.lblONtime.frame = CGRectMake(0, yy+20,DEVICE_WIDTH/2,60);
+        cell.lblOFFtime.frame = CGRectMake(DEVICE_WIDTH/2, yy+20,DEVICE_WIDTH/2,60);
+        cell.btnONTimer.frame = CGRectMake(0, yy+20,DEVICE_WIDTH/2,60);
+        cell.btnOFFTimer.frame = CGRectMake(DEVICE_WIDTH/2, yy+20,DEVICE_WIDTH/2,60);
+    }
+    else
+    {
+        yy = yy +30;
+        
+        cell.imgCheck.image = [UIImage imageNamed:@"checkEmpty.png"];
+        cell.dayView.hidden = true;
+        cell.lbldays.hidden = true;
+        cell.lblBack.frame = CGRectMake(0, 0, DEVICE_WIDTH, 130);
+
+        cell.lblLineParall.frame = CGRectMake(DEVICE_WIDTH/2, 70,.8,60);
+        cell.lblON.frame = CGRectMake(0, 60,DEVICE_WIDTH/2,30);
+        cell.lblOFF.frame = CGRectMake(DEVICE_WIDTH/2, 60,DEVICE_WIDTH/2,30);
+        cell.lblONtime.frame = CGRectMake(0, 80,DEVICE_WIDTH/2,60);
+        cell.lblOFFtime.frame = CGRectMake(DEVICE_WIDTH/2, 80,DEVICE_WIDTH/2,60);
+        cell.btnONTimer.frame = CGRectMake(0, 80,DEVICE_WIDTH/2,60);
+        cell.btnOFFTimer.frame = CGRectMake(DEVICE_WIDTH/2, 80,DEVICE_WIDTH/2,60);
+
+    }
+    
+     isRepeate = NO;
     
     cell.btnTime.tag = indexPath.row+100;
     cell.btnon.tag = indexPath.row+500;
@@ -645,6 +698,7 @@
     [cell.btnDelete addTarget:self action:@selector(btnDeleteClick:) forControlEvents:UIControlEventTouchUpInside];//btndeleteClick
     [cell.btnONTimer addTarget:self action:@selector(btnONTimerClick:) forControlEvents:UIControlEventTouchUpInside];
     [cell.btnOFFTimer addTarget:self action:@selector(btnOFFTimerClick:) forControlEvents:UIControlEventTouchUpInside];
+    [cell.btnRepeate addTarget:self action:@selector(btnRepeateClick:) forControlEvents:UIControlEventTouchUpInside];
 
         if (indexPath.row == 0)
         {
@@ -708,7 +762,6 @@
     dayView.frame = CGRectMake(0, 50, DEVICE_WIDTH, 70);
     [viewForDay addSubview:dayView];
 
-    
     [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^
     {
         self->viewForDay.frame = CGRectMake(0, (DEVICE_HEIGHT-130)/2, DEVICE_WIDTH, 130);
@@ -729,6 +782,9 @@
 
     [tblAlarms reloadData];
 }
+
+
+#pragma mark - Button Events
 -(void)btnDoneClicked:(UIButton *)sender
 {
     UIButton * btnTmp = [[UIButton alloc] init];
@@ -878,9 +934,17 @@
     if (alarm1Check == 0 && alarm2Check == 0)
     {
         //both are empty, show error that select time 
-        [self AlertViewFCTypeCautionCheck:@"Please select the on and off time"];
+        [self AlertViewFCTypeCautionCheck:@"Please select ON and OFF time"];
     }
-    else if(alarm1Check == 2 && alarm2Check == 2)
+    else
+    {
+        NSString * strRepated1 = [self checkforValidString:[[ arrTitle objectAtIndex:0] valueForKey:@"isExpanded"]];
+        NSString * strRepated2 = [self checkforValidString:[[ arrTitle objectAtIndex:1] valueForKey:@"isExpanded"]];
+
+        
+        
+    }
+     if(alarm1Check == 2 && alarm2Check == 2)
     {
         //both are OK save it
         selectedAlarmIndex = 0;
@@ -900,6 +964,19 @@
         [self SendAlarmtoDevice:1];
     }
 }
+-(void)btnRepeateClick:sender
+{
+    if ([[[arrTitle objectAtIndex:[sender tag]] valueForKey:@"isExpanded"] isEqualToString:@"1"])
+    {
+        [[arrTitle objectAtIndex:[sender tag]] setValue:@"0" forKey:@"isExpanded"];
+    }
+    else
+    {
+        [[arrTitle objectAtIndex:[sender tag]] setValue:@"1" forKey:@"isExpanded"];
+    }
+    
+    [tblAlarms reloadData];
+}
 -(void)SendSecondAlarmAfterSomeDelay
 {
     [self SendAlarmtoDevice:1];
@@ -913,7 +990,7 @@
     }
     else if ([[[arrTitle objectAtIndex:indexx] valueForKey:@"OnTimestamp"] isEqualToString:@"NA"] ||  [[[arrTitle objectAtIndex:indexx] valueForKey:@"OffTimestamp"] isEqualToString:@"NA"])
     {
-        return 1; ;
+        return 1;
     }
     else
     {
@@ -971,8 +1048,8 @@
         return;
     }
     
-    NSString * strOnTimestamp = [[arrTitle objectAtIndex:selectedIndex] valueForKey:@"On_original"];
-    NSString * strOFFTimestamp = [[arrTitle objectAtIndex:selectedIndex] valueForKey:@"Off_original"];
+    NSString * strOnTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"On_original"]];
+    NSString * strOFFTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"Off_original"]];
     
     NSString *time1 = strOnTimestamp;
     NSString *time2 = strOFFTimestamp;
@@ -986,19 +1063,10 @@
 
     NSComparisonResult result = [date1 compare:date2];
 
-    BOOL isDateCorrect = NO;
-    if(result == NSOrderedAscending)
+    BOOL isDateCorrect = YES;
+    if(result == NSOrderedSame)
     {
-        isDateCorrect = YES;
-        NSLog(@"date2 is later than date1");//allow
-    }
-    else if(result == NSOrderedDescending)
-    {
-        NSLog(@"date1 is later than date2");
-        strMsg = [NSString stringWithFormat:@"%@'s On Time should not be greater than Off Time.",strAlarmType];
-    }
-    else
-    {
+        isDateCorrect = NO;
         strMsg = [NSString stringWithFormat:@"%@'s On Time and Off Time should not be same.",strAlarmType];
     }
 
@@ -1022,17 +1090,31 @@
        
         NSData * dataDaytID = [[NSData alloc] initWithBytes:&strDayID length:1];
         
-        double  intStartTime = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"OnTimestamp"] doubleValue];//1611663180; //  ON timestap
-        NSString *decStr = [NSString stringWithFormat:@"%f",intStartTime];
-        NSString *hexStr = [NSString stringWithFormat:@"%llX", (long long)[decStr integerValue]];
-        NSString * strDate = hexStr;
-        NSData * dataStartTime = [self dataFromHexString:strDate];
+        NSInteger totallength = -1;
+        NSData * dataStartTime  = [[NSData alloc] initWithBytes:&totallength length:4];
 
-        double intEndTime = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"OffTimestamp"] doubleValue];//1611663180; //  ON timestap
-        decStr = [NSString stringWithFormat:@"%f",intEndTime];
-        hexStr = [NSString stringWithFormat:@"%llX", (long long)[decStr integerValue]];
-        strDate = hexStr;
-        NSData * dataEndTime = [self dataFromHexString:strDate];
+        if (![strOnTimestamp isEqualToString:@"NA"])
+        {
+            double  intStartTime = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"OnTimestamp"] doubleValue];//1611663180; //  ON timestap
+            NSString *decStr = [NSString stringWithFormat:@"%f",intStartTime];
+            NSString *hexStr = [NSString stringWithFormat:@"%llX", (long long)[decStr integerValue]];
+            NSString * strDate = hexStr;
+            dataStartTime = [self dataFromHexString:strDate];
+        }
+        
+        
+        
+        NSData * dataEndTime = [[NSData alloc] initWithBytes:&totallength length:4];
+        if (![strOFFTimestamp isEqualToString:@"NA"])
+        {
+             double intEndTime = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"OffTimestamp"] doubleValue];//1611663180; //  ON timestap
+             NSString * decStr = [NSString stringWithFormat:@"%f",intEndTime];
+             NSString * hexStr = [NSString stringWithFormat:@"%llX", (long long)[decStr integerValue]];
+             NSString * strDate = hexStr;
+            dataEndTime = [self dataFromHexString:strDate];
+        }
+
+
         
         NSMutableData *completeData = [dataAlarmID mutableCopy];
         [completeData appendData:dataSocketID];
@@ -1163,4 +1245,27 @@
     NSString * deleteQuery =[NSString stringWithFormat:@"delete from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%ld'",strMacaddress,(long)strAlaramID];
     [[DataBaseManager dataBaseManager] execute:deleteQuery];
 }
+-(NSString *)checkforValidString:(NSString *)strRequest
+{
+    NSString * strValid;
+    if (![strRequest isEqual:[NSNull null]])
+    {
+        if (strRequest != nil && strRequest != NULL && ![strRequest isEqualToString:@""])
+        {
+            strValid = strRequest;
+        }
+        else
+        {
+            strValid = @"NA";
+        }
+    }
+    else
+    {
+        strValid = @"NA";
+    }
+    strValid = [strValid stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+    
+    return strValid;
+}
+
 @end

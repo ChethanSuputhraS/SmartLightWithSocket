@@ -418,7 +418,7 @@
     {
         noMsgView.hidden = YES;
     }
-    [addFloatButton ChangeImage:[UIImage imageNamed:@"navbulb_icon.png"]];
+    [addFloatButton ChangeImage:[UIImage imageNamed:@"cross.png"]];
     int yytbl = 64 + 5;
     
     if (IS_IPHONE_X)
@@ -748,6 +748,23 @@
         
         globalSocketWIFiSEtup = [[SocketWiFiSetupVC alloc] init];
         globalSocketWIFiSEtup.peripheralPss = globalSocketPeripheral;
+        
+        if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strMacaddress])
+        {
+            NSInteger foundindex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strMacaddress];
+            if (foundindex != NSNotFound)
+            {
+                if ([arrSocketDevices count] > foundindex)
+                {
+                    if ([[arrSocketDevices objectAtIndex:foundindex] objectForKey:@"peripheral"])
+                    {
+                        CBPeripheral * p = [[arrSocketDevices objectAtIndex:foundindex] objectForKey:@"peripheral"];
+                        globalSocketWIFiSEtup.peripheralPss = p;
+                    }
+                }
+            }
+        }
+
         globalSocketWIFiSEtup.strBleAddress = strMacaddress;
         globalSocketWIFiSEtup.strWifiConfig = strWifiConfig;
         [self.navigationController pushViewController:globalSocketWIFiSEtup animated:true];
@@ -1001,7 +1018,7 @@
 -(void)deleteSocketDevice:(NSIndexPath*)selectedIndex
 {
     NSString * strBleAddress = [[[sectionArr objectAtIndex:selectedIndex.row] valueForKey:@"ble_address"] uppercaseString];
-    NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set status ='2',is_sync = '0' where ble_address = '%@'",strBleAddress];
+    NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set status ='2',is_sync = '0', wifi_configured = '0' where ble_address = '%@'",strBleAddress];
     [[DataBaseManager dataBaseManager] execute:strUpdate];
     if ([sectionArr count] > selectedIndexPathl.row)
     {
@@ -1166,37 +1183,57 @@
             }
             else
             {
-                if ([[[groupsArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"4"])
+                if ([[[groupsArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"0"])
                 {
-                    if ([[[groupsArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"0"])
-                    {
-                        return 65;
-                    }
-                    else
-                    {
-                        return 110;
-                    }
+                    return 65;
                 }
                 else
                 {
                     return 110;
                 }
-
             }
         }
         else
         {
-            if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"1"])
+            if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"4"])
             {
-                return 110;
+                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"1"])
+                {
+                    return 110;
+                }
+                else
+                {
+                    return 65;
+                }
             }
             else
             {
-                return 65;
+                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
+                {
+                    if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"1"])
+                    {
+                        return 140;
+                    }
+                    else
+                    {
+                        return 100;
+                    }
+                }
+                else
+                {
+                    if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"1"])
+                    {
+                        return 100;
+                    }
+                    else
+                    {
+                        return 70;
+                    }
+                }
             }
         }
     }
-    return 110;
+    return 65;
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -1229,66 +1266,15 @@
             cell.lblName.textColor = UIColor.whiteColor;
             [cell.imgBulb setImage:[UIImage imageNamed:@"default_group_icon.png"]];
             
-            
             if (indexPath.row==0)
             {
-                cell.lblName.text = @"All Devices";
-                cell._switchLight.tag = 123;
-                cell._switchLight.frame = CGRectMake(DEVICE_WIDTH-110+30+15, 0+10, 60, 40);
-                cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
-
-                cell.btnMore.hidden = YES;
-                cell.imgMore.hidden = YES;
-                cell.lblLine.hidden = YES;
-                cell.optionView.hidden = YES; // css commnected
-                
-                if (isAlldevicePowerOn)
-                {
-                    [cell._switchLight setIsOn:YES];
-                    [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
-                }
-                else
-                {
-                    [cell._switchLight setIsOn:NO];
-                    [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
-                }
+                [self CellforAllDevices:cell WithIndexPath:indexPath];
             }
             else
             {
-                cell.btnMore.hidden = NO;
-                cell.imgMore.hidden = NO;
-                cell._switchLight.frame = CGRectMake(DEVICE_WIDTH-110+15, 0+10, 60, 40);
-                
-                if ([groupsArr count]==0)
-                {
-                }
-                else
-                {
-                    cell.optionView.hidden = YES;
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
-                    cell.lblLine.hidden = YES;
-                    cell.lblName.text = [[groupsArr objectAtIndex:indexPath.row-1] valueForKey:@"group_name"];
-                    if ([[[groupsArr objectAtIndex:indexPath.row-1] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
-                    {
-                        [cell._switchLight setIsOn:YES];
-                        [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
-                    }
-                    else
-                    {
-                        [cell._switchLight setIsOn:NO];
-                        [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
-                    }
-                    
-                    if ([[[groupsArr objectAtIndex:indexPath.row-1] valueForKey:@"is_favourite"] isEqualToString:@"1"])
-                    {
-                        [cell.btnFav setImage:[UIImage imageNamed:@"active_favorite_icon.png"] forState:UIControlStateNormal];
-                    }
-                    else
-                    {
-                        [cell.btnFav setImage:[UIImage imageNamed:@"favorite_icon-1.png"] forState:UIControlStateNormal];
-                    }
-                }
+                [self CellforGroups:cell WithIndexPath:indexPath];
             }
+            
             if (indexPath.row == 0)
             {
                 cell.gradient.colors = @[(id)[UIColor colorWithRed:138.0/255.0 green:35.0/255.0 blue:135.0/255.0 alpha:1].CGColor, (id)[UIColor colorWithRed:233.0/255.0 green:64.0/255.0 blue:87.0/255.0 alpha:1].CGColor,(id)[UIColor colorWithRed:242.0/255.0 green:113.0/255.0 blue:33.0/255.0 alpha:1].CGColor];
@@ -1325,6 +1311,8 @@
             cell.btnMore.tag = indexPath.row;
             cell.brightnessSlider.tag = indexPath.row;
             
+            cell.lblName.text = [[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_name"];
+
             [cell.btnEdit addTarget:self action:@selector(btnRenameClick:) forControlEvents:UIControlEventTouchUpInside];
             [cell.btnFav addTarget:self action:@selector(btnFavouriteClick:) forControlEvents:UIControlEventTouchUpInside];
             [cell.btnMore addTarget:self action:@selector(btnMoreClick:) forControlEvents:UIControlEventTouchUpInside];
@@ -1332,138 +1320,16 @@
             [cell.btnSettings addTarget:self action:@selector(btnSettingsClick:) forControlEvents:UIControlEventTouchUpInside];
             [cell.brightnessSlider addTarget:self action:@selector(brightnessChanged:) forControlEvents:UIControlEventValueChanged];
             
-
             if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"4"])
             {
-                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
-                {
-                    cell.optionView.hidden = NO;
-                    cell.lblLine.hidden = NO;
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,100);
-                    cell.lblLine.frame = CGRectMake(4, 59.5, DEVICE_WIDTH-8, 0.5);
-                    cell.optionView.frame = CGRectMake(4, 60, DEVICE_WIDTH-8, 40);
-                    cell.btnSettings.tag = indexPath.row;
-                    
-                    cell.brightnessSlider.hidden = true;
-                    cell.imgLowBrightness.hidden = true;
-                    cell.imgFullBrightness.hidden = true;
-                }
-                else
-                {
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
-                    cell.optionView.hidden = YES;
-                    cell.lblLine.hidden = YES;
-                    cell.btnSettings.tag = indexPath.row;
-                    
-                    cell.brightnessSlider.hidden = false;
-                    cell.imgFullBrightness.hidden = false;
-                    cell.imgLowBrightness.hidden = false;
-                }
-            }
-            else if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqualToString:@"1"])
-            {
-                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
-                {
-                    cell.optionView.hidden = NO;
-                    cell.lblLine.hidden = NO;
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,140);
-                    cell.lblLine.frame = CGRectMake(4, 90.5, DEVICE_WIDTH-18, 0.5);
-                    cell.optionView.frame = CGRectMake(4, 90, DEVICE_WIDTH-14, 40);
-                    cell.brightnessSlider.hidden = NO;
-                    cell.imgLowBrightness.hidden = NO;
-                    cell.imgFullBrightness.hidden = NO;
-                }
-                else
-                {
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,90);
-                    cell.optionView.hidden = YES;
-                    cell.lblLine.hidden = YES;
-                    cell.brightnessSlider.hidden = YES;
-                    cell.imgLowBrightness.hidden = YES;
-                    cell.imgFullBrightness.hidden = YES;
-                }
-            }
-            
-            cell.lblName.text = [[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_name"];
-            
-            if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
-            {
-                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"4"])
-                {
-                    
-                    cell.brightnessSlider.hidden = true;
-                    cell.imgLowBrightness.hidden = true;
-                    cell.imgFullBrightness.hidden = true;
-                }
-                else
-                {
-                    cell.brightnessSlider.hidden = NO;
-                    cell.imgLowBrightness.hidden = NO;
-                    cell.imgFullBrightness.hidden = NO;
-                }
-                
-                [cell._switchLight setIsOn:YES];
-                [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
-                
-                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"1"])
-                {
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,90);
-                }
-                else if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"4"])
-                {
-                    if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"1"])
-                    {
-                        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,100);
-                    }
-                    else
-                    {
-                        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
-                    }
-                }
+                [self CellforSocket:cell WithIndexPath:indexPath];
             }
             else
             {
-                [cell._switchLight setIsOn:NO];
-                [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
-                
-                cell.brightnessSlider.hidden = true;
-                cell.imgFullBrightness.hidden = true;
-                cell.imgLowBrightness.hidden = true;
-                cell.lblLine.hidden = true;
-
-                cell.optionView.hidden = YES;
-                cell.lblLine.hidden = YES;
-                cell.brightnessSlider.hidden = YES;
-                cell.imgLowBrightness.hidden = YES;
-                cell.imgFullBrightness.hidden = YES;
-                
-                if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"1"])
-                {
-                    if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqual:@"1"])
-                    {
-                        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,130);
-                        cell.lblLine.hidden = false;
-                        cell.imgLowBrightness.hidden = false;
-                        cell.optionView.hidden = false;
-                        cell.imgFullBrightness.hidden = false;
-                        cell.brightnessSlider.hidden = false;
-                    }
-                    else
-                    {
-                        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
-                        cell.lblLine.hidden = true;
-                        cell.optionView.hidden = true;
-                        cell.imgLowBrightness.hidden = true;
-                        cell.imgFullBrightness.hidden = true;
-                        cell.brightnessSlider.hidden = true;
-                    }
-                }
-                else if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"device_type"] isEqual:@"4"])
-                {
-                    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,90);
-                }
+                [self CellforSmartLights:cell WithIndexPath:indexPath];
             }
             
+
             if ([[[sectionArr objectAtIndex:indexPath.row] valueForKey:@"is_favourite"] isEqualToString:@"1"])
             {
                 [cell.btnFav setImage:[UIImage imageNamed:@"active_favorite_icon.png"] forState:UIControlStateNormal];
@@ -1491,14 +1357,166 @@
                 cell.gradient.colors = @[(id)global_brown_color.CGColor, (id)[UIColor colorWithRed:50.0/255.0 green:0.0/255.0 blue:0.0/255.0 alpha:0.6].CGColor];
             }
             cell.gradient.frame = cell.lblBack.bounds;
-            //Check TYpe is socket, then check @"socket_status" in that check opcode 56 or 92. if 56 then check all 0 or all 1. based on it switch on off. if 92 means switch is ON.
-            
             return cell;
         }
     }
     return 0;
 }
+-(void)CellforAllDevices:(NewCustomGroupCell *)cell WithIndexPath:(NSIndexPath *)indexx
+{
+    cell.lblName.text = @"All Devices";
+    cell._switchLight.tag = 123;
+    cell._switchLight.frame = CGRectMake(DEVICE_WIDTH-110+30+15, 0+10, 60, 40);
+    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
 
+    cell.btnMore.hidden = YES;
+    cell.imgMore.hidden = YES;
+    cell.lblLine.hidden = YES;
+    cell.optionView.hidden = YES; // css commnected
+    
+    if (isAlldevicePowerOn)
+    {
+        [cell._switchLight setIsOn:YES];
+        [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    else
+    {
+        [cell._switchLight setIsOn:NO];
+        [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+}
+-(void)CellforGroups:(NewCustomGroupCell *)cell WithIndexPath:(NSIndexPath *)indexx
+{
+    cell.btnMore.hidden = NO;
+    cell.imgMore.hidden = NO;
+    cell._switchLight.frame = CGRectMake(DEVICE_WIDTH-110+15, 0+10, 60, 40);
+    
+    if ([groupsArr count]==0)
+    {
+    }
+    else
+    {
+        cell.optionView.hidden = YES;
+        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
+        cell.lblLine.hidden = YES;
+        cell.lblName.text = [[groupsArr objectAtIndex:indexx.row-1] valueForKey:@"group_name"];
+        if ([[[groupsArr objectAtIndex:indexx.row-1] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
+        {
+            [cell._switchLight setIsOn:YES];
+            [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+        else
+        {
+            [cell._switchLight setIsOn:NO];
+            [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+        
+        if ([[[groupsArr objectAtIndex:indexx.row-1] valueForKey:@"is_favourite"] isEqualToString:@"1"])
+        {
+            [cell.btnFav setImage:[UIImage imageNamed:@"active_favorite_icon.png"] forState:UIControlStateNormal];
+        }
+        else
+        {
+            [cell.btnFav setImage:[UIImage imageNamed:@"favorite_icon-1.png"] forState:UIControlStateNormal];
+        }
+    }
+}
+
+-(void)CellforSocket:(DashboardNewCell *)cell WithIndexPath:(NSIndexPath *)indexx
+{
+    cell.brightnessSlider.hidden = true;
+    cell.imgLowBrightness.hidden = true;
+    cell.imgFullBrightness.hidden = true;
+
+    if ([[[sectionArr objectAtIndex:indexx.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
+    {
+        cell.optionView.hidden = NO;
+        cell.lblLine.hidden = NO;
+        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,100);
+        cell.lblLine.frame = CGRectMake(4, 59.5, DEVICE_WIDTH-8, 0.5);
+        cell.optionView.frame = CGRectMake(4, 60, DEVICE_WIDTH-8, 40);
+        cell.btnSettings.tag = indexx.row;
+        
+    }
+    else
+    {
+        cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
+        cell.optionView.hidden = YES;
+        cell.lblLine.hidden = YES;
+        cell.btnSettings.tag = indexx.row;
+        
+    }
+
+}
+-(void)CellforSmartLights:(DashboardNewCell *)cell WithIndexPath:(NSIndexPath *)indexx
+{
+    cell.optionView.hidden = NO;
+    cell.lblLine.hidden = NO;
+    cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,140);
+    cell.lblLine.frame = CGRectMake(4, 90.5, DEVICE_WIDTH-18, 0.5);
+    cell.optionView.frame = CGRectMake(4, 90, DEVICE_WIDTH-14, 40);
+    cell.brightnessSlider.hidden = NO;
+    cell.imgLowBrightness.hidden = NO;
+    cell.imgFullBrightness.hidden = NO;
+
+    if ([[[sectionArr objectAtIndex:indexx.row] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
+    {
+        if ([[[sectionArr objectAtIndex:indexx.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
+        {
+            cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,130);
+            cell.optionView.hidden = NO;
+            cell.lblLine.hidden = NO;
+        }
+        else
+        {
+            cell.optionView.hidden = YES;
+            cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,90);
+            cell.lblLine.hidden = YES;
+        }
+    }
+    else
+    {
+        if ([[[sectionArr objectAtIndex:indexx.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
+        {
+            cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,90);
+            cell.optionView.hidden = NO;
+            cell.lblLine.hidden = NO;
+        }
+        else
+        {
+            cell.optionView.hidden = YES;
+            cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
+            cell.lblLine.hidden = YES;
+        }
+    }
+    cell.lblName.text = [[sectionArr objectAtIndex:indexx.row] valueForKey:@"device_name"];
+
+    if ([[[sectionArr objectAtIndex:indexx.row] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
+    {
+        [cell._switchLight setIsOn:YES];
+        [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        
+        cell.brightnessSlider.hidden = false;
+        cell.imgFullBrightness.hidden = false;
+        cell.imgLowBrightness.hidden = false;
+        
+        cell.lblLine.frame = CGRectMake(7, 59.5+30, DEVICE_WIDTH-14, 0.5);
+        cell.optionView.frame = CGRectMake(7, 60+30, DEVICE_WIDTH-14, 40);
+    }
+    else
+    {
+        [cell._switchLight setIsOn:NO];
+        [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        
+        cell.brightnessSlider.hidden = true;
+        cell.imgFullBrightness.hidden = true;
+        cell.imgLowBrightness.hidden = true;
+        
+        cell.lblLine.frame = CGRectMake(7, cell.brightnessSlider.frame.size.height-0.5, DEVICE_WIDTH-14, 0.5);
+        cell.optionView.frame = CGRectMake(7, cell.brightnessSlider.frame.size.height, DEVICE_WIDTH-14, 40);
+    }
+
+}
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath;
 {
     if (tableView  == tblView)
@@ -2017,6 +2035,7 @@
 #pragma mark - UrlManager Delegate
 - (void)onResult:(NSDictionary *)result
 {
+    NSLog(@"=======Result=======%@",result);
     [topPullToRefreshManager tableViewReloadFinishedAnimated:NO];
     [APP_DELEGATE endHudProcess];
     if ([[result valueForKey:@"commandName"] isEqualToString:@"GetallDevices"])
@@ -3622,7 +3641,6 @@ alert.colorScheme = [UIColor blackColor];
                     CBPeripheral * p = [[arrSocketDevices objectAtIndex:foundIndex] valueForKey:@"peripheral"];
                     NSInteger intPacket = [@"0" integerValue];
                     NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-                    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"07" withLength:@"01" withPeripheral:p];
                     
                     
                     NSData * dataSwitchStatus = [[NSData alloc] initWithBytes:&switchStatus length:1];
@@ -3653,7 +3671,13 @@ alert.colorScheme = [UIColor blackColor];
     
 //    if ([tmpArr count] > 0)
     {
-        self->mqttObj = [[CocoaMQTT alloc] initWithClientID:@"ClientId" host:@"iot.vithamastech.com" port:8883];
+        NSString * strClientId = [self checkforValidString:deviceTokenStr];
+        if ([strClientId isEqualToString:@"NA"])
+        {
+            strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
+        }
+
+        self->mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
         self->mqttObj.delegate = self;
     
         [self->mqttObj selfSignedSSLSetting];
@@ -3683,7 +3707,13 @@ alert.colorScheme = [UIColor blackColor];
     }
     if (self->mqttObj == nil)
     {
-        self->mqttObj = [[CocoaMQTT alloc] initWithClientID:@"ClientId" host:@"iot.vithamastech.com" port:8883];
+        NSString * strClientId = [self checkforValidString:deviceTokenStr];
+        if ([strClientId isEqualToString:@"NA"])
+        {
+            strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
+        }
+
+        self->mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
         self->mqttObj.delegate = self;
         [self->mqttObj selfSignedSSLSetting];
         BOOL isConnected =  [self->mqttObj connect];
@@ -3794,7 +3824,13 @@ alert.colorScheme = [UIColor blackColor];
     NSLog(@"State Changed===>%hhu",state);
     if (state == 3)
     {
-        mqttObj = [[CocoaMQTT alloc] initWithClientID:@"ClientId" host:@"iot.vithamastech.com" port:8883];
+        NSString * strClientId = [self checkforValidString:deviceTokenStr];
+        if ([strClientId isEqualToString:@"NA"])
+        {
+            strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
+        }
+
+        mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
         mqttObj.delegate = self;
         [mqttObj selfSignedSSLSetting];
         BOOL isConnected =  [mqttObj connect];

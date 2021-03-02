@@ -9,7 +9,7 @@
 #import "SwitchesCell.h"
 
 @implementation SwitchesCell
-@synthesize lblBack,btnDay,btnon,btnoff,lblAlarms,lblLine,btnTime,lblWifiSetup,btnDelete,btn0,btn1,btn2,btn3,btn4,btn5,btn6,btn7,lbldays,lblON,lblOFF,lblLineParall,lblONtime,lblOFFtime,btnONTimer,btnOFFTimer,btnRepeate,imgCheck;
+@synthesize lblBack,btnDay,btnon,btnoff,lblAlarms,lblLine,btnTime,lblWifiSetup,btnDelete,btn0,btn1,btn2,btn3,btn4,btn5,btn6,btn7,lbldays,lblON,lblOFF,lblLineParall,lblONtime,lblOFFtime,btnONTimer,btnOFFTimer,btnRepeate,imgCheck,dayView;
 - (void)awakeFromNib
 {
     [super awakeFromNib];
@@ -33,7 +33,7 @@
         int aa = 100;
         float  btnWidth = DEVICE_WIDTH/3;
         
-        lblBack = [[UILabel alloc] initWithFrame:CGRectMake(5, 0,DEVICE_WIDTH-10,200)];
+        lblBack = [[UILabel alloc] initWithFrame:CGRectMake(5, 0,DEVICE_WIDTH-10,220)];
         lblBack.backgroundColor = [UIColor blackColor];
         lblBack.alpha = 0.6;
         lblBack.layer.cornerRadius = 10;
@@ -65,14 +65,7 @@
         lblAlarms.font = [UIFont fontWithName:CGRegular size:textSizes+2];
         [self.contentView addSubview:lblAlarms];
         
-        
-        lbldays = [[UILabel alloc] initWithFrame:CGRectMake(10, 30,btnWidth,30)];
-        lbldays.backgroundColor = [UIColor clearColor];
-        lbldays.textAlignment = NSTextAlignmentLeft;
-        lbldays.layer.masksToBounds = YES;
-        lbldays.textColor = [UIColor whiteColor];
-        lbldays.text = @"Days";
-        [self.contentView addSubview:lbldays];
+
         
         imgCheck = [[UIImageView alloc] init];
         imgCheck.image = [UIImage imageNamed:@"checkEmpty.png"];
@@ -80,18 +73,18 @@
         [self.contentView addSubview:imgCheck];
         
         UILabel * lblRepeate =  [[UILabel alloc] init];
-        lblRepeate.frame = CGRectMake(45, 50, DEVICE_WIDTH-30, 30);
+        lblRepeate.frame = CGRectMake(50, 25, DEVICE_WIDTH-30, 30);
         lblRepeate.textColor = [UIColor whiteColor];
         lblRepeate.text = @"Repeate alarm";
         [lblRepeate setFont:[UIFont fontWithName:CGRegular size:textSizes-1]];
         [self.contentView addSubview:lblRepeate];
         
-        btnRepeate = [[UIButton alloc] initWithFrame:CGRectMake(50, 50, DEVICE_WIDTH, 44)];
+        btnRepeate = [[UIButton alloc] initWithFrame:CGRectMake(0, 25, DEVICE_WIDTH, 50)];
         [btnRepeate setBackgroundColor:[UIColor clearColor]];
         btnRepeate.backgroundColor = UIColor.clearColor;
         btnRepeate.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
         btnRepeate.titleLabel.textAlignment = NSTextAlignmentRight;
-        [self.contentView addSubview:btnDelete];
+        [self.contentView addSubview:btnRepeate]; 
 
         
         int yy = 130;
@@ -200,8 +193,17 @@
         lblWifiSetup.textColor = [UIColor whiteColor];
         [self.contentView addSubview:lblWifiSetup];
         
-        UIView * dayView = [[UIView alloc] init];
-        dayView.frame = CGRectMake(0, 60, DEVICE_WIDTH, 60);
+        lbldays = [[UILabel alloc] initWithFrame:CGRectMake(10, 50,btnWidth,30)];
+        lbldays.backgroundColor = [UIColor clearColor];
+        lbldays.textAlignment = NSTextAlignmentLeft;
+        lbldays.layer.masksToBounds = YES;
+        lbldays.textColor = [UIColor whiteColor];
+        lbldays.text = @"Days";
+        [self.contentView addSubview:lbldays];
+        
+        
+        dayView = [[UIView alloc] init];
+        dayView.frame = CGRectMake(0, 80, DEVICE_WIDTH, 60);
         dayView.backgroundColor = UIColor.clearColor;
         [self.contentView addSubview:dayView];
         

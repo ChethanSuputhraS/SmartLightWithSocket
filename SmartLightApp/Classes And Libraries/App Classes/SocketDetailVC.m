@@ -79,7 +79,7 @@
     imgNotWifiConnected.layer.masksToBounds = true;
     [self.view addSubview:imgNotWifiConnected];
     
-    _centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+//    _centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 
     if (IS_IPHONE_X)
     {
@@ -94,6 +94,7 @@
     {
         imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
     }
+    
     
     if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
     {
@@ -393,7 +394,7 @@
         cell.lblDeviceName.text = @"All sockets ON/OFF";
         cell.swSocket.tag = 107;
         cell.imgSwitch.hidden = true;
-        cell.lblDeviceName.frame = CGRectMake(10, 0, DEVICE_WIDTH-20, 50);
+        cell.lblDeviceName.frame = CGRectMake(10, 0, DEVICE_WIDTH-20, 60);
         cell.btnAlaram.hidden = true;
         NSArray * allValues = [dictFromHomeSwState allValues];
         NSString * strAllSwitches = [allValues componentsJoinedByString:@""];
@@ -567,7 +568,13 @@
 }
 -(void)ConnecttoMQTTSocketServer
 {
-    classMqttObj = [[CocoaMQTT alloc] initWithClientID:@"ClientId" host:@"iot.vithamastech.com" port:8883];
+    NSString * strClientId = [self checkforValidString:deviceTokenStr];
+    if ([strClientId isEqualToString:@"NA"])
+    {
+        strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
+    }
+    
+    classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
     classMqttObj.delegate = self;
     [classMqttObj selfSignedSSLSetting];
     BOOL isConnected =  [classMqttObj connect];
@@ -661,7 +668,13 @@
     NSLog(@"State Changed===>%hhu",state);
     if (state == 3)
     {
-        classMqttObj = [[CocoaMQTT alloc] initWithClientID:@"ClientId" host:@"iot.vithamastech.com" port:8883];
+        NSString * strClientId = [self checkforValidString:deviceTokenStr];
+        if ([strClientId isEqualToString:@"NA"])
+        {
+            strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
+        }
+        
+        classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
         classMqttObj.delegate = self;
         [classMqttObj selfSignedSSLSetting];
         BOOL isConnected =  [classMqttObj connect];

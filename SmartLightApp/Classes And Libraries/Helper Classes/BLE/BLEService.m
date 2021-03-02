@@ -1689,9 +1689,7 @@ static BLEService    *sharedInstance    = nil;
 
                                 if ([strpacketNo isEqualToString:@"00"])
                                 {
-
                                     NSString * strRSSI = [strDecrypted substringWithRange:NSMakeRange(6, 2)];
-
                                     NSScanner *scanner = [NSScanner scannerWithString:strRSSI];
                                     unsigned int temp;
                                     [scanner scanHexInt:&temp];
@@ -1723,8 +1721,20 @@ static BLEService    *sharedInstance    = nil;
                                     NSLog(@"PacketLenght=%d",packetLength);
                                     NSLog(@"Packet NO=%@",strpacketNo);
                                     NSLog(@"Data NO=%@",strDecrypted);
-
-                                    NSString * strSSIDdata = [strDecrypted substringWithRange:NSMakeRange(6, (packetLength*2) - 6)];
+                                    
+                                    NSInteger fullPacketLength = [[self stringFroHex:[strDecrypted substringWithRange:NSMakeRange(2, 2)]] integerValue];
+                                    
+                                    NSInteger remainingLength = fullPacketLength - 12;
+                                    
+                                    NSString * strSSIDdata;
+                                    if (remainingLength < 0)
+                                    {
+                                        strSSIDdata = [strDecrypted substringWithRange:NSMakeRange(6, (packetLength*2) - 6)];
+                                    }
+                                    else
+                                    {
+                                        strSSIDdata = [strDecrypted substringWithRange:NSMakeRange(6, remainingLength * 2)];
+                                    }
                                     NSMutableString * strWifiName = [[NSMutableString alloc] init];
                                     int i = 0;
                                     while (i < [strSSIDdata length])

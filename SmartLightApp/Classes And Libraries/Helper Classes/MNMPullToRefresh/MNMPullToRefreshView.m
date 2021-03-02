@@ -38,7 +38,7 @@
 
 
 #define TXT_MNM_PTR_PULL NSLocalizedString(@"Pull to refresh...", nil)
-#define TXT_MNM_PTR_RELEASE  NSLocalizedString(@"Release to update", nil)
+#define TXT_MNM_PTR_RELEASE  NSLocalizedString(@"Release to refresh...", nil)
 #define TXT_MNM_PTR_LOADING NSLocalizedString (@"", nil)//(@"Loading...", nil)
 
 #define TXT_MNM_PRT_LAST_UPDATE_FORMAT                                  NSLocalizedStringFromTable(@"TXT_MNM_PRT_LAST_UPDATE_FORMAT", MNM_PTR_LOCALIZED_STRINGS_TABLE, nil)

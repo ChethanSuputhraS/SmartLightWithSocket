@@ -117,31 +117,36 @@
 
     btnConfigWifi  = [UIButton buttonWithType:UIButtonTypeCustom];
     [btnConfigWifi addTarget:self action:@selector(btnWifiClick) forControlEvents:UIControlEventTouchUpInside];
-    btnConfigWifi.frame = CGRectMake(10, globalStatusHeight+110+yy, (DEVICE_WIDTH-20)/2, 70);
+    btnConfigWifi.frame = CGRectMake((DEVICE_WIDTH-(DEVICE_WIDTH/2))/2, globalStatusHeight+110+yy, DEVICE_WIDTH/2, 70);
     btnConfigWifi.backgroundColor = [UIColor blackColor];
+    btnConfigWifi.layer.borderWidth = 0.7;
+    btnConfigWifi.layer.borderColor = UIColor.lightGrayColor.CGColor;
     btnConfigWifi.alpha = 0.9;
     btnConfigWifi.layer.cornerRadius = 5;
     btnConfigWifi.titleLabel.numberOfLines = 0;
+    btnConfigWifi.titleLabel.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:btnConfigWifi];
     
     btnRemoveWifi  = [UIButton buttonWithType:UIButtonTypeCustom];
     [btnRemoveWifi addTarget:self action:@selector(btnRemoveWifiClick) forControlEvents:UIControlEventTouchUpInside];
-    btnRemoveWifi.frame = CGRectMake(btnConfigWifi.frame.size.width+20, globalStatusHeight+110+yy, (DEVICE_WIDTH-20)/2, 70);
+    btnRemoveWifi.frame = CGRectMake((DEVICE_WIDTH-(DEVICE_WIDTH/2))/2, 80+globalStatusHeight+110+yy, DEVICE_WIDTH/2, 70);
     btnRemoveWifi.backgroundColor = [UIColor blackColor];
+    btnRemoveWifi.layer.borderWidth = 0.7;
+    btnRemoveWifi.layer.borderColor = UIColor.lightGrayColor.CGColor;
     btnRemoveWifi.alpha = 0.9;
     btnRemoveWifi.layer.cornerRadius = 5;
     btnRemoveWifi.titleLabel.numberOfLines = 0;
     btnRemoveWifi.hidden = true;
+    btnRemoveWifi.titleLabel.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:btnRemoveWifi];
     
     if ([strWifiConfig  isEqual: @"1"])
     {
         [lblWifiConfigure setText:@"Wi-Fi configured"];
-        [btnConfigWifi setTitle:@"Configure \n   Wi-Fi " forState:UIControlStateNormal];
+        [btnConfigWifi setTitle:@"Modify\nWi-Fi configuration" forState:UIControlStateNormal];
         [imgWifiState setImage:[UIImage imageNamed:@"tick.png"]];
         btnRemoveWifi.hidden = false;
-        [btnRemoveWifi setTitle:@"Remove\nConfigured Wi-Fi" forState:UIControlStateNormal];
-
+        [btnRemoveWifi setTitle:@"Remove\nWi-Fi configured" forState:UIControlStateNormal];
     }
     else
     {
@@ -289,30 +294,46 @@
         [self->viewTxtfld addSubview:lblHint];
     
     
-        yy = yy+60;
+        yy = yy+40;
         UILabel * lblRouterName = [[UILabel alloc] initWithFrame:CGRectMake(10, yy, self->viewTxtfld.frame.size.width-20, 60)];
         lblRouterName.textColor= UIColor.blackColor;
         lblRouterName.textAlignment = NSTextAlignmentCenter;
         lblRouterName.numberOfLines = 0;
         lblRouterName.font = [UIFont fontWithName:CGRegular size:textSizes+1];
-        lblRouterName.text = [NSString stringWithFormat:@"Connected Wi-Fi \n%@",strWIFIname];
+        lblRouterName.text = @"Connected Wi-Fi";
         [self->viewTxtfld addSubview:lblRouterName];
+        
+        yy = yy+50;
+        UITextField * txtRouterName = [[UITextField alloc] initWithFrame:CGRectMake(10, yy, self->viewTxtfld.frame.size.width-20, 50)];
+        [self setTextfieldProperties:txtRouterName withPlaceHolderText:@"" withtextSizes:textSizes];
+        txtRouterName.returnKeyType = UIReturnKeyDone;
+        txtRouterName.textColor = UIColor.whiteColor;
+        txtRouterName.backgroundColor = UIColor.blackColor;
+        txtRouterName.text = [NSString stringWithFormat:@" %@",strWIFIname];
+        txtRouterName.alpha = 0.7;
+        txtRouterName.textColor = UIColor.whiteColor;
+        txtRouterName.userInteractionEnabled = NO;
+//        txtRouterName.textAlignment = NSTextAlignmentCenter;
+        [viewTxtfld addSubview:txtRouterName];
+//        strWIFIname
      
-        yy = yy+80;
+        yy = yy+55;
         self->txtRouterPassword = [[UITextField alloc] initWithFrame:CGRectMake(10, yy, self->viewTxtfld.frame.size.width-20, 50)];
         [self setTextfieldProperties:self->txtRouterPassword withPlaceHolderText:@" Enter Wi-Fi Password" withtextSizes:textSizes];
         self->txtRouterPassword.returnKeyType = UIReturnKeyDone;
         self->txtRouterPassword.textColor = UIColor.whiteColor;
         self->txtRouterPassword.backgroundColor = UIColor.blackColor;
         self->txtRouterPassword.alpha = 0.7;
+        self->txtRouterPassword.secureTextEntry = YES;
+        self->txtRouterPassword.keyboardAppearance = UIKeyboardAppearanceAlert;
         [self->viewTxtfld addSubview:self->txtRouterPassword];
         
-        btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
-        btnShowPass.frame = CGRectMake(txtRouterPassword.frame.size.width-60, 7.5, 60, 35);
-        btnShowPass.backgroundColor = [UIColor clearColor];
-        [btnShowPass addTarget:self action:@selector(showPassclick) forControlEvents:UIControlEventTouchUpInside];
-        [btnShowPass setImage:[UIImage imageNamed:@"passShow.png"] forState:UIControlStateNormal];
-        [txtRouterPassword addSubview:btnShowPass];
+        self->btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
+        self->btnShowPass.frame = CGRectMake(txtRouterPassword.frame.size.width-50, yy, 50, 50);
+        self->btnShowPass.backgroundColor = [UIColor clearColor];
+        [self->btnShowPass addTarget:self action:@selector(showPassclick) forControlEvents:UIControlEventTouchUpInside];
+        [self->btnShowPass setImage:[UIImage imageNamed:@"passShow.png"] forState:UIControlStateNormal];
+        [self->viewTxtfld addSubview:btnShowPass];
     
         isShowPasswordEye = NO;
     
@@ -370,6 +391,7 @@
 }
 -(void)btnNotNowClick
 {
+    [self.view endEditing:YES];
     [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^
      {
     self-> viewTxtfld.frame = CGRectMake(20, DEVICE_HEIGHT, DEVICE_WIDTH-40, 250);
@@ -378,7 +400,6 @@
       {
         [self-> viewForTxtBg removeFromSuperview];
         [self AlertViewFCTypeCautionCheck:@"Now you can only Control through Bluetooth"];
-
     })];
 }
 -(void)btnSaveWIFIClick
@@ -389,7 +410,7 @@
     }
     else
     {
-        [APP_DELEGATE startHudProcess:@"Processing..."];
+        [APP_DELEGATE startHudProcess:@"Connecting..."];
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
         if ([APP_DELEGATE isNetworkreachable]) 
         {
@@ -431,11 +452,25 @@
 {
     if (peripheralPss.state == CBPeripheralStateConnected)
     {
-        [self AskforWifiConfiguration];
+        if ([strWifiConfig isEqualToString:@"1"])
+        {
+            [APP_DELEGATE startHudProcess:@"Cheking for availble Wi-Fi..."];
+            NSInteger intPacket = [@"0" integerValue];
+            NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->peripheralPss];
+            isWifiListFound = NO;
+            WifiScanTimer = nil;
+            wifiConnectionStatusRetryCount = 0;
+            WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
+        }
+        else
+        {
+            [self AskforWifiConfiguration];
+        }
     }
     else
     {
-        
+        [self AlertViewFCTypeCautionCheck:@"Please connect device."];
     }
 }
 -(void)btnRemoveWifiClick
@@ -552,7 +587,9 @@
     alert.delegate = self;
     [alert addButton:@"Yes" withActionBlock:
      ^{
-        [APP_DELEGATE startHudProcess:@"Cheking availble Wi-Fi..."];
+        
+        [APP_DELEGATE startHudProcess:@"Cheking for availble Wi-Fi..."];
+        
         NSInteger intPacket = [@"0" integerValue];
         NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
         [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->peripheralPss];
@@ -575,7 +612,6 @@
         {
             [self AlertViewFCTypeCautionCheck:@"No Wi-Fi available nearby !"];
         }
-        
         isWifiListFound = NO;
     });
 }
@@ -731,7 +767,7 @@
                 alert.tag = 555;
                 alert.delegate = self;
                 alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
-                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wifi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
+                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wi-Fi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
                 
                 int yy = 44;
                 if (IS_IPHONE_X)
@@ -739,12 +775,13 @@
                     yy = 44;
                 }
                 
-                btnConfigWifi.frame = CGRectMake(10, globalStatusHeight+110+yy, (DEVICE_WIDTH-20)/2, 70);
+                btnConfigWifi.frame = CGRectMake((DEVICE_WIDTH-(DEVICE_WIDTH/2))/2, globalStatusHeight+110+yy, DEVICE_WIDTH/2, 70);
                 [lblWifiConfigure setText:@"Wi-Fi configured"];
-                [btnConfigWifi setTitle:@"Configure \n   Wi-Fi " forState:UIControlStateNormal];
+                [btnConfigWifi setTitle:@"Modify\nWi-Fi configuration" forState:UIControlStateNormal];
                 [imgWifiState setImage:[UIImage imageNamed:@"tick.png"]];
                 btnRemoveWifi.hidden = false;
-                [btnRemoveWifi setTitle:@"Remove\nConfigured Wi-Fi" forState:UIControlStateNormal];
+                [btnRemoveWifi setTitle:@"Remove\nWi-Fi configured" forState:UIControlStateNormal];
+                strWifiConfig = @"1";
             }
         }
     }
@@ -775,7 +812,7 @@
         btnConfigWifi.frame = CGRectMake((DEVICE_WIDTH-150)/2, globalStatusHeight+110+yy,150 , 70);
         [imgWifiState setImage:[UIImage imageNamed:@"redcross.png"]];
         btnRemoveWifi.hidden = true;
-        
+        strWifiConfig = @"0";
         NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '0' where ble_address = '%@'",strBleAddress];
         [[DataBaseManager dataBaseManager] execute:strUpdate];
     });
