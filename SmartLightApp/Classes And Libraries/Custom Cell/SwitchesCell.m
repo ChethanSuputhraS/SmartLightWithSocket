@@ -75,7 +75,7 @@
         UILabel * lblRepeate =  [[UILabel alloc] init];
         lblRepeate.frame = CGRectMake(50, 25, DEVICE_WIDTH-30, 30);
         lblRepeate.textColor = [UIColor whiteColor];
-        lblRepeate.text = @"Repeate alarm";
+        lblRepeate.text = @"Repeat alarm";
         [lblRepeate setFont:[UIFont fontWithName:CGRegular size:textSizes-1]];
         [self.contentView addSubview:lblRepeate];
         

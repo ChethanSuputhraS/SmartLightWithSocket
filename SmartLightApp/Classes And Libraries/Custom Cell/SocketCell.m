@@ -9,7 +9,7 @@
 #import "SocketCell.h"
 
 @implementation SocketCell
-@synthesize lblDeviceName,lblBack,swSocket,imgSwitch,btnAlaram,lblLine;
+@synthesize lblDeviceName,lblBack,swSocket,imgSwitch,btnAlaram,lblLine,lblSettings,imgArrow,lblLineLower;
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
@@ -34,7 +34,8 @@
         lblBack.layer.borderColor = UIColor.whiteColor.CGColor; // light graycolor
         lblBack.layer.borderWidth = .6;
         lblBack.layer.cornerRadius = 6;
-        lblBack.layer.borderColor = [UIColor whiteColor].CGColor;
+        lblBack.layer.borderColor = [UIColor lightGrayColor].CGColor;
+        lblBack.layer.borderWidth = 0.7;
         lblBack.userInteractionEnabled = YES;
         [self.contentView addSubview:lblBack];
         
@@ -69,6 +70,20 @@
         [imgSwitch setImage:[UIImage imageNamed:@"sw.png"]];
         [imgSwitch setContentMode:UIViewContentModeScaleAspectFit];
         [lblBack addSubview:imgSwitch];
+        
+        lblSettings = [[UILabel alloc] initWithFrame:CGRectMake(60, 0, DEVICE_WIDTH-120, 50)];
+        [lblSettings setBackgroundColor:[UIColor clearColor]];
+        lblSettings.textColor = UIColor.whiteColor;
+        [lblSettings setFont:[UIFont fontWithName:CGRegular size:textSizes]];
+        [lblSettings setTextAlignment:NSTextAlignmentLeft];
+        lblSettings.hidden = true;
+        [self.contentView addSubview:lblSettings];
+        
+        imgArrow = [[UIImageView alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-50, 10, 30, 30)];
+        [imgArrow setImage:[UIImage imageNamed:@"arrowRight.png"]];
+        [imgArrow setContentMode:UIViewContentModeScaleAspectFit];
+        imgArrow.hidden = true;
+        [self.contentView addSubview:imgArrow];
         
         lblLine = [[UILabel alloc] initWithFrame:CGRectMake(5, 50,  DEVICE_WIDTH-10, 0.5)];
         [lblLine setBackgroundColor:[UIColor lightGrayColor]];

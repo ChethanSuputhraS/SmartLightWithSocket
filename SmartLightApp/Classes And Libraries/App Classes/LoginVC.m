@@ -1193,7 +1193,6 @@
         [APP_DELEGATE goToDashboard];
     }
 }
-
 - (void)FCAlertViewDismissed:(FCAlertView *)alertView
 {
 }

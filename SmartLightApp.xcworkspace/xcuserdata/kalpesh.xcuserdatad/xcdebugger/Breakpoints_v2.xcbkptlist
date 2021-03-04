@@ -16,7 +16,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "2461"
             endingLineNumber = "2461"
-            landmarkName = "-getImageName:"
+            landmarkName = "-saveGroupsinDatabase:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -64,7 +64,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1119"
             endingLineNumber = "1119"
-            landmarkName = "-SendAlarmtoDevice:"
+            landmarkName = "-InsertAndUpdateTheAlaramTable:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -128,7 +128,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "502"
             endingLineNumber = "502"
-            landmarkName = "-wifiConfigMethod"
+            landmarkName = "-btnRemoveWifiClick"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -145,6 +145,22 @@
             startingLineNumber = "1759"
             endingLineNumber = "1759"
             landmarkName = "-Socket_peripheral:didUpdateValueForCharacteristic:error:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "FAE789A4-EE43-4425-954A-E45944093749"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketDetailVC.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1226"
+            endingLineNumber = "1226"
+            landmarkName = "-deleteSocketDevice"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

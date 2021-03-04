@@ -18,7 +18,8 @@
  * this delegate method sense the bluetooth status.
  */
 -(void) bluetoothPowerState:(NSString*)state;
-
+-(void) didDeviceDisconnectedCallback:(CBPeripheral *)peripheral;
+-(void) didDeviceConnectedCallback:(CBPeripheral *)peripheral;
 
 @required
 
@@ -168,7 +169,7 @@
 -(NSArray *)getLastConnected;
 -(NSArray *)getLastSocketConnected;
 -(void)ConnectDevicePeripheralforSocket:(CBPeripheral *)peripheral;
--(NSArray *)getLastDiscoveredSocketDevices:(NSArray *)arrIdentifiers;
+-(NSArray *)getLastDiscoveredSocketDevices:(NSString *)strIdentifier;
 
 @property (nonatomic)   float batteryLevel;
 @end

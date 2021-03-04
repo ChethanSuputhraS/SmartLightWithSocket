@@ -829,7 +829,10 @@ typedef signed long                     SInt32;
     [userDefault setValue:@"" forKey:@"CURRENT_USER_ACCESS_TOKEN"];
     [userDefault synchronize];
     
-    
+    if (globalDashBoardVC)
+    {
+        [globalDashBoardVC DisconnectMQTTSocketServer];
+    }
     LoginVC * start_up = [[LoginVC alloc] init];
     UINavigationController *nav =[[UINavigationController alloc] initWithRootViewController:start_up];
     self.window.rootViewController =nav;

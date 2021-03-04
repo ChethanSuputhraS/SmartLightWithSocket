@@ -32,7 +32,7 @@
     int wifiConnectionStatusRetryCount;
 
 }
-@synthesize strWifiConfig,peripheralPss,strBleAddress;
+@synthesize strWifiConfig,peripheralPss,strBleAddress, dictData;
 - (void)viewDidLoad
 {
     globalStatusHeight = 20;
@@ -59,6 +59,12 @@
 
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+}
+-(void)viewWillAppear:(BOOL)animated
+{
+    currentScreen = @"SocketWifiSetup";
+    
+    [super viewWillAppear:YES];
 }
 #pragma mark - Set Frames
 -(void)setNavigationViewFrames
@@ -645,7 +651,6 @@
         [connectionTimer invalidate];
         connectionTimer = nil;
         connectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
-        
         [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(CheckforWifiStatus) userInfo:nil repeats:NO];
     }
 }
@@ -689,22 +694,78 @@
     }
     });
 }
--(void)UpdateWifiConfigurationStatustoServer
+-(void)UpdateWifiConfigurationStatustoServer:(NSMutableDictionary *)inforDict
 {
     if ([APP_DELEGATE isNetworkreachable])
     {
-     serverDict = [[NSMutableDictionary alloc] init];
-        
-        if ([serverDict count] >= 11)
+        if ([IS_USER_SKIPPED isEqualToString:@"NO"])
         {
-            [serverDict setValue:@"1" forKey:@"is_update"];
-            [serverDict setValue:@"1" forKey:@"wifi_configured"];
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+            dispatch_async(queue, ^{
+                {
+                    NSMutableDictionary *args = [[NSMutableDictionary alloc] init];
+                    [args setObject:CURRENT_USER_ID forKey:@"user_id"];
+                    [args setObject:[inforDict valueForKey:@"device_id"] forKey:@"device_id"];
+                    [args setObject:[inforDict valueForKey:@"hex_device_id"] forKey:@"hex_device_id"];
+                    [args setObject:[inforDict valueForKey:@"device_name"] forKey:@"device_name"];
+                    [args setObject:[inforDict valueForKey:@"device_type"] forKey:@"device_type"];
+                    [args setObject:[[inforDict valueForKey:@"ble_address"]uppercaseString] forKey:@"ble_address"];
+                    [args setObject:[inforDict valueForKey:@"status"] forKey:@"status"];
+                    [args setObject:[inforDict valueForKey:@"is_favourite"] forKey:@"is_favourite"];
+                    [args setObject:@"1" forKey:@"is_update"];
+                    [args setValue:@"0" forKey:@"remember_last_color"];
+                    [args setObject:@"1" forKey:@"wifi_configured"];
 
-            URLManager *manager = [[URLManager alloc] init];
-            manager.commandName = @"UpdateDevice";
-            manager.delegate = self;
-            NSString *strServerUrl = @"http://vithamastech.com/smartlight/api/save_device";
-            [manager urlCall:strServerUrl withParameters:serverDict];
+                    if ([[self checkforValidString:[inforDict valueForKey:@"server_device_id"]] isEqualToString:@"NA"])
+                    {
+                        [args setObject:@"0" forKey:@"is_update"];
+                    }
+                    NSString *deviceToken =deviceTokenStr;
+                    if (deviceToken == nil || deviceToken == NULL)
+                    {
+                        [args setValue:@"123456789" forKey:@"device_token"];
+                    }
+                    else
+                    {
+                        [args setValue:deviceToken forKey:@"device_token"];
+                    }
+                    AFHTTPRequestOperationManager *manager1 = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:[NSURL URLWithString:@"http://server.url"]];
+                    //[manager1.requestSerializer setValue:@"multipart/form-data" forHTTPHeaderField:@"Content-Type"];
+                    NSString *token=[[NSUserDefaults standardUserDefaults]valueForKey:@"globalCode"];
+                    NSString *authorization = [NSString stringWithFormat: @"Basic %@",token];
+                    [manager1.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+                    [manager1.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+                    //manager1.responseSerializer = [AFHTTPResponseSerializer serializer];
+                    
+                    AFHTTPRequestOperation *op = [manager1 POST:@"http://vithamastech.com/smartlight/api/save_device" parameters:args success:^(AFHTTPRequestOperation *operation, id responseObject)
+                                                  {
+                                                      NSMutableDictionary * dictID = [[NSMutableDictionary alloc] init];
+                                                      dictID = [responseObject mutableCopy];
+                                                      if ([dictID valueForKey:@"data"] == [NSNull null] || [dictID valueForKey:@"data"] == nil)
+                                                      {
+                                                          
+                                                      }
+                                                      else
+                                                      {
+                                                          NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set is_sync ='1' where device_id='%@'",[[dictID valueForKey:@"data"]valueForKey:@"device_id"]];
+                                                          [[DataBaseManager dataBaseManager] execute:strUpdate];
+                                                      }
+                                                  }
+                                                        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                                                            if (error)
+                                                            {
+                                                                //                                                                NSLog(@"Servicer error = %@", error);
+                                                            }
+                                                        }];
+                    [op start];
+                }
+                // Perform async operation
+                // Call your method/function here
+                // Example:
+                dispatch_sync(dispatch_get_main_queue(), ^{
+                    //Method call finish here
+                });
+            });
         }
     }
 }
@@ -744,6 +805,7 @@
                 [APP_DELEGATE endHudProcess];
                 [alert removeFromSuperview];
                 alert = [[FCAlertView alloc] init];
+                alert.tag = 6767;
                 [alert makeAlertTypeCaution];
                 alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
                 [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Something went wrong. Please try again later..." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
@@ -756,10 +818,8 @@
 
             if (![IS_USER_SKIPPED isEqualToString:@"YES"])
             {
-                [self UpdateWifiConfigurationStatustoServer];
+                [self UpdateWifiConfigurationStatustoServer:dictData];
             }
-            else
-            {
                 [APP_DELEGATE endHudProcess];
                 [alert removeFromSuperview];
                 alert = [[FCAlertView alloc] init];
@@ -782,7 +842,6 @@
                 btnRemoveWifi.hidden = false;
                 [btnRemoveWifi setTitle:@"Remove\nWi-Fi configured" forState:UIControlStateNormal];
                 strWifiConfig = @"1";
-            }
         }
     }
     else
@@ -876,4 +935,69 @@
     }
     return strValid;
 }
+
+- (void)onResult:(NSDictionary *)result
+{
+    [APP_DELEGATE endHudProcess];
+    
+     if ([[result valueForKey:@"commandName"] isEqualToString:@"UpdateDevice"])
+    {
+        if ([[[result valueForKey:@"result"] valueForKey:@"response"] isEqualToString:@"true"])
+        {
+            if([[result valueForKey:@"result"] valueForKey:@"data"]!=[NSNull null] || [[result valueForKey:@"result"] valueForKey:@"data"] != nil)
+            {
+                [alert removeFromSuperview];
+                alert = [[FCAlertView alloc] init];
+                alert.colorScheme = [UIColor blackColor];
+                [alert makeAlertTypeSuccess];
+                alert.delegate = self;
+                alert.tag = 333;
+                [alert showAlertInView:self
+                             withTitle:@"Smart Light"
+                          withSubtitle:@"You can control Socket with Bluetooth and WIFI as well."
+                       withCustomImage:[UIImage imageNamed:@"logo.png"]
+                   withDoneButtonTitle:nil
+                            andButtons:nil];
+            }
+        }
+    }
+}
+- (void)onError:(NSError *)error
+{
+
+    [APP_DELEGATE hideScannerView];
+    [APP_DELEGATE endHudProcess];
+    
+    NSInteger ancode = [error code];
+    NSMutableDictionary * errorDict = [error.userInfo mutableCopy];
+    
+    if (ancode == -1001 || ancode == -1004 || ancode == -1005 || ancode == -1009)
+    {
+//        [APP_DELEGATE ShowErrorPopUpWithErrorCode:ancode andMessage:@""];
+    }
+    else
+    {
+//        [APP_DELEGATE ShowErrorPopUpWithErrorCode:customErrorCodeForMessage andMessage:@"Please try again later"];
+    }
+    
+    NSString * strLoginUrl = [NSString stringWithFormat:@"%@%@",WEB_SERVICE_URL,@"token.json"];
+    if ([[errorDict valueForKey:@"NSErrorFailingURLStringKey"] isEqualToString:strLoginUrl])
+    {
+    }
+}
+- (void)FCAlertDoneButtonClicked:(FCAlertView *)alertView
+{
+    if (alertView.tag == 6767)
+    {
+        [self.navigationController popViewControllerAnimated:true];
+    }
+}
+- (void)FCAlertViewDismissed:(FCAlertView *)alertView
+{
+}
+
+- (void)FCAlertViewWillAppear:(FCAlertView *)alertView
+{
+}
+
 @end

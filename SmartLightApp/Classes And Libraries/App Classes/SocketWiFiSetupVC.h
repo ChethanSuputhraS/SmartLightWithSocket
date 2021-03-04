@@ -18,6 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,strong)NSString * strWifiConfig;
 @property(nonatomic,strong)CBPeripheral * peripheralPss;
 @property(nonatomic,strong)NSString * strBleAddress;
+@property(nonatomic,strong)NSMutableDictionary * dictData;
 
 -(void)FoundNumberofWIFITOsetting:(NSMutableArray *)arrayWifiList;
 -(void)WifiPasswordAcknowledgementTowifiSetting:(NSString *)strStatus;

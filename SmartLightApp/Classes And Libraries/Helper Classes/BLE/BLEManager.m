@@ -90,9 +90,10 @@ static BLEManager    *sharedManager    = nil;
 {
     return [centralManager retrieveConnectedPeripheralsWithServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]];
 }
--(NSArray *)getLastDiscoveredSocketDevices:(NSArray *)arrIdentifiers
+-(NSArray *)getLastDiscoveredSocketDevices:(NSString *)strIdentifier
 {
-    return [centralManager retrievePeripheralsWithIdentifiers:arrIdentifiers];
+    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:strIdentifier];
+    return [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
 }
 
 
@@ -971,31 +972,38 @@ static BLEManager    *sharedManager    = nil;
     }
     else if ([checkNameStr rangeOfString:@"V"].location != NSNotFound)
     {
-        if ([[arrSocketDevices valueForKey:@"peripheral"] containsObject:peripheral])
+        [delegate didDeviceConnectedCallback:peripheral];
+        
+        NSInteger intPacket = [@"0" integerValue];
+        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:peripheral];
+
+        NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+        if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
         {
-            NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"peripheral"] indexOfObject:peripheral];
-            if (foudIndex != NSNotFound)
+            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+            [dict setValue:strCurrentIdentifier forKey:@"identifier"];
+            [dict setValue:peripheral forKey:@"peripheral"];
+            [arrSocketDevices addObject:dict];
+        }
+        else
+        {
+            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
             {
-                if ([arrSocketDevices count] > foudIndex)
+                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                if (foudIndex != NSNotFound)
                 {
-                    NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
-                    if (![[arrGlobalDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+                    if ([arrSocketDevices count] > foudIndex)
                     {
-                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
-                        [dict setValue:strCurrentIdentifier forKey:@"identifier"];
-                        [dict setValue:peripheral forKey:@"peripheral"];
-                        [arrGlobalDevices addObject:dict];
-                    }
-                    else
-                    {
-                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
-                        [dict setValue:strCurrentIdentifier forKey:@"identifier"];
-                        [dict setValue:peripheral forKey:@"peripheral"];
-                        [arrGlobalDevices replaceObjectAtIndex:foudIndex withObject:dict];
+                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                        [dataDict setValue:peripheral forKey:@"peripheral"];
+                        [dataDict setValue:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
+                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
                     }
                 }
             }
         }
+
         if (peripheral.services)
         {
             NSLog(@"Peripheral disciver all services------>");
@@ -1007,7 +1015,6 @@ static BLEManager    *sharedManager    = nil;
             [peripheral discoverServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]];
         }
     }
-    
 }
 -(void) peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
@@ -1110,6 +1117,7 @@ static BLEManager    *sharedManager    = nil;
     }
     else if ([checkNameStr rangeOfString:@"V"].location != NSNotFound)
     {
+        [delegate didDeviceDisconnectedCallback:peripheral];
         [[NSNotificationCenter defaultCenter] postNotificationName:@"deviceDidDisConnectNotificationSocket" object:peripheral];
 
         NSString * strIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];

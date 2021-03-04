@@ -1395,10 +1395,7 @@ static BLEService    *sharedInstance    = nil;
                     NSString * strKeyUnsigned = [self getStringConvertedinUnsigned:defaultKey];
                     NSString * strPacket = [self getStringConvertedinUnsigned:[valueCharStr substringWithRange:NSMakeRange(4, 32)]];
                     NSString * strPactLength = [self stringFroHex:[valueCharStr substringWithRange:NSMakeRange(2, 2)]];
-                    
                     NSString * strDecrypted = [APP_DELEGATE GetSocketDecrypedData:strPacket withKey:strKeyUnsigned withLength:defaultKey.length / 2];
-//                    NSLog(@"=====DefaultKey=%@     \n Encrypted Packet=%@",defaultKey, strPacket);
-
                     NSLog(@"====SOCKET_FULL_DECRYPTED_PACKET========%@%@%@",strOpcode,[valueCharStr substringWithRange:NSMakeRange(2, 2)],strDecrypted);
 
                     if ([strDecrypted length]>=6)
@@ -1418,7 +1415,6 @@ static BLEService    *sharedInstance    = nil;
                             NSInteger intPacket = [@"0" integerValue];
                             NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
                             [self WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:peripheral];
-
                         }
                         else if ([strOpcode isEqualToString:@"03"])
                         {
@@ -1527,7 +1523,31 @@ static BLEService    *sharedInstance    = nil;
                         {
                             if ([strDecrypted length]>=8)
                             {
-                                [_delegate RecievedWifiConfiguredStatus:[strDecrypted substringWithRange:NSMakeRange(0, 4)]];
+                                if ([currentScreen isEqualToString:@"SocketWifiSetup"] || [currentScreen isEqualToString:@"AddSocket"])
+                                {
+                                    [_delegate RecievedWifiConfiguredStatus:[strDecrypted substringWithRange:NSMakeRange(0, 4)]];
+                                }
+                                NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+                                if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+                                {
+                                    NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                                    if (foudIndex != NSNotFound)
+                                    {
+                                        if ([arrSocketDevices count] > foudIndex)
+                                        {
+                                            NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                                            if ([[strDecrypted substringWithRange:NSMakeRange(0, 4)] isEqualToString:@"0102"])
+                                            {
+                                                [dataDict setObject:@"1" forKey:@"BLE_WIFI_CONFIG_STATUS"];
+                                            }
+                                            else
+                                            {
+                                                [dataDict setObject:@"0" forKey:@"BLE_WIFI_CONFIG_STATUS"];
+                                            }
+                                            [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                                        }
+                                    }
+                                }
                             }
                         }
                         else if ([strOpcode isEqualToString:@"0a"])
@@ -1636,7 +1656,6 @@ static BLEService    *sharedInstance    = nil;
                                     [dictAlarmID setValue:strOffTime forKey:@"offTime"];
                                     [dictAlarmID setValue:strAlarmSate forKey:@"alarmState"];
                                             
-                                        
                                     if (globalSocketDetailVC)
                                     {
                                         [globalSocketDetailVC AlarmListStoredinDevice:dictAlarmID];
@@ -1651,7 +1670,6 @@ static BLEService    *sharedInstance    = nil;
                                 if ([[strDecrypted substringWithRange:NSMakeRange(2, 2)] isEqualToString:@"01"])
                                 {
 //                                    NSInteger indexPacket = [[strDecrypted substringWithRange:NSMakeRange(0, 2)] intValue];
-                                    
                                 }
                             }
                         }

@@ -59,5 +59,6 @@
 #pragma mark- ALL socket method
 @property(nonatomic,strong)NSString * strMack;
 -(void)NewSocketAddedWithWIFIConfigured:(NSString *)strBleAddress withPeripheral:(CBPeripheral *)peripheral;
+-(void)DisconnectMQTTSocketServer;
 
 @end

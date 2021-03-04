@@ -40,7 +40,6 @@
 
 - (void)viewDidLoad
 {
-    currentScreen = @"AddSocket";
     globalStatusHeight = 20;
     if (IS_IPHONE_4 || IS_IPHONE_5)
     {
@@ -88,6 +87,7 @@
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+    currentScreen = @"AddSocket";
     [self InitialBLE];
     [self refreshBtnClick];
     [self.navigationController setNavigationBarHidden:YES animated:NO];
@@ -934,7 +934,29 @@
             [dict setValue:classPeripheral forKey:@"peripheral"];
             [dict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
             [dict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
-            [arrSocketDevices addObject:dict];
+            
+            NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
+            if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+            {
+                [arrSocketDevices addObject:dict];
+            }
+            else
+            {
+                if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+                {
+                    NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                    if (foudIndex != NSNotFound)
+                    {
+                        if ([arrSocketDevices count] > foudIndex)
+                        {
+                            NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                            [dataDict setValue:classPeripheral forKey:@"peripheral"];
+                            [dataDict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+                            [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                        }
+                    }
+                }
+            }
         }
         [globalDashBoardVC NewSocketAddedWithWIFIConfigured:strCurrentSelectedAddress withPeripheral:classPeripheral];
         [self.navigationController popViewControllerAnimated:true];
@@ -1098,6 +1120,7 @@
         [dict setValue:@"0" forKey:@"is_update"];
         [dict setValue:@"0" forKey:@"remember_last_color"];
         [dict setValue:@"0" forKey:@"remember_last_color"];
+        [dict setValue:@"0" forKey:@"wifi_configured"];
 
         
         NSString *deviceToken =deviceTokenStr;

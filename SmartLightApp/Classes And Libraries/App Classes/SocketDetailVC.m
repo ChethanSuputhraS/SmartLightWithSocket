@@ -11,15 +11,20 @@
 #import "SocketAlarmVC.h"
 #import "BLEManager.h"
 #import <CoreBluetooth/CoreBluetooth.h>
+#import "ResetSocketVC.h"
 
-@interface SocketDetailVC ()<UITableViewDelegate,UITableViewDataSource,CBCentralManagerDelegate, CocoaMQTTDelegate>
+@interface SocketDetailVC ()<UITableViewDelegate,UITableViewDataSource,CBCentralManagerDelegate, CocoaMQTTDelegate, BLEManagerDelegate,FCAlertViewDelegate,URLManagerDelegate>
 {
+    NYSegmentedControl * blueSegmentedControl;
+    UIView  *controlView,*settingsView;
+    UITableView * tblSettings;
+    UIImageView * imgBack;
+
 }
 @end
 
 @implementation SocketDetailVC
 @synthesize classMqttObj, deviceDetail, isMQTTselect,classPeripheral ,strMacAddress,strWifiConnect, delegate;
-
 
 #pragma mark - View Life Cycle
 - (void)viewDidLoad
@@ -63,7 +68,6 @@
         [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
     }
 
-//    [imgNotConnected removeFromSuperview];
     imgNotConnected = [[UIImageView alloc]init];
     imgNotConnected.image = [UIImage imageNamed:@"notconnect_iconWhite.png"];
     imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
@@ -71,7 +75,6 @@
     imgNotConnected.layer.masksToBounds = true;
     [self.view addSubview:imgNotConnected];
     
-//    [imgNotWifiConnected removeFromSuperview];
     imgNotWifiConnected = [[UIImageView alloc]init];
     imgNotWifiConnected.image = [UIImage imageNamed:@"wifigreen.png"];
     imgNotWifiConnected.frame = CGRectMake(DEVICE_WIDTH-60, 32, 30, 22);
@@ -79,8 +82,6 @@
     imgNotWifiConnected.layer.masksToBounds = true;
     [self.view addSubview:imgNotWifiConnected];
     
-//    _centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
-
     if (IS_IPHONE_X)
     {
         imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 55, 30, 22);
@@ -95,7 +96,6 @@
         imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
     }
     
-    
     if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
     {
         imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
@@ -104,7 +104,15 @@
     {
         imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
     }
+    
+    if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
+    {
+        imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+        isMQTTConfigured = YES;
+    }
     [self.navigationController setNavigationBarHidden:YES animated:NO];
+    
+    [[BLEManager sharedManager] setDelegate:self];
 }
 -(void)setNavigationViewFrames
 {
@@ -124,7 +132,7 @@
     
     UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(50, globalStatusHeight, DEVICE_WIDTH-100, yy)];
     [lblTitle setBackgroundColor:[UIColor clearColor]];
-    [lblTitle setText:@"Switch control"];
+    [lblTitle setText:[NSString stringWithFormat:@"%@ control",[deviceDetail valueForKey:@"device_name"]]];
     [lblTitle setTextAlignment:NSTextAlignmentCenter];
     [lblTitle setFont:[UIFont fontWithName:CGRegular size:textSizes+2]];
     [lblTitle setTextColor:[UIColor whiteColor]];
@@ -142,12 +150,61 @@
     btnBack.backgroundColor = [UIColor clearColor];
     [viewHeader addSubview:btnBack];
     
-    UIImageView * imgBacksc = [[UIImageView alloc]initWithFrame:CGRectMake(10,globalStatusHeight+yy+20, DEVICE_WIDTH-20, 60)];
+    
+    [blueSegmentedControl removeFromSuperview];
+    blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Socket cotrol",@"Settings"]];
+    blueSegmentedControl.titleTextColor = [UIColor colorWithRed:0.38f green:0.68f blue:0.93f alpha:1.0f];
+    blueSegmentedControl.titleTextColor = global_brown_color;
+    blueSegmentedControl.selectedTitleTextColor = [UIColor whiteColor];
+    blueSegmentedControl.segmentIndicatorBackgroundColor = global_brown_color;
+    blueSegmentedControl.backgroundColor = [UIColor whiteColor];
+    blueSegmentedControl.borderWidth = 0.0f;
+    blueSegmentedControl.segmentIndicatorBorderWidth = 0.0f;
+    blueSegmentedControl.segmentIndicatorInset = 2.0f;
+    blueSegmentedControl.segmentIndicatorBorderColor = self.view.backgroundColor;
+    blueSegmentedControl.cornerRadius = 20;
+    blueSegmentedControl.usesSpringAnimations = YES;
+    [blueSegmentedControl addTarget:self action:@selector(segmentClick:) forControlEvents:UIControlEventValueChanged];
+    [blueSegmentedControl setFrame:CGRectMake(20,globalStatusHeight+yy+10, DEVICE_WIDTH-40, 40)];
+    blueSegmentedControl.layer.cornerRadius = 20;
+    blueSegmentedControl.layer.masksToBounds = YES;
+    [self.view addSubview:blueSegmentedControl];
+
+
+    if (IS_IPHONE_6 || IS_IPHONE_6plus)
+    {
+        blueSegmentedControl.cornerRadius = 20 * approaxSize;
+        [blueSegmentedControl setFrame:CGRectMake(20,globalStatusHeight+yy+10, DEVICE_WIDTH-40, 40 * approaxSize)];
+        blueSegmentedControl.layer.cornerRadius = 20 * approaxSize;
+    }
+    
+    controlView = [[UIView alloc] init];
+    controlView.frame = CGRectMake(0, globalStatusHeight+yy+10, DEVICE_WIDTH, DEVICE_HEIGHT-yy-globalStatusHeight-10);
+    controlView.backgroundColor = UIColor.clearColor;
+    controlView.userInteractionEnabled = true;
+    controlView.hidden = false;
+    [self.view addSubview:controlView];
+    
+    UIImageView * imgBacksc = [[UIImageView alloc]initWithFrame:CGRectMake(10,10, DEVICE_WIDTH-20, 70)];
     imgBacksc.image = [UIImage imageNamed:@"SocketStatusImage.png"];
     imgBacksc.backgroundColor = UIColor.clearColor;
-    [self.view addSubview:imgBacksc];
+    [controlView addSubview:imgBacksc];
     
-    tblView = [[UITableView alloc] initWithFrame:CGRectMake(0, yy+globalStatusHeight+100, DEVICE_WIDTH, DEVICE_HEIGHT-yy-globalStatusHeight-100)];
+    settingsView = [[UIView alloc] init];
+    settingsView.frame = CGRectMake(0, globalStatusHeight+yy, DEVICE_WIDTH, DEVICE_HEIGHT-yy-globalStatusHeight);
+    settingsView.backgroundColor = UIColor.clearColor;
+    settingsView.userInteractionEnabled = true;
+    settingsView.hidden = true;
+    [self.view addSubview:settingsView];
+    
+    if (IS_IPHONE_6 || IS_IPHONE_6plus)
+    {
+        controlView.frame = CGRectMake(0, globalStatusHeight+yy+50, DEVICE_WIDTH, DEVICE_HEIGHT-yy-globalStatusHeight-60);
+        settingsView.frame = CGRectMake(0, globalStatusHeight+yy+60, DEVICE_WIDTH, DEVICE_HEIGHT-yy-globalStatusHeight-60);
+
+    }
+    
+    tblView = [[UITableView alloc] initWithFrame:CGRectMake(0, 80, controlView.frame.size.width, controlView.frame.size.height-80)];
     tblView.delegate = self;
     tblView.dataSource= self;
     tblView.backgroundColor = UIColor.clearColor;
@@ -155,8 +212,31 @@
     tblView.hidden = false;
     tblView.scrollEnabled = false;
     tblView.separatorColor = UIColor.clearColor;
-    [self.view addSubview:tblView];
+    [controlView addSubview:tblView];
     
+    tblSettings = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, settingsView.frame.size.width, settingsView.frame.size.height)];
+    tblSettings.delegate = self;
+    tblSettings.dataSource= self;
+    tblSettings.backgroundColor = UIColor.clearColor;
+    tblSettings.separatorStyle = UITableViewCellSelectionStyleNone;
+    tblSettings.hidden = false;
+    tblSettings.scrollEnabled = false;
+    tblSettings.separatorColor = UIColor.clearColor;
+    [settingsView addSubview:tblSettings];
+    
+}
+-(void)segmentClick:(NYSegmentedControl *) sender
+{
+    if (sender.selectedSegmentIndex==0)
+    {
+        controlView.hidden = false;
+        settingsView.hidden = true;
+    }
+    else if (sender.selectedSegmentIndex==1)
+    {
+        controlView.hidden = true;
+        settingsView.hidden = false;
+    }
 }
 #pragma mark- Check Peripheral Connection & MQTT Available
 -(void)ConnectPeripheralIfnotConnected
@@ -164,31 +244,38 @@
     arrAlarmIdsofDevices = [[NSMutableArray alloc] init];
     strMacAddress = [[deviceDetail valueForKey:@"ble_address"] uppercaseString];
         
-    if (classMqttObj == nil)
+//    if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
+//    {
+//        
+//    }
+//    else
     {
-        [self ConnecttoMQTTSocketServer];
-    }
-    else
-    {
-        if ([classMqttObj connState] == 2)
-        {
-            isMQTTConfigured = NO;
-            classMqttObj.delegate = self;
-            
-            [APP_DELEGATE endHudProcess];
-            [APP_DELEGATE startHudProcess:@"Checking Status..."];
-            
-            NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
-            NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
-            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
-            
-            [mqttRequestTimeOut invalidate];
-            mqttRequestTimeOut = nil;
-            mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
-        }
-        else if ([classMqttObj connState] == 3)
+        if (classMqttObj == nil)
         {
             [self ConnecttoMQTTSocketServer];
+        }
+        else
+        {
+            if ([classMqttObj connState] == 2)
+            {
+                isMQTTConfigured = NO;
+                classMqttObj.delegate = self;
+                
+//                [APP_DELEGATE endHudProcess];
+//                [APP_DELEGATE startHudProcess:@"Checking Status..."];
+                
+                NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+                NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+                
+                [mqttRequestTimeOut invalidate];
+                mqttRequestTimeOut = nil;
+                mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+            }
+            else if ([classMqttObj connState] == 3)
+            {
+                [self ConnecttoMQTTSocketServer];
+            }
         }
     }
         
@@ -309,7 +396,7 @@
 {
     if (central.state == CBCentralManagerStatePoweredOn)
     {
-        imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
+//        imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
 
     } else if(central.state == CBCentralManagerStatePoweredOff)
     {
@@ -355,10 +442,27 @@
 }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
+    if (tableView == tblView)
+    {
+        return 7;
+    }
+    else
+    {
+        return 3;
+    }
     return  7; // array have to pass
 }
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    if (tableView == tblView)
+    {
+        return 65;
+    }
+    else
+    {
+        return 55;
+    }
+    
     return 65;
 }
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -407,13 +511,133 @@
             [cell.swSocket setOn:NO animated:YES];
         }
     }
+    
+    if (tableView == tblSettings)
+    {
+        cell.lblSettings.hidden = false;
+        cell.lblDeviceName.hidden = true;
+        cell.imgSwitch.hidden = false;
+        cell.swSocket.hidden = true;
+        cell.btnAlaram.hidden = true;
+        cell.imgArrow.hidden = false;
+        cell.lblLineLower.hidden = true;
+        cell.lblBack.frame = CGRectMake (20, 0,DEVICE_WIDTH-40,50);
+        cell.lblBack.layer.borderColor = UIColor.lightGrayColor.CGColor;
+        
+        cell.imgSwitch.frame =  CGRectMake(10, 15, 20, 20);
+        NSArray * imgArr = [[NSArray alloc]initWithObjects:@"wifiWhite.png",@"delete_icon.png",@"reset.png", nil];
+        cell.imgSwitch.image =  [UIImage imageNamed:[NSString stringWithFormat:@"%@",[imgArr objectAtIndex:indexPath.row]]];
+
+
+        if (indexPath.row == 0)
+        {
+            cell.lblSettings.text = @"Wi-Fi setting";
+        }
+        else if (indexPath.row == 1)
+        {
+            cell.lblSettings.text = @"Delete device";
+        }
+        else if (indexPath.row == 2)
+        {
+            cell.lblSettings.text = @"Reset device";
+        }
+    }
+    
+    
     cell.backgroundColor = UIColor.clearColor;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     return cell;
 }
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    
+    if (tableView == tblSettings)
+    {
+        if (indexPath.row == 0)
+        {
+            NSString * strWifiConfig = [deviceDetail valueForKey:@"wifi_configured"];
+            NSString * strMacaddress = [deviceDetail  valueForKey:@"ble_address"];
+
+            globalSocketWIFiSEtup = [[SocketWiFiSetupVC alloc] init];
+            globalSocketWIFiSEtup.peripheralPss = globalSocketPeripheral;
+
+            if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strMacaddress])
+            {
+                NSInteger foundindex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strMacaddress];
+                if (foundindex != NSNotFound)
+                {
+                    if ([arrSocketDevices count] > foundindex)
+                    {
+                        if ([[arrSocketDevices objectAtIndex:foundindex] objectForKey:@"peripheral"])
+                        {
+                            CBPeripheral * p = [[arrSocketDevices objectAtIndex:foundindex] objectForKey:@"peripheral"];
+                            globalSocketWIFiSEtup.peripheralPss = p;
+                        }
+                    }
+                }
+            }
+
+            globalSocketWIFiSEtup.strBleAddress = strMacaddress;
+            globalSocketWIFiSEtup.strWifiConfig = strWifiConfig;
+            globalSocketWIFiSEtup = [[SocketWiFiSetupVC alloc] init];
+            [self.navigationController pushViewController:globalSocketWIFiSEtup animated:true];
+        }
+        else if (indexPath.row == 1)
+        {
+            NSString * msgStr = [NSString stringWithFormat:@"Are you sure. You want to delete this device ?"];
+            
+//            if (classPeripheral.state ==CBPeripheralStateConnected)
+            {
+                FCAlertView *alert = [[FCAlertView alloc] init];
+                alert.colorScheme = [UIColor blackColor];
+                [alert makeAlertTypeWarning];
+                [alert addButton:@"Yes" withActionBlock:^{
+                    
+                    [APP_DELEGATE startHudProcess:@"Deleting..."];
+
+                    if ([IS_USER_SKIPPED isEqualToString:@"NO"])
+                    {
+                        if ([[deviceDetail  valueForKey:@"device_type"] isEqual:@"4"])
+                        {
+                            if ([deviceDetail count] > 0)
+                            {
+                                [self deleteSocketDevice];
+                            }
+                        }
+                    }
+                    
+                    [self performSelector:@selector(timeOutForDeleteDevice) withObject:nil afterDelay:5];
+                    // Put your action here
+                    if ([deviceDetail count]> 0)
+                    {
+                        if ([[deviceDetail  valueForKey:@"device_type"] isEqual:@"4"])
+                        {
+                            if ([deviceDetail count]> 0)
+                            {
+                                [self deleteSocketDevice];
+                            }
+                        }
+                    }
+                }];
+                
+                alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
+                [alert showAlertInView:self
+                             withTitle:@"Smart Light"
+                          withSubtitle:msgStr
+                       withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
+                   withDoneButtonTitle:@"No" andButtons:nil];
+            }
+//            else
+            {
+//                [self AlertViewFCTypeCautionCheck:@"Please conncet device."];
+            }
+        }
+        else if (indexPath.row == 2)
+        {
+            ResetSocketVC * rstSVC = [[ResetSocketVC alloc] init];
+            [self.navigationController pushViewController:rstSVC animated:true];
+            
+        }
+    }
 }
 #pragma mark- Socket Switch Status & Buton Click Events
 -(void)switchSocketStateClick:(id)sender
@@ -462,27 +686,41 @@
     }
     else //MQTT
     {
-        [APP_DELEGATE endHudProcess];
-        [APP_DELEGATE startHudProcess:@"Please Wait..."];
-        [mqttRequestTimeOut invalidate];
-        mqttRequestTimeOut = nil;
-        mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutForSwithStatus) userInfo:nil repeats:NO];
-
-
-        if ([strIndex  isEqual: @"06"])
+        if (isMQTTConfigured == YES)
         {
-            NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:10],[NSNumber numberWithInt:1],[NSNumber numberWithInteger:switchStatus], nil];
-            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
-            
-            arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
-            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+            [APP_DELEGATE endHudProcess];
+            [APP_DELEGATE startHudProcess:@"Please Wait..."];
+            [mqttRequestTimeOut invalidate];
+            mqttRequestTimeOut = nil;
+            mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutForSwithStatus) userInfo:nil repeats:NO];
+
+            if ([strIndex  isEqual: @"06"])
+            {
+                NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:10],[NSNumber numberWithInt:1],[NSNumber numberWithInteger:switchStatus], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+                
+                arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+            }
+            else
+            {
+                NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:9],[NSNumber numberWithInt:2],[NSNumber numberWithInt:index],[NSNumber numberWithInteger:switchStatus], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+                arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+            }
         }
         else
         {
-            NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:9],[NSNumber numberWithInt:2],[NSNumber numberWithInt:index],[NSNumber numberWithInteger:switchStatus], nil];
-            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
-            arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
-            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+            if ([RecntSwitch isOn])
+            {
+                [RecntSwitch setOn:NO];
+            }
+            else
+            {
+                [RecntSwitch setOn:YES];
+            }
+            [tblView reloadData];
         }
     }
 }
@@ -505,7 +743,22 @@
     globalSocketAlarmVC.strMacaddress  = strMacAddress;
     [self.navigationController pushViewController:globalSocketAlarmVC animated:true];
 }
+-(void)timeOutForDeleteDevice
+{
+    [APP_DELEGATE endHudProcess];
+}
+-(void)CheckUserCredentialDetials
+{
+    NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+    [dict setValue:CURRENT_USER_ID forKey:@"user_id"];
+    [dict setValue:CURRENT_USER_PASS forKey:@"password"];
 
+    URLManager *manager = [[URLManager alloc] init];
+    manager.commandName = @"CheckUserDetails";
+    manager.delegate = self;
+    NSString *strServerUrl = @"http://vithamastech.com/smartlight/api/check_user_details";
+    [manager urlCall:strServerUrl withParameters:dict];
+}
 #pragma mark- Recieve Data from BLE
 
 -(void)AlarmListStoredinDevice:(NSMutableDictionary *)arrDictDetails
@@ -849,6 +1102,11 @@
                     [APP_DELEGATE endHudProcess];
                     [mqttRequestTimeOut invalidate];
                     mqttRequestTimeOut = nil;
+                    imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+                }
+                else
+                {
+                    imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
                 }
                 if (classPeripheral.state == CBPeripheralStateDisconnected)
                 {
@@ -871,6 +1129,296 @@
     NSLog(@"UpdateSwitchStatusfromMQTT=====%@",dictSwitcState);
     [self ReceivedSwitchStatusfromDevice:dictSwitcState];
 }
-                   
+  
+#pragma mark - BLEManager Delegate
+-(void) didDisconnectDevice:(CBPeripheral *)device;
+{
+    
+}
+-(void) didFailToConnectDevice:(CBPeripheral*)device error:(NSError*)error;
+{
+    
+}
+-(void) didDiscoveredDevice:(CBPeripheral *)device withRSSI:(NSNumber *)RSSI
+{
+    
+}
+-(void)didDeviceDisconnectedCallback:(CBPeripheral *)peripheral
+{
+    NSString * strRecievedIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+    NSString * strClassIdentifier = [NSString stringWithFormat:@"%@",[self checkforValidString:[deviceDetail valueForKey:@"identifier"]]];
 
+    if (peripheral.identifier == classPeripheral.identifier)
+    {
+        classPeripheral = peripheral;
+        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+    }
+    else if ([strRecievedIdentifier isEqualToString:strClassIdentifier])
+    {
+        classPeripheral = peripheral;
+        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+    }
+}
+-(void)didDeviceConnectedCallback:(CBPeripheral *)peripheral
+{
+    NSString * strRecievedIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+    NSString * strClassIdentifier = [NSString stringWithFormat:@"%@",[self checkforValidString:[deviceDetail valueForKey:@"identifier"]]];
+
+    if (peripheral.identifier == classPeripheral.identifier)
+    {
+        classPeripheral = peripheral;
+        imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
+    }
+    else if ([strRecievedIdentifier isEqualToString:strClassIdentifier])
+    {
+        classPeripheral = peripheral;
+        imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
+    }
+}
+-(void) bluetoothPowerState:(NSString*)state;
+{
+    NSLog(@"====bluetoothPowerState===%@",state);
+    if ([state isEqualToString:@"Bluetooth is currently powered off."])
+    {
+        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+    }
+}
+-(void)deleteSocketDevice
+{
+    NSString * strBleAddress = [[deviceDetail  valueForKey:@"ble_address"] uppercaseString];
+    NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set status ='2',is_sync = '0', wifi_configured = '0' where ble_address = '%@'",strBleAddress];
+    [[DataBaseManager dataBaseManager] execute:strUpdate];
+    
+    if ([deviceDetail count] > 0)
+    {
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+        dict = deviceDetail;
+        [dict setObject:@"0" forKey:@"status"];
+        [self SaveDeviceDetailstoServer:dict];
+        [APP_DELEGATE hudEndProcessMethod];
+        
+        [tblView reloadData];
+    }
+    [APP_DELEGATE endHudProcess];
+
+    
+    if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strBleAddress])
+    {
+        NSInteger foundIndex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strBleAddress];
+        if (foundIndex != NSNotFound)
+        {
+            if ([arrSocketDevices count] > foundIndex)
+            {
+                NSMutableDictionary * dict = [arrSocketDevices objectAtIndex:foundIndex];
+                NSArray * allKeys = [dict allKeys];
+                if ([allKeys containsObject:@"peripheral"])
+                {
+                    CBPeripheral * p = [[arrSocketDevices objectAtIndex:foundIndex] valueForKey:@"peripheral"];
+                    NSInteger intPacket = [@"0" integerValue];
+                    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+                    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"07" withLength:@"01" withPeripheral:p];
+                    [arrSocketDevices removeObjectAtIndex:foundIndex];
+                }
+            }
+        }
+    }
+    
+    NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strBleAddress uppercaseString]];
+    NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:7],[NSNumber numberWithInt:1], nil];
+    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+
+    [APP_DELEGATE endHudProcess];
+    FCAlertView *alert = [[FCAlertView alloc] init];
+    alert.colorScheme = [UIColor blackColor];
+    alert.tag = 6767;
+    alert.delegate = self;
+    [alert makeAlertTypeSuccess];
+    [alert showAlertInView:self
+                 withTitle:@"Smart Light"
+              withSubtitle:@"Device has been deleted successfully."
+           withCustomImage:[UIImage imageNamed:@"logo.png"]
+       withDoneButtonTitle:nil
+                andButtons:nil];
+    
+
+}
+- (void)FCAlertDoneButtonClicked:(FCAlertView *)alertView
+{
+    if (alertView.tag == 6767)
+    {
+        [self.navigationController popViewControllerAnimated:true];
+    }
+}
+- (void)FCAlertViewDismissed:(FCAlertView *)alertView
+{
+}
+
+- (void)FCAlertViewWillAppear:(FCAlertView *)alertView
+{
+}
+-(void)SaveDeviceDetailstoServer:(NSMutableDictionary *)inforDict
+{
+    if ([APP_DELEGATE isNetworkreachable])
+    {
+        if ([IS_USER_SKIPPED isEqualToString:@"NO"])
+        {
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+            dispatch_async(queue, ^{
+                {
+                    NSMutableDictionary *args = [[NSMutableDictionary alloc] init];
+                    [args setObject:CURRENT_USER_ID forKey:@"user_id"];
+                    [args setObject:[inforDict valueForKey:@"device_id"] forKey:@"device_id"];
+                    [args setObject:[inforDict valueForKey:@"hex_device_id"] forKey:@"hex_device_id"];
+                    [args setObject:[inforDict valueForKey:@"device_name"] forKey:@"device_name"];
+                    [args setObject:[inforDict valueForKey:@"device_type"] forKey:@"device_type"];
+                    [args setObject:[[inforDict valueForKey:@"ble_address"]uppercaseString] forKey:@"ble_address"];
+                    [args setObject:[inforDict valueForKey:@"status"] forKey:@"status"];
+                    [args setObject:[inforDict valueForKey:@"is_favourite"] forKey:@"is_favourite"];
+                    [args setObject:@"1" forKey:@"is_update"];
+                    [args setValue:@"0" forKey:@"remember_last_color"];
+                    
+                    if ([[self checkforValidString:[inforDict valueForKey:@"server_device_id"]] isEqualToString:@"NA"])
+                    {
+                        [args setObject:@"0" forKey:@"is_update"];
+                    }
+                    NSString *deviceToken =deviceTokenStr;
+                    if (deviceToken == nil || deviceToken == NULL)
+                    {
+                        [args setValue:@"123456789" forKey:@"device_token"];
+                    }
+                    else
+                    {
+                        [args setValue:deviceToken forKey:@"device_token"];
+                    }
+                    AFHTTPRequestOperationManager *manager1 = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:[NSURL URLWithString:@"http://server.url"]];
+                    //[manager1.requestSerializer setValue:@"multipart/form-data" forHTTPHeaderField:@"Content-Type"];
+                    NSString *token=[[NSUserDefaults standardUserDefaults]valueForKey:@"globalCode"];
+                    NSString *authorization = [NSString stringWithFormat: @"Basic %@",token];
+                    [manager1.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+                    [manager1.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+                    //manager1.responseSerializer = [AFHTTPResponseSerializer serializer];
+                    
+                    AFHTTPRequestOperation *op = [manager1 POST:@"http://vithamastech.com/smartlight/api/save_device" parameters:args success:^(AFHTTPRequestOperation *operation, id responseObject)
+                    {
+                        NSMutableDictionary * dictID = [[NSMutableDictionary alloc] init];
+                        dictID = [responseObject mutableCopy];
+                        if ([dictID valueForKey:@"data"] == [NSNull null] || [dictID valueForKey:@"data"] == nil)
+                        {
+                                                          
+                        }
+                        else
+                        {
+                            NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set is_sync ='1' where device_id='%@'",[[dictID valueForKey:@"data"]valueForKey:@"device_id"]];
+                            [[DataBaseManager dataBaseManager] execute:strUpdate];
+                        }
+                    }
+                                                        failure:^(AFHTTPRequestOperation *operation, NSError *error)
+                    {
+                        if (error)
+                        {
+                            //NSLog(@"Servicer error = %@", error);
+                        }
+                    }];
+                    [op start];
+                }
+                // Perform async operation
+                // Call your method/function here
+                // Example:
+                dispatch_sync(dispatch_get_main_queue(), ^{
+                    //Method call finish here
+                });
+            });
+        }
+    }
+}
+#pragma mark - UrlManager Delegate
+- (void)onResult:(NSDictionary *)result
+{
+    NSLog(@"=======Result=======%@",result);
+    [APP_DELEGATE endHudProcess];
+    
+   if ([[result valueForKey:@"commandName"] isEqualToString:@"CheckUserDetails"])
+    {
+        if ([[[result valueForKey:@"result"] valueForKey:@"response"] isEqualToString:@"false"])
+        {
+            if ([[[result valueForKey:@"result"] valueForKey:@"message"] isEqualToString:@"Password not matching with database."])
+            {
+                FCAlertView *alert = [[FCAlertView alloc] init];
+                alert.colorScheme = [UIColor blackColor];
+                [alert makeAlertTypeCaution];
+                alert.delegate =self;
+                alert.tag = 345;
+                [alert showAlertInView:self
+                             withTitle:@"Smart Light"
+                          withSubtitle:@"Authentication session expired. Please login again."
+                       withCustomImage:[UIImage imageNamed:@"logo.png"]
+                   withDoneButtonTitle:nil
+                            andButtons:nil];
+
+            }
+        }
+       else
+        {
+            NSLog(@"<-------onResult------>%@",result);
+            [APP_DELEGATE endHudProcess];
+
+            if ([deviceDetail count]> 0)
+            {
+                if ([[deviceDetail  valueForKey:@"device_type"] isEqual:@"4"])
+                {
+                    return;
+                }
+                else
+                {
+                    [APP_DELEGATE endHudProcess];
+                    FCAlertView *alert = [[FCAlertView alloc] init];
+                    alert.colorScheme = [UIColor blackColor];
+                    [alert makeAlertTypeSuccess];
+                    [alert showAlertInView:self
+                                 withTitle:@"Smart Light"
+                              withSubtitle:@"Device has been deleted successfully."
+                           withCustomImage:[UIImage imageNamed:@"logo.png"]
+                       withDoneButtonTitle:nil
+                                andButtons:nil];
+                }
+            }
+        }
+    }
+}
+- (void)onError:(NSError *)error
+{
+    [APP_DELEGATE endHudProcess];
+    
+//    NSLog(@"The error is...%@", error);
+    
+    
+    NSInteger ancode = [error code];
+    
+    NSMutableDictionary * errorDict = [error.userInfo mutableCopy];
+//    NSLog(@"errorDict===%@",errorDict);
+    
+    if (ancode == -1001 || ancode == -1004 || ancode == -1005 || ancode == -1009) {
+//        [APP_DELEGATE ShowErrorPopUpWithErrorCode:ancode andMessage:@""];
+    } else {
+//        [APP_DELEGATE ShowErrorPopUpWithErrorCode:customErrorCodeForMessage andMessage:@"Please try again later"];
+    }
+    
+    NSString * strLoginUrl = [NSString stringWithFormat:@"%@%@",WEB_SERVICE_URL,@"token.json"];
+    if ([[errorDict valueForKey:@"NSErrorFailingURLStringKey"] isEqualToString:strLoginUrl])
+    {
+//        NSLog(@"NSErrorFailingURLStringKey===%@",[errorDict valueForKey:@"NSErrorFailingURLStringKey"]);
+    }
+}
+-(void)AlertViewFCTypeCautionCheck:(NSString *)strMsg
+{
+        FCAlertView *alert = [[FCAlertView alloc] init];
+        alert.colorScheme = [UIColor blackColor];
+        [alert makeAlertTypeCaution];
+        [alert showAlertInView:self
+                     withTitle:@"Vithamas"
+                  withSubtitle:strMsg
+               withCustomImage:[UIImage imageNamed:@"logo.png"]
+           withDoneButtonTitle:nil
+                    andButtons:nil];
+}
 @end

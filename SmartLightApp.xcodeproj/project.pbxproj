@@ -31,6 +31,13 @@
 		04F74F8925EA7956009FE7DC /* wifired.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8625EA7956009FE7DC /* wifired.png */; };
 		04F74F8A25EA7956009FE7DC /* wifired@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8725EA7956009FE7DC /* wifired@2x.png */; };
 		04F74F8B25EA7956009FE7DC /* wifired@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F8825EA7956009FE7DC /* wifired@3x.png */; };
+		04F74F9D25F10ED2009FE7DC /* ResetSocketVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 04F74F9C25F10ED2009FE7DC /* ResetSocketVC.m */; };
+		04F74FA425F11222009FE7DC /* wifiWhite@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F9E25F11221009FE7DC /* wifiWhite@2x.png */; };
+		04F74FA525F11222009FE7DC /* wifiWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74F9F25F11221009FE7DC /* wifiWhite.png */; };
+		04F74FA625F11222009FE7DC /* arrowRight@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74FA025F11221009FE7DC /* arrowRight@3x.png */; };
+		04F74FA725F11222009FE7DC /* wifiWhite@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74FA125F11222009FE7DC /* wifiWhite@3x.png */; };
+		04F74FA825F11222009FE7DC /* arrowRight.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74FA225F11222009FE7DC /* arrowRight.png */; };
+		04F74FA925F11222009FE7DC /* arrowRight@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 04F74FA325F11222009FE7DC /* arrowRight@2x.png */; };
 		2BBEA6347DEA26BFDDD3510D /* Pods_SmartLightApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95A88A6366A552EDB4008694 /* Pods_SmartLightApp.framework */; };
 		9703E6D421DB90D7004CA364 /* whatsapp@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9703E6C221DB90D4004CA364 /* whatsapp@3x.png */; };
 		9703E6D521DB90D7004CA364 /* linkedin-box@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9703E6C321DB90D4004CA364 /* linkedin-box@3x.png */; };
@@ -681,6 +688,14 @@
 		04F74F8625EA7956009FE7DC /* wifired.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wifired.png; sourceTree = "<group>"; };
 		04F74F8725EA7956009FE7DC /* wifired@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifired@2x.png"; sourceTree = "<group>"; };
 		04F74F8825EA7956009FE7DC /* wifired@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifired@3x.png"; sourceTree = "<group>"; };
+		04F74F9B25F10ED2009FE7DC /* ResetSocketVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ResetSocketVC.h; sourceTree = "<group>"; };
+		04F74F9C25F10ED2009FE7DC /* ResetSocketVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ResetSocketVC.m; sourceTree = "<group>"; };
+		04F74F9E25F11221009FE7DC /* wifiWhite@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifiWhite@2x.png"; sourceTree = "<group>"; };
+		04F74F9F25F11221009FE7DC /* wifiWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wifiWhite.png; sourceTree = "<group>"; };
+		04F74FA025F11221009FE7DC /* arrowRight@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "arrowRight@3x.png"; sourceTree = "<group>"; };
+		04F74FA125F11222009FE7DC /* wifiWhite@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "wifiWhite@3x.png"; sourceTree = "<group>"; };
+		04F74FA225F11222009FE7DC /* arrowRight.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = arrowRight.png; sourceTree = "<group>"; };
+		04F74FA325F11222009FE7DC /* arrowRight@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "arrowRight@2x.png"; sourceTree = "<group>"; };
 		2F4BCA447A87051C52C73D43 /* Pods-SmartLightApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SmartLightApp.release.xcconfig"; path = "Pods/Target Support Files/Pods-SmartLightApp/Pods-SmartLightApp.release.xcconfig"; sourceTree = "<group>"; };
 		95A88A6366A552EDB4008694 /* Pods_SmartLightApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SmartLightApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9703E6C221DB90D4004CA364 /* whatsapp@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "whatsapp@3x.png"; path = "Other icons/whatsapp@3x.png"; sourceTree = "<group>"; };
@@ -1650,6 +1665,8 @@
 		AB0138BA2063DA0400F8E661 /* App Classes */ = {
 			isa = PBXGroup;
 			children = (
+				04F74F9B25F10ED2009FE7DC /* ResetSocketVC.h */,
+				04F74F9C25F10ED2009FE7DC /* ResetSocketVC.m */,
 				04193E9525CE7AFA00401495 /* DashboardNewCell.h */,
 				04193E9425CE7AFA00401495 /* DashboardNewCell.m */,
 				042E23BC25C1359A009D2A68 /* SocketWiFiSetupVC.h */,
@@ -2141,6 +2158,12 @@
 		AB0139822063DA2200F8E661 /* Other icons */ = {
 			isa = PBXGroup;
 			children = (
+				04F74FA225F11222009FE7DC /* arrowRight.png */,
+				04F74FA325F11222009FE7DC /* arrowRight@2x.png */,
+				04F74FA025F11221009FE7DC /* arrowRight@3x.png */,
+				04F74F9F25F11221009FE7DC /* wifiWhite.png */,
+				04F74F9E25F11221009FE7DC /* wifiWhite@2x.png */,
+				04F74FA125F11222009FE7DC /* wifiWhite@3x.png */,
 				04F74F8625EA7956009FE7DC /* wifired.png */,
 				04F74F8725EA7956009FE7DC /* wifired@2x.png */,
 				04F74F8825EA7956009FE7DC /* wifired@3x.png */,
@@ -2947,6 +2970,7 @@
 				9721D4A621E710D4007E4D2B /* phoneBlack@3x.png in Resources */,
 				ABDF6C2E20D3C3B200261847 /* retrivePass@2x.png in Resources */,
 				AB013A8D2063DA2300F8E661 /* Splash4.png in Resources */,
+				04F74FA725F11222009FE7DC /* wifiWhite@3x.png in Resources */,
 				AB4870A7207F5E4400F41B78 /* favorite_icon-1.png in Resources */,
 				AB487094207F348F00F41B78 /* home_icon.png in Resources */,
 				AB013A772063DA2300F8E661 /* whiteknow@3x.png in Resources */,
@@ -2979,6 +3003,7 @@
 				AB76072420C1117800B452AE /* checkmark-round.png in Resources */,
 				AB013A712063DA2300F8E661 /* voice_icon@3x.png in Resources */,
 				972508ED221EB82300F21FC7 /* instagram.png in Resources */,
+				04F74FA825F11222009FE7DC /* arrowRight.png in Resources */,
 				AB08023720E3CE0E00219DED /* ic_wheel_three.png in Resources */,
 				9715058921887C8100359AC4 /* radioUnselectedWhite@3x.png in Resources */,
 				978624E521DB6AF300936385 /* map-marker@2x.png in Resources */,
@@ -3077,6 +3102,7 @@
 				FAE7E79625E76A7F00866B11 /* redcross@3x.png in Resources */,
 				AB013A342063DA2200F8E661 /* default_lamp@2x.png in Resources */,
 				9703E6DF21DB90D7004CA364 /* linkedin-box@2x.png in Resources */,
+				04F74FA925F11222009FE7DC /* arrowRight@2x.png in Resources */,
 				AB4E897E2146A77700F9D8A0 /* solidCheck.png in Resources */,
 				9721D48E21E710A4007E4D2B /* ic_light_state@3x.png in Resources */,
 				97EEE15D22001C4F00AB3909 /* radioUnselectedBlack.png in Resources */,
@@ -3106,6 +3132,7 @@
 				9721D48821E710A4007E4D2B /* phoneBlack.png in Resources */,
 				ABDF6C2C20D3C3B200261847 /* retrivePass@3x.png in Resources */,
 				AB013A442063DA2200F8E661 /* default_switch_icon@3x.png in Resources */,
+				04F74FA525F11222009FE7DC /* wifiWhite.png in Resources */,
 				978624E621DB6AF300936385 /* web@3x.png in Resources */,
 				AB1AC32620750A75007C7865 /* checked.png in Resources */,
 				978624EA21DB6AF300936385 /* email-plus.png in Resources */,
@@ -3203,6 +3230,7 @@
 				AB487086207F348F00F41B78 /* active_favorite_icon@2x.png in Resources */,
 				AB013A172063DA2200F8E661 /* Icon-App-60x60@3x.png in Resources */,
 				ABF4B0D22147B73700498B6E /* sliderHandleBlue@2x.png in Resources */,
+				04F74FA425F11222009FE7DC /* wifiWhite@2x.png in Resources */,
 				97FC82C022214FB900017927 /* appVersion@3x.png in Resources */,
 				AB013A742063DA2300F8E661 /* whitecolor_wheel@3x.png in Resources */,
 				AB013A472063DA2200F8E661 /* group_icon@3x.png in Resources */,
@@ -3314,6 +3342,7 @@
 				9715058A21887C8100359AC4 /* radioSelectedWhite@3x.png in Resources */,
 				978624C221DB3A9100936385 /* menu@2x.png in Resources */,
 				ABF4B0E32148031B00498B6E /* N.json in Resources */,
+				04F74FA625F11222009FE7DC /* arrowRight@3x.png in Resources */,
 				AB013A4F2063DA2200F8E661 /* navbulb_icon@2x.png in Resources */,
 				AB24BFD42189E60E00A98C09 /* MNMPullToRefreshIcon.png in Resources */,
 				AB18127620BC3A7200F2989F /* CGBoldItalic.TTF in Resources */,
@@ -3534,6 +3563,7 @@
 				AB01393E2063DA0400F8E661 /* MasterVC.m in Sources */,
 				AB0139602063DA0400F8E661 /* Reachability.m in Sources */,
 				ABFE0F7321650918006E4F47 /* OtpVerifyVC.m in Sources */,
+				04F74F9D25F10ED2009FE7DC /* ResetSocketVC.m in Sources */,
 				AB0139632063DA0400F8E661 /* URLManager.m in Sources */,
 				AB52C51D206A752800846387 /* SWTableViewCell.m in Sources */,
 				AB01394D2063DA0400F8E661 /* NYSegmentTextRenderView.m in Sources */,

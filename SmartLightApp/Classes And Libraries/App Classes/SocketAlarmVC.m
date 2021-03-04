@@ -938,31 +938,36 @@
     }
     else
     {
-        NSString * strRepated1 = [self checkforValidString:[[ arrTitle objectAtIndex:0] valueForKey:@"isExpanded"]];
-        NSString * strRepated2 = [self checkforValidString:[[ arrTitle objectAtIndex:1] valueForKey:@"isExpanded"]];
-
-        
-        
+        if (alarm1Check == 1)
+        {
+            selectedAlarmIndex = 0;
+            [self SendAlarmtoDevice:0];
+        }
+        else if (alarm2Check == 1)
+        {
+            selectedAlarmIndex = 1;
+            [self SendAlarmtoDevice:1];
+        }
     }
-     if(alarm1Check == 2 && alarm2Check == 2)
-    {
-        //both are OK save it
-        selectedAlarmIndex = 0;
-        [self SendAlarmtoDevice:0];
-//        [self performSelector:@selector(SendSecondAlarmAfterSomeDelay) withObject:nil afterDelay:2];
-
-    }
-    else if(alarm1Check == 2)
-    {
-        selectedAlarmIndex = 0;
-        [self SendAlarmtoDevice:0];
-
-    }
-    else if(alarm2Check == 2)
-    {
-        selectedAlarmIndex = 1;
-        [self SendAlarmtoDevice:1];
-    }
+//     if(alarm1Check == 2 && alarm2Check == 2)
+//    {
+//        //both are OK save it
+//        selectedAlarmIndex = 0;
+//        [self SendAlarmtoDevice:0];
+////        [self performSelector:@selector(SendSecondAlarmAfterSomeDelay) withObject:nil afterDelay:2];
+//
+//    }
+//    else if(alarm1Check == 2)
+//    {
+//        selectedAlarmIndex = 0;
+//        [self SendAlarmtoDevice:0];
+//
+//    }
+//    else if(alarm2Check == 2)
+//    {
+//        selectedAlarmIndex = 1;
+//        [self SendAlarmtoDevice:1];
+//    }
 }
 -(void)btnRepeateClick:sender
 {
@@ -983,42 +988,15 @@
 }
 -(int)getStatusOfSavedAlarm:(int)indexx //0 : Both NA, 1 : Any one NA, 2: Both OK
 {
-    int totalCount = 0;
     if ([[[arrTitle objectAtIndex:indexx] valueForKey:@"OnTimestamp"] isEqualToString:@"NA"] &&  [[[arrTitle objectAtIndex:indexx] valueForKey:@"OffTimestamp"] isEqualToString:@"NA"])
     {
         return  0;
     }
-    else if ([[[arrTitle objectAtIndex:indexx] valueForKey:@"OnTimestamp"] isEqualToString:@"NA"] ||  [[[arrTitle objectAtIndex:indexx] valueForKey:@"OffTimestamp"] isEqualToString:@"NA"])
+    else if (![[[arrTitle objectAtIndex:indexx] valueForKey:@"OnTimestamp"] isEqualToString:@"NA"] ||  ![[[arrTitle objectAtIndex:indexx] valueForKey:@"OffTimestamp"] isEqualToString:@"NA"])
     {
         return 1;
     }
-    else
-    {
-        NSMutableDictionary * dayDict = [[NSMutableDictionary alloc] init];
-        
-        dayDict = [arrTitle objectAtIndex:indexx];
-
-        NSArray * countsArr = [NSArray arrayWithObjects:@"1",@"2",@"4",@"8",@"16",@"32",@"64", nil]; // 127 all days selected
-        
-        int correctValue = 200;
-        
-        if (indexx == 1)
-        {
-            correctValue = 300;
-        }
-        for (int j=0; j<[countsArr count]; j++)
-        {
-            NSString * strStatus = [dayDict valueForKey:[NSString stringWithFormat:@"%d", correctValue + j]];//
-            if ([strStatus isEqualToString:@"1"])
-            {
-                totalCount = totalCount + [[countsArr objectAtIndex:j] intValue];
-//                totalCount = totalDayCount;
-            }
-        }
-        [dayDict setValue:[NSString stringWithFormat:@"%d",totalCount] forKey:@"totalCount"];
-        [arrTitle replaceObjectAtIndex:indexx withObject:dayDict];
-        return 2;
-    }
+    return 0;
 }
 
 -(void)AlertViewFCTypeCautionCheck:(NSString *)strMsg
@@ -1044,8 +1022,8 @@
     
     if ([[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"totalCount"] isEqual:@"0"])
     {
-        [self AlertViewFCTypeCautionCheck:[NSString stringWithFormat:@"Please select day for %@.",strAlarmType]];
-        return;
+//        [self AlertViewFCTypeCautionCheck:[NSString stringWithFormat:@"Please select day for %@.",strAlarmType]];
+//        return;
     }
     
     NSString * strOnTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"On_original"]];
@@ -1064,10 +1042,13 @@
     NSComparisonResult result = [date1 compare:date2];
 
     BOOL isDateCorrect = YES;
-    if(result == NSOrderedSame)
+    if (![strOnTimestamp  isEqualToString:@"NA"] &&  ![strOFFTimestamp  isEqualToString:@"NA"])
     {
-        isDateCorrect = NO;
-        strMsg = [NSString stringWithFormat:@"%@'s On Time and Off Time should not be same.",strAlarmType];
+        if(result == NSOrderedSame)
+        {
+            isDateCorrect = NO;
+            strMsg = [NSString stringWithFormat:@"%@'s On Time and Off Time should not be same.",strAlarmType];
+        }
     }
 
     if (isDateCorrect == NO)
