@@ -47,9 +47,9 @@
     CocoaMQTT * mqttObj;
     NSArray *imageArray,*labelArray;
     NSMutableArray * arrayAllDevice;
-    NSString * strMackAddress;
     NSString * strCurrentTopic;
     BOOL isFloatButton;
+    BOOL isMqttDisconnected;
 
 }
 @property (nonatomic) NSIndexPath *expandingIndexPath;
@@ -502,7 +502,7 @@
         blbFrame.size.height = 103;
         blbFrame.origin.x = (DEVICE_WIDTH-70)/2;
         blbImg.frame = blbFrame;
-        blbImg.image = [UIImage imageNamed:@"bulb_icon.png"];
+        blbImg.image = [UIImage imageNamed:@"plus.png"];
         
         isForGroup = NO;
         lblSuccessMsg.hidden = NO;
@@ -533,7 +533,7 @@
             } completion:nil];
         }
         [tblView reloadData];
-        [addFloatButton ChangeImage:[UIImage imageNamed:@"navbulb_icon.png"]];
+        [addFloatButton ChangeImage:[UIImage imageNamed:@"plus.png"]];
         imgNetworkStatus.frame = CGRectMake(DEVICE_WIDTH-15, 32+0, 10, 18);
         imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
 
@@ -552,8 +552,8 @@
         blbFrame.size.height = 103;
         blbFrame.origin.x = (DEVICE_WIDTH-121)/2;
         blbImg.frame = blbFrame;
-        blbImg.image = [UIImage imageNamed:@"group_icon.png"];
-        [addFloatButton ChangeImage:[UIImage imageNamed:@"add_group.png"]];
+        blbImg.image = [UIImage imageNamed:@"navbulb_icon.png"];
+        [addFloatButton ChangeImage:[UIImage imageNamed:@"navbulb_icon.png"]];
         imgNetworkStatus.frame = CGRectMake(DEVICE_WIDTH-10, 32+0, 10, 18);
         imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
 
@@ -746,8 +746,8 @@
         NSString * strWifiConfig = [[sectionArr objectAtIndex:[sender tag]] valueForKey:@"wifi_configured"];
         NSString * strMacaddress = [[sectionArr objectAtIndex:[sender tag]] valueForKey:@"ble_address"];
         
-        globalSocketWIFiSEtup = [[SocketWiFiSetupVC alloc] init];
-        globalSocketWIFiSEtup.dictData = [sectionArr objectAtIndex:[sender tag]];
+        SocketWiFiSetupVC * socketWifi = [[SocketWiFiSetupVC alloc] init];
+        socketWifi.dictData = [sectionArr objectAtIndex:[sender tag]];
         
         if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strMacaddress])
         {
@@ -759,15 +759,14 @@
                     if ([[arrSocketDevices objectAtIndex:foundindex] objectForKey:@"peripheral"])
                     {
                         CBPeripheral * p = [[arrSocketDevices objectAtIndex:foundindex] objectForKey:@"peripheral"];
-                        globalSocketWIFiSEtup.peripheralPss = p;
+                        socketWifi.peripheralPss = p;
                     }
                 }
             }
         }
-
-        globalSocketWIFiSEtup.strBleAddress = strMacaddress;
-        globalSocketWIFiSEtup.strWifiConfig = strWifiConfig;
-        [self.navigationController pushViewController:globalSocketWIFiSEtup animated:true];
+        socketWifi.strBleAddress = strMacaddress;
+        socketWifi.strWifiConfig = strWifiConfig;
+        [self.navigationController pushViewController:socketWifi animated:true];
     }
     else
     {
@@ -1003,7 +1002,6 @@
                                         andButtons:nil];
                         }
                     }
-
                 }
             }
         }
@@ -1066,6 +1064,28 @@
         }
     }
     
+    NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey:@"PairedDevices"];
+    NSArray *array = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    NSMutableArray * arrPreviouslyFound = [[NSMutableArray alloc] initWithArray:array];
+    
+    if([[arrPreviouslyFound valueForKey:@"ble_address"] containsObject:strBleAddress])
+    {
+        NSInteger foundIndex = [[arrPreviouslyFound valueForKey:@"ble_address"] indexOfObject:strBleAddress];
+        if (foundIndex != NSNotFound)
+        {
+            if ([arrPreviouslyFound count] > foundIndex)
+            {
+                [arrPreviouslyFound removeObjectAtIndex:foundIndex];
+            }
+        }
+    }
+    
+    NSData *dataSave = [NSKeyedArchiver archivedDataWithRootObject:arrPreviouslyFound];
+    [[NSUserDefaults standardUserDefaults] setObject:dataSave forKey:@"PairedDevices"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+    
+    
     NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strBleAddress uppercaseString]];
     NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:7],[NSNumber numberWithInt:1], nil];
     [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
@@ -1075,8 +1095,8 @@
     alert.colorScheme = [UIColor blackColor];
     [alert makeAlertTypeSuccess];
     [alert showAlertInView:self
-                 withTitle:@"Smart Light"
-              withSubtitle:@"Device has been removed successfully."
+                 withTitle:@"Power socket"
+              withSubtitle:@"Device has been deleted successfully."
            withCustomImage:[UIImage imageNamed:@"logo.png"]
        withDoneButtonTitle:nil
                 andButtons:nil];
@@ -1153,7 +1173,6 @@
     foot.backgroundColor = [UIColor clearColor];
     return foot;
 }
-
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if (tableView == tblView)
@@ -2342,16 +2361,20 @@
             {
                 NSString * strIdentifier = [self checkforValidString:[[sectionArr objectAtIndex:i] valueForKey:@"identifier"]];
                 NSString * strBleAddress = [self checkforValidString:[[sectionArr objectAtIndex:i] valueForKey:@"ble_address"]];
-
-                NSArray * arrDevie = [[BLEManager sharedManager] getLastDiscoveredSocketDevices:strIdentifier];
                 CBPeripheral * p;
-                if ([arrDevie count] > 0)
+
+                if(![strIdentifier isEqualToString:@"NA"])
                 {
-                     p = [arrDevie objectAtIndex:0];
+                    NSArray * arrDevie = [[BLEManager sharedManager] getLastDiscoveredSocketDevices:strIdentifier];
+                    if ([arrDevie count] > 0)
+                    {
+                         p = [arrDevie objectAtIndex:0];
+                    }
                 }
                 if (p != nil)
                 {
-                    if (![[arrSocketDevices valueForKey:@"ble_address"] containsObject:strBleAddress])
+                    NSString * strPeripheralIdentifier = [NSString stringWithFormat:@"%@",p.identifier];
+                    if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strPeripheralIdentifier])
                     {
                         [[sectionArr objectAtIndex:i] setObject:p forKey:@"peripheral"];
                         [arrSocketDevices addObject:[sectionArr objectAtIndex:i]];
@@ -2365,6 +2388,7 @@
                             {
                                 NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
                                 [dataDict setValue:p forKey:@"peripheral"];
+                                [dataDict setValue:strBleAddress forKey:@"ble_address"];
                                 [dataDict setValue:[NSString stringWithFormat:@"%@",p.identifier] forKey:@"identifier"];
                                 [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
                             }
@@ -3358,20 +3382,16 @@ alert.colorScheme = [UIColor blackColor];
     {
         if (self.expandedIndexPathGroup && [indexPath row] > [self.expandedIndexPathGroup row])
         {
-            return [NSIndexPath indexPathForRow:[indexPath row]
-                                      inSection:[indexPath section]];
+            return [NSIndexPath indexPathForRow:[indexPath row] inSection:[indexPath section]];
         }
     }
     else
     {
         if (self.expandedIndexPath && [indexPath row] > [self.expandedIndexPath row])
         {
-            return [NSIndexPath indexPathForRow:[indexPath row]
-                                      inSection:[indexPath section]];
+            return [NSIndexPath indexPathForRow:[indexPath row] inSection:[indexPath section]];
         }
     }
-    
-    
     return indexPath;
 }
 
@@ -3572,6 +3592,8 @@ alert.colorScheme = [UIColor blackColor];
 //    arrCnt = [[BLEManager sharedManager] arrBLESocketDevices];
     
 //    if([arrCnt count] == 0)
+    
+    if (![currentScreen isEqualToString: @"AddSocket"])
     {
         for (int i=0; i<arrSocketDevices.count; i++)
         {
@@ -3580,6 +3602,27 @@ alert.colorScheme = [UIColor blackColor];
                 CBPeripheral * p = [[arrSocketDevices objectAtIndex:i] objectForKey:@"peripheral"];
                 if (p.state == CBPeripheralStateConnected)
                 {
+                    bool isNotified = NO;
+                    if ([[[arrSocketDevices objectAtIndex:i] allKeys] containsObject:@"IsNotified"])
+                    {
+                        if ([[[arrSocketDevices objectAtIndex:i] valueForKey:@"IsNotified"] isEqualToString:@"1"])
+                        {
+                            isNotified = YES;
+                        }
+                        else
+                        {
+                            isNotified = NO;
+                        }
+                    }
+                    if (isNotified == NO)
+                    {
+                        [[BLEService sharedInstance] sendNotificationsSKT:p withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
+                        [[BLEService sharedInstance] EnableNotificationsForCommandSKT:p withType:YES];
+                        [[BLEService sharedInstance] EnableNotificationsForDATASKT:p withType:YES];
+                        [[BLEService sharedInstance] GetAuthcodeforSocket:p withValue:@"1"];//Ask for Authentication Value
+                        [[arrSocketDevices objectAtIndex:i] setValue:@"1" forKey:@"IsNotified"];
+                    }
+
                 }
                 else
                 {
@@ -3588,7 +3631,9 @@ alert.colorScheme = [UIColor blackColor];
                     {
                        if (![currentScreen isEqualToString: @"AddSocket"])
                         {
-                            [[BLEManager sharedManager] ConnectDevicePeripheralforSocket:p];
+//                            NSLog(@"Auto Connection Dashboard =%@",[arrSocketDevices objectAtIndex:i]);
+                            [[BLEManager sharedManager] connectDevice:p];
+//                            [[arrSocketDevices objectAtIndex:i] setValue:@"1" forKey:@"IsNotified"];
                         }
                     }
                 }
@@ -3602,13 +3647,17 @@ alert.colorScheme = [UIColor blackColor];
                         NSString * strIdentifier = [self checkforValidString:[[sectionArr objectAtIndex:i] valueForKey:@"identifier"]];
                         NSString * strBleAddress = [self checkforValidString:[[sectionArr objectAtIndex:i] valueForKey:@"ble_address"]];
 
-                        NSArray * arrDevie = [[BLEManager sharedManager] getLastDiscoveredSocketDevices:strIdentifier];
                         CBPeripheral * p;
-                        if ([arrDevie count] > 0)
+
+                        if(![strIdentifier isEqualToString:@"NA"])
                         {
-                            NSLog(@"CheckSockectConnectionTimer=========%@",arrDevie);
-                             p = [arrDevie objectAtIndex:0];
+                            NSArray * arrDevie = [[BLEManager sharedManager] getLastDiscoveredSocketDevices:strIdentifier];
+                            if ([arrDevie count] > 0)
+                            {
+                                 p = [arrDevie objectAtIndex:0];
+                            }
                         }
+
                         if (p != nil)
                         {
                             if (![[arrSocketDevices valueForKey:@"ble_address"] containsObject:strBleAddress])
@@ -3763,6 +3812,7 @@ alert.colorScheme = [UIColor blackColor];
             strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
         }
 
+        [mqttObj didDisconnect];
         self->mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
         self->mqttObj.delegate = self;
     
@@ -3780,6 +3830,7 @@ alert.colorScheme = [UIColor blackColor];
     if (mqttObj)
     {
         [mqttObj disconnect];
+        isMqttDisconnected = YES;
     }
 }
 -(void)NewSocketAddedWithWIFIConfigured:(NSString *)strBleAddress withPeripheral:(CBPeripheral *)peripheral
@@ -3903,11 +3954,6 @@ alert.colorScheme = [UIColor blackColor];
 -(void)mqtt:(CocoaMQTT *)mqtt didSubscribeTopic:(NSArray<NSString *> *)topics
 {
     NSLog(@"Topic Subscried successfully =%@",topics);
-    
-//    NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMackAddress]; // BLE adress
-//    
-//    UInt16 pubTop =  [mqttObj publish:publishTopic withString:@"Message" qos:2 retained:false dup:false];
-//    NSLog(@"%d",pubTop);
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didUnsubscribeTopic:(NSString *)topic
 {
@@ -3918,19 +3964,22 @@ alert.colorScheme = [UIColor blackColor];
     NSLog(@"State Changed===>%hhu",state);
     if (state == 3)
     {
-        NSString * strClientId = [self checkforValidString:deviceTokenStr];
-        if ([strClientId isEqualToString:@"NA"])
+        if(isMqttDisconnected == NO)
         {
-            strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
-        }
+            NSString * strClientId = [self checkforValidString:deviceTokenStr];
+            if ([strClientId isEqualToString:@"NA"])
+            {
+                strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
+            }
 
-        mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
-        mqttObj.delegate = self;
-        [mqttObj selfSignedSSLSetting];
-        BOOL isConnected =  [mqttObj connect];
-        if (isConnected)
-        {
-            NSLog(@"MQTT is CONNECTING....");
+            mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
+            mqttObj.delegate = self;
+            [mqttObj selfSignedSSLSetting];
+            BOOL isConnected =  [mqttObj connect];
+            if (isConnected)
+            {
+                NSLog(@"MQTT is CONNECTING....");
+            }
         }
     }
 }

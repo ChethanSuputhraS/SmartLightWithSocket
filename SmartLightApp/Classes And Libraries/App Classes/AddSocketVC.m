@@ -120,6 +120,11 @@
     [viewHeader setBackgroundColor:[UIColor clearColor]];
     [self.view addSubview:viewHeader];
     
+    UILabel * lblBack = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, 64)];
+    lblBack.backgroundColor = [UIColor blackColor];
+    lblBack.alpha = 0.5;
+    [viewHeader addSubview:lblBack];
+    
     UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(60, globalStatusHeight, DEVICE_WIDTH-120, yy)];
     [lblTitle setBackgroundColor:[UIColor clearColor]];
     [lblTitle setText:@"Power socket"];
@@ -697,6 +702,7 @@
         self->txtRouterPassword.textColor = UIColor.whiteColor;
         self->txtRouterPassword.backgroundColor = UIColor.blackColor;
         self->txtRouterPassword.alpha = 0.7;
+        self->txtRouterPassword.secureTextEntry = YES;
         [self->viewTxtfld addSubview:self->txtRouterPassword];
         
         self->btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -916,48 +922,7 @@
 
     else if (alertView.tag == 555)
     {
-        if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strCurrentSelectedAddress])
-        {
-            NSInteger idxAddress = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strCurrentSelectedAddress];
-            if (idxAddress != NSNotFound)
-            {
-                if (idxAddress < [arrSocketDevices count])
-                {
-                    [[arrSocketDevices objectAtIndex:idxAddress]setObject:classPeripheral forKey:@"peripheral"];
-                    [[arrSocketDevices objectAtIndex:idxAddress]setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
-                }
-            }
-        }
-        else
-        {
-            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
-            [dict setValue:classPeripheral forKey:@"peripheral"];
-            [dict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
-            [dict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
-            
-            NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
-            if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
-            {
-                [arrSocketDevices addObject:dict];
-            }
-            else
-            {
-                if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
-                {
-                    NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
-                    if (foudIndex != NSNotFound)
-                    {
-                        if ([arrSocketDevices count] > foudIndex)
-                        {
-                            NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
-                            [dataDict setValue:classPeripheral forKey:@"peripheral"];
-                            [dataDict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
-                            [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
-                        }
-                    }
-                }
-            }
-        }
+        [self AddDeviceDatatoSocketArray];
         [globalDashBoardVC NewSocketAddedWithWIFIConfigured:strCurrentSelectedAddress withPeripheral:classPeripheral];
         [self.navigationController popViewControllerAnimated:true];
     }
@@ -1055,6 +1020,7 @@
         }
     }
     }
+    [self AddDeviceDatatoSocketArray];
     if ([[deviceListArray valueForKey:@"ble_address"] containsObject:strMckAddress])
     {
         NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set device_name='%@', status ='1', is_sync = '0' where ble_address = '%@'",strdeviceName,strMckAddress];
@@ -1559,6 +1525,53 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
     NSInteger intPacket = [@"0" integerValue];
     NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
     [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:classPeripheral];
+}
+-(void)AddDeviceDatatoSocketArray
+{
+    if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strCurrentSelectedAddress])
+    {
+        NSInteger idxAddress = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strCurrentSelectedAddress];
+        if (idxAddress != NSNotFound)
+        {
+            if (idxAddress < [arrSocketDevices count])
+            {
+                [[arrSocketDevices objectAtIndex:idxAddress]setObject:classPeripheral forKey:@"peripheral"];
+                [[arrSocketDevices objectAtIndex:idxAddress]setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+            }
+        }
+    }
+    else
+    {
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:classPeripheral forKey:@"peripheral"];
+        [dict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+        [dict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
+        
+        NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
+        if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+        {
+            [arrSocketDevices addObject:dict];
+        }
+        else
+        {
+            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+            {
+                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                if (foudIndex != NSNotFound)
+                {
+                    if ([arrSocketDevices count] > foudIndex)
+                    {
+                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                        [dataDict setValue:classPeripheral forKey:@"peripheral"];
+                        [dataDict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+                        [dataDict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
+                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                    }
+                }
+            }
+        }
+    }
+
 }
 #pragma mark - BLE Received data...
 -(void)ReceivedSwitchStatusfromDevice:(NSMutableDictionary *)dictSwitch

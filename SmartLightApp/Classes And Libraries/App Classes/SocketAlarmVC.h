@@ -10,6 +10,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@protocol SocketAlarmDelegate <NSObject>
+@optional
+-(void)SetupAlarm:(NSMutableData *)alarmDict;
+@end
+
 @interface SocketAlarmVC : UIViewController
 {
     int globalStatusHeight;
@@ -20,11 +25,14 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,strong)NSString* strTAg;
 @property(nonatomic,assign)int intswitchState;
 @property(nonatomic,assign)NSString * strMacaddress;
-
 @property(nonatomic,strong)CBPeripheral * periphPass;
+@property (nonatomic,weak) id<SocketAlarmDelegate>delegate;
+@property(nonatomic,assign) NSMutableDictionary * dictDeviceDetail;
+
 
 -(void)ALaramSuccessResponseFromDevie;
 -(void)DeleteAlarmConfirmFromDevice:(NSMutableDictionary *)dictAlaramID;
+-(void)MqttAlarmStatusfromServer:(BOOL)isSuccess;
 
 @end
 

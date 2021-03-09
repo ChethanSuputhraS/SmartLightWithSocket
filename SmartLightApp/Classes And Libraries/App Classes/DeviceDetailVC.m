@@ -51,6 +51,8 @@
     UISlider *brightnessSliderColorView;
     UIButton * btnOptions;
     BOOL isfromSolid;
+    UIView * settingView;
+    UITableView * tblSettings;
 }
 @property (strong, nonatomic) JMMarkSlider * redSlider;
 @property (strong, nonatomic) JMMarkSlider * greenSlider;
@@ -351,6 +353,24 @@
         stsImgY = ((yy+22)+60)*approaxSize;
         yAbove =  (yy+22)*approaxSize + 40*approaxSize;
     }
+}
+-(void)SetupForSetting
+{
+    int yHeight = (blueSegmentedControl.frame.size.height + blueSegmentedControl.frame.origin.y)*approaxSize + 0;
+
+    settingView = [[UIView alloc] initWithFrame:CGRectMake(0, yHeight, DEVICE_WIDTH, DEVICE_HEIGHT-yHeight)];
+    settingView.backgroundColor = UIColor.clearColor;
+    settingView.hidden = true;
+    [self.view addSubview:settingView];
+    
+    
+    tblSettings = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, settingView.frame.size.width, settingView.frame.size.height)];
+    tblSettings.backgroundColor = UIColor.clearColor;
+    tblSettings.delegate = self;
+    tblSettings.dataSource = self;
+    [settingView addSubview:tblSettings];
+    
+    
 }
 #pragma mark - ===========Here Send COLORS to Device===========
 -(void)MethodtoSendColor

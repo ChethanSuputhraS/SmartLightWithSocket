@@ -15,7 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,strong)UILabel * lblONtime,* lblOFFtime,*lblAlarms,*lblON,*lbldays,*lblOFF;
 @property(nonatomic,strong)UILabel * lblBack,*lblLine,*lblWifiSetup,*lblLineParall;
 @property(nonatomic,strong)UIButton  * btnDay,*btnon ,*btnoff,*btnTime,*btnDelete,*btnONTimer,*btnOFFTimer,*btnRepeate;
-@property(nonatomic,strong)UIButton  *btn0,*btn1,*btn2,*btn3,*btn4,*btn5,*btn6,*btn7;
+@property(nonatomic,strong)UIButton  *btn0,*btn1,*btn2,*btn3,*btn4,*btn5,*btn6,*btn7,*btnSave;
 @property(nonatomic,strong)NSMutableArray * dayArr;
 @property(nonatomic,strong)UIImageView * imgCheck;
 @property(nonatomic,strong)UIView *dayView;

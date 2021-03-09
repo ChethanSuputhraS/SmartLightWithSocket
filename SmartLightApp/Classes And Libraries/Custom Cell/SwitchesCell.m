@@ -9,7 +9,7 @@
 #import "SwitchesCell.h"
 
 @implementation SwitchesCell
-@synthesize lblBack,btnDay,btnon,btnoff,lblAlarms,lblLine,btnTime,lblWifiSetup,btnDelete,btn0,btn1,btn2,btn3,btn4,btn5,btn6,btn7,lbldays,lblON,lblOFF,lblLineParall,lblONtime,lblOFFtime,btnONTimer,btnOFFTimer,btnRepeate,imgCheck,dayView;
+@synthesize lblBack,btnDay,btnon,btnoff,lblAlarms,lblLine,btnTime,lblWifiSetup,btnDelete,btn0,btn1,btn2,btn3,btn4,btn5,btn6,btn7,lbldays,lblON,lblOFF,lblLineParall,lblONtime,lblOFFtime,btnONTimer,btnOFFTimer,btnRepeate,imgCheck,dayView,btnSave;
 - (void)awakeFromNib
 {
     [super awakeFromNib];
@@ -65,7 +65,6 @@
         lblAlarms.font = [UIFont fontWithName:CGRegular size:textSizes+2];
         [self.contentView addSubview:lblAlarms];
         
-
         
         imgCheck = [[UIImageView alloc] init];
         imgCheck.image = [UIImage imageNamed:@"checkEmpty.png"];
@@ -79,14 +78,13 @@
         [lblRepeate setFont:[UIFont fontWithName:CGRegular size:textSizes-1]];
         [self.contentView addSubview:lblRepeate];
         
-        btnRepeate = [[UIButton alloc] initWithFrame:CGRectMake(0, 25, DEVICE_WIDTH, 50)];
+        btnRepeate = [[UIButton alloc] initWithFrame:CGRectMake(0, 25, DEVICE_WIDTH-20, 50)];
         [btnRepeate setBackgroundColor:[UIColor clearColor]];
         btnRepeate.backgroundColor = UIColor.clearColor;
         btnRepeate.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
         btnRepeate.titleLabel.textAlignment = NSTextAlignmentRight;
         [self.contentView addSubview:btnRepeate]; 
 
-        
         int yy = 130;
         
         lblON = [[UILabel alloc] initWithFrame:CGRectMake(0, yy,DEVICE_WIDTH/2,30)];
@@ -131,16 +129,29 @@
         [btnOFFTimer setBackgroundColor:[UIColor clearColor]];
         [self.contentView addSubview:btnOFFTimer];
         
-        
-        btnDelete = [[UIButton alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-55, 10, 50, 44)];
+        btnDelete = [[UIButton alloc] initWithFrame:CGRectMake(10, yy-20, DEVICE_WIDTH/2-20, 44)];
         [btnDelete setBackgroundColor:[UIColor clearColor]];
         btnDelete.backgroundColor = UIColor.clearColor;
-        btnDelete.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
+        btnDelete.titleLabel.font = [UIFont fontWithName:CGBold size:textSizes+3];
         btnDelete.titleLabel.textAlignment = NSTextAlignmentRight;
-//        [btnDelete setTitle:@" Delete" forState:UIControlStateNormal];
-        [btnDelete setImage:[UIImage imageNamed:@"delete_icon.png"] forState:UIControlStateNormal];
+        [btnDelete setTitle:@"Delete Alarm" forState:UIControlStateNormal];
+        [btnDelete setTitleColor:[UIColor colorWithRed:192.0/255.0f green:57.0/255.0f blue:43.0/255.0f alpha:1.0] forState:UIControlStateNormal];
+//        [btnDelete setImage:[UIImage imageNamed:@"delete_icon.png"] forState:UIControlStateNormal];
 //        btnDelete.contentVerticalAlignment = UIControlContentHorizontalAlignmentRight;
+        btnDelete.layer.borderColor = UIColor.lightGrayColor.CGColor;
+        btnDelete.layer.borderWidth = 0.6;
         [self.contentView addSubview:btnDelete];
+        
+        btnSave = [[UIButton alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2+10, yy-20, DEVICE_WIDTH/2-20, 44)];
+        [btnSave setBackgroundColor:[UIColor clearColor]];
+        btnSave.backgroundColor = UIColor.clearColor;
+        btnSave.titleLabel.font = [UIFont fontWithName:CGBold size:textSizes+3];
+        btnSave.titleLabel.textAlignment = NSTextAlignmentRight;
+        [btnSave setTitle:@"Save Alarm" forState:UIControlStateNormal];
+        [btnSave setTitleColor:[UIColor colorWithRed:39.0/255.0f green:174.0/255.0f blue:96.0/255.0f alpha:1.0] forState:UIControlStateNormal];
+        btnSave.layer.borderColor = UIColor.lightGrayColor.CGColor;
+        btnSave.layer.borderWidth = 0.6;
+        [self.contentView addSubview:btnSave];
         
         btnDay = [[UIButton alloc] initWithFrame:CGRectMake(15, 50, btnWidth-10, 50)];
         [btnDay setBackgroundColor:[UIColor clearColor]];
@@ -164,7 +175,6 @@
         btnon.contentVerticalAlignment = UIControlContentHorizontalAlignmentLeft;
 //        [self.contentView addSubview:btnon];
         
-        
         btnoff = [[UIButton alloc] initWithFrame:CGRectMake(btnWidth*2, 10, btnWidth, 50)];
         [btnoff setBackgroundColor:[UIColor clearColor]];
         btnoff.backgroundColor = UIColor.clearColor;
@@ -185,7 +195,6 @@
 //        [self.contentView addSubview:lbltime];
         
   
-        
         lblWifiSetup = [[UILabel alloc] initWithFrame:CGRectMake(0, 10,btnWidth,30)];
         lblWifiSetup.backgroundColor = [UIColor clearColor];
         lblWifiSetup.textAlignment = NSTextAlignmentCenter;
@@ -200,7 +209,6 @@
         lbldays.textColor = [UIColor whiteColor];
         lbldays.text = @"Days";
         [self.contentView addSubview:lbldays];
-        
         
         dayView = [[UIView alloc] init];
         dayView.frame = CGRectMake(0, 80, DEVICE_WIDTH, 60);

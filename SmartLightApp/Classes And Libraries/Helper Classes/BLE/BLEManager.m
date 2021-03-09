@@ -974,9 +974,9 @@ static BLEManager    *sharedManager    = nil;
     {
         [delegate didDeviceConnectedCallback:peripheral];
         
-        NSInteger intPacket = [@"0" integerValue];
-        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:peripheral];
+//        NSInteger intPacket = [@"0" integerValue];
+//        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+//        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:peripheral];
 
         NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
         if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])

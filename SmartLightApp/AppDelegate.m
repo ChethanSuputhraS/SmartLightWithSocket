@@ -84,6 +84,12 @@ typedef signed long                     SInt32;
 }
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    long long mills = (long long)([[NSDate date]timeIntervalSince1970]);
+    NSData *dates = [NSData dataWithBytes:&mills length:4];
+
+    NSLog(@"0000000999999999999==%@",dates);
+
+//    NSArray * r = @[buf,buf];
     
     [self CheckHash256];
     NSString * strKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"];
@@ -745,6 +751,10 @@ typedef signed long                     SInt32;
 }
 -(void)movetoLogin
 {
+    if (globalDashBoardVC)
+    {
+        [globalDashBoardVC DisconnectMQTTSocketServer];
+    }
     [UIView beginAnimations:nil context:NULL];
     [UIView setAnimationDuration:1.3];
     [UIView setAnimationTransition:UIViewAnimationTransitionFlipFromLeft forView:[[UIApplication sharedApplication] keyWindow] cache:YES];
@@ -829,10 +839,7 @@ typedef signed long                     SInt32;
     [userDefault setValue:@"" forKey:@"CURRENT_USER_ACCESS_TOKEN"];
     [userDefault synchronize];
     
-    if (globalDashBoardVC)
-    {
-        [globalDashBoardVC DisconnectMQTTSocketServer];
-    }
+    
     LoginVC * start_up = [[LoginVC alloc] init];
     UINavigationController *nav =[[UINavigationController alloc] initWithRootViewController:start_up];
     self.window.rootViewController =nav;

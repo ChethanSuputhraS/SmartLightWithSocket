@@ -90,6 +90,12 @@
     [viewHeader setBackgroundColor:[UIColor clearColor]];
     [self.view addSubview:viewHeader];
     
+    UILabel * lblBack = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, 64)];
+    lblBack.backgroundColor = [UIColor blackColor];
+    lblBack.alpha = 0.5;
+    [viewHeader addSubview:lblBack];
+
+    
     UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(60, globalStatusHeight, DEVICE_WIDTH-120, yy)];
     [lblTitle setBackgroundColor:[UIColor clearColor]];
     [lblTitle setText:@"Power socket"];
@@ -124,7 +130,7 @@
     
     UIView * line = [[UIView alloc] initWithFrame:CGRectMake(0, globalStatusHeight + yy - 1, DEVICE_WIDTH, 0.5)];
     line.backgroundColor = [UIColor darkGrayColor];
-    [viewHeader addSubview:line];
+//    [viewHeader addSubview:line];
     
     tblDeviceList = [[UITableView alloc] initWithFrame:CGRectMake(0, yy+globalStatusHeight, DEVICE_WIDTH, DEVICE_HEIGHT-yy-globalStatusHeight)];
     tblDeviceList.delegate = self;
@@ -160,6 +166,30 @@
     [self.view addSubview:lblNoDevice];
 }
 #pragma mark- UITableView Methods
+#pragma mark- UITableView Methods
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section;   // custom view for header. will be adjusted to default or specified header height
+{
+    UIView * headerView =[[UIView alloc] initWithFrame:CGRectMake(10, 0, self.view.frame.size.width-20, 30)];
+    headerView.backgroundColor = [UIColor clearColor];
+    
+    if (tableView == tblDeviceList)
+    {
+        UILabel *lblmenu=[[UILabel alloc]init];
+        lblmenu.text = @" Tap on Connect button to reset device";
+        [lblmenu setTextColor:[UIColor whiteColor]];
+        [lblmenu setFont:[UIFont fontWithName:CGRegular size:textSizes-1]];
+        lblmenu.frame = CGRectMake(10,0, DEVICE_WIDTH-20, 30);
+        lblmenu.backgroundColor = UIColor.clearColor;
+        [headerView addSubview:lblmenu];
+        
+        return headerView;
+    }
+    return headerView;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return 30;
+}
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     return 1;

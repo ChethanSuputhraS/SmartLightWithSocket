@@ -30,9 +30,11 @@
     UIButton * btnConfigWifi,* btnRemoveWifi,*btnShowPass;
     UIImageView * imgWifiState;
     int wifiConnectionStatusRetryCount;
+    BOOL isRequestSentWifi;
+
 
 }
-@synthesize strWifiConfig,peripheralPss,strBleAddress, dictData;
+@synthesize strWifiConfig,peripheralPss,strBleAddress, dictData, delegate;
 - (void)viewDidLoad
 {
     globalStatusHeight = 20;
@@ -79,14 +81,18 @@
     [viewHeader setBackgroundColor:[UIColor clearColor]];
     [self.view addSubview:viewHeader];
     
+    UILabel * lblBack = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, 64)];
+    lblBack.backgroundColor = [UIColor blackColor];
+    lblBack.alpha = 0.5;
+    [viewHeader addSubview:lblBack];
     
     UILabel * lblLine = [[UILabel alloc] initWithFrame:CGRectMake(0, yy + globalStatusHeight-1, DEVICE_WIDTH,0.5)];
     [lblLine setBackgroundColor:[UIColor lightGrayColor]];
-    [viewHeader addSubview:lblLine];
+//    [viewHeader addSubview:lblLine];
     
     UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(50, globalStatusHeight, DEVICE_WIDTH-100, yy)];
     [lblTitle setBackgroundColor:[UIColor clearColor]];
-    [lblTitle setText:@"Setting"];
+    [lblTitle setText:@"Wi-Fi setting"];
     [lblTitle setTextAlignment:NSTextAlignmentCenter];
     [lblTitle setFont:[UIFont fontWithName:CGRegular size:textSizes+2]];
     [lblTitle setTextColor:[UIColor whiteColor]];
@@ -332,6 +338,8 @@
         self->txtRouterPassword.alpha = 0.7;
         self->txtRouterPassword.secureTextEntry = YES;
         self->txtRouterPassword.keyboardAppearance = UIKeyboardAppearanceAlert;
+        self->txtRouterPassword.secureTextEntry = YES;
+
         [self->viewTxtfld addSubview:self->txtRouterPassword];
         
         self->btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -420,6 +428,7 @@
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
         if ([APP_DELEGATE isNetworkreachable]) 
         {
+            isRequestSentWifi = YES;
             isWifiWritePasswordResponded = NO;
             [connectionTimer invalidate];
             connectionTimer = nil;
@@ -589,7 +598,7 @@
     alert = [[FCAlertView alloc] init];
     alert.colorScheme = [UIColor blackColor];
     [alert makeAlertTypeCaution];
-    alert.tag = 555;
+    alert.tag = 666;
     alert.delegate = self;
     [alert addButton:@"Yes" withActionBlock:
      ^{
@@ -802,13 +811,17 @@
             }
             else
             {
-                [APP_DELEGATE endHudProcess];
-                [alert removeFromSuperview];
-                alert = [[FCAlertView alloc] init];
-                alert.tag = 6767;
-                [alert makeAlertTypeCaution];
-                alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
-                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Something went wrong. Please try again later..." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
+                if(isRequestSentWifi == YES)
+                {
+                    isRequestSentWifi = NO;
+                    [APP_DELEGATE endHudProcess];
+                    [alert removeFromSuperview];
+                    alert = [[FCAlertView alloc] init];
+                    alert.tag = 900;
+                    [alert makeAlertTypeCaution];
+                    alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
+                    [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Something went wrong. Please try again later..." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
+                }
             }
         }
         else
@@ -816,10 +829,16 @@
             NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '1' where ble_address = '%@'",strBleAddress];
             [[DataBaseManager dataBaseManager] execute:strUpdate];
 
+            [dictData setValue:@"1" forKey:@"wifi_configured"];
+            [delegate UpdateWifiSetupfromWifiSetting:dictData];
+
             if (![IS_USER_SKIPPED isEqualToString:@"YES"])
             {
                 [self UpdateWifiConfigurationStatustoServer:dictData];
             }
+            if(isRequestSentWifi == YES)
+            {
+                isRequestSentWifi = NO;
                 [APP_DELEGATE endHudProcess];
                 [alert removeFromSuperview];
                 alert = [[FCAlertView alloc] init];
@@ -828,6 +847,8 @@
                 alert.delegate = self;
                 alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
                 [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wi-Fi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
+
+            }
                 
                 int yy = 44;
                 if (IS_IPHONE_X)
@@ -874,6 +895,15 @@
         strWifiConfig = @"0";
         NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '0' where ble_address = '%@'",strBleAddress];
         [[DataBaseManager dataBaseManager] execute:strUpdate];
+        
+        [dictData setValue:@"0" forKey:@"wifi_configured"];
+        [delegate UpdateWifiSetupfromWifiSetting:dictData];
+        
+        if (![IS_USER_SKIPPED isEqualToString:@"YES"])
+        {
+            [self UpdateWifiConfigurationStatustoServer:dictData];
+        }
+
     });
 }
 #pragma mark-textField
@@ -987,17 +1017,17 @@
 }
 - (void)FCAlertDoneButtonClicked:(FCAlertView *)alertView
 {
-    if (alertView.tag == 6767)
+    if (alertView.tag == 555)
     {
-        [self.navigationController popViewControllerAnimated:true];
+        
     }
 }
 - (void)FCAlertViewDismissed:(FCAlertView *)alertView
 {
+    
 }
-
 - (void)FCAlertViewWillAppear:(FCAlertView *)alertView
 {
+    
 }
-
 @end

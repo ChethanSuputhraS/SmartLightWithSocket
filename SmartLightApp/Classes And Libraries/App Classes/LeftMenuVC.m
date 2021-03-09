@@ -26,7 +26,7 @@
     self.view.backgroundColor = UIColor.clearColor;
     
     arrOptions = [[NSMutableArray alloc] init];
-    for (int i = 0; i<8; i++)
+    for (int i = 0; i<6; i++)
     {
     
         NSMutableDictionary * tempDict = [[NSMutableDictionary alloc] init];
@@ -35,24 +35,18 @@
             [tempDict setValue:@"Home" forKey:@"name"];
             [tempDict setValue:@"active_home_iconBlack.png" forKey:@"image"];
         }else if (i==1) {
-            [tempDict setValue:@"My Routine for smartlights" forKey:@"name"];
-            [tempDict setValue:@"active_alarm_iconBlack.png" forKey:@"image"];
-        }else if (i==2) {
-            [tempDict setValue:@"Device Settings" forKey:@"name"];
-            [tempDict setValue:@"active_settings_iconBlack.png" forKey:@"image"];
-        }else if (i==3) {
             [tempDict setValue:@"Account" forKey:@"name"];
             [tempDict setValue:@"ic_switch_accountBlack.png" forKey:@"image"];
-        }else if (i==4) {
+        }else if (i==2) {
             [tempDict setValue:@"Help" forKey:@"name"];
             [tempDict setValue:@"helpBlack.png" forKey:@"image"];
-        }else if (i==5) {
+        }else if (i==3) {
             [tempDict setValue:@"Buy now" forKey:@"name"];
             [tempDict setValue:@"buynow" forKey:@"image"];
-        }else if (i==6) {
+        }else if (i==4) {
             [tempDict setValue:@"About Us" forKey:@"name"];
             [tempDict setValue:@"about_icon" forKey:@"image"];
-        }else if (i==7) {
+        }else if (i==5) {
             [tempDict setValue:@"Contact Us" forKey:@"name"];
             [tempDict setValue:@"phoneBlack.png" forKey:@"image"];
         }
@@ -255,8 +249,7 @@
     }
     else if (indexPath.row == 1)
     {
-        AlarmVC *demoController = [[AlarmVC alloc] init];
-//        demoController.isFromLeftMenu = YES;
+        ManageAccLeftMenuVC *demoController = [[ManageAccLeftMenuVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
         NSArray *controllers = [NSArray arrayWithObject:demoController];
         navigationController.viewControllers = controllers;
@@ -264,7 +257,7 @@
     }
     else if (indexPath.row == 2)
     {
-        SettingsVC *demoController = [[SettingsVC alloc] init];
+        HelpLeftMenuVC *demoController = [[HelpLeftMenuVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
         NSArray *controllers = [NSArray arrayWithObject:demoController];
         navigationController.viewControllers = controllers;
@@ -272,27 +265,10 @@
     }
     else if (indexPath.row == 3)
     {
-        ManageAccLeftMenuVC *demoController = [[ManageAccLeftMenuVC alloc] init];
-        UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
-        NSArray *controllers = [NSArray arrayWithObject:demoController];
-        navigationController.viewControllers = controllers;
-        [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
-    }
-    else if (indexPath.row == 4)
-    {
-        HelpLeftMenuVC *demoController = [[HelpLeftMenuVC alloc] init];
-        UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
-        NSArray *controllers = [NSArray arrayWithObject:demoController];
-        navigationController.viewControllers = controllers;
-        [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
-    }
-    else if (indexPath.row == 5)
-    {
         [[UIApplication sharedApplication]
          openURL:[NSURL URLWithString:@"https://www.amazon.in/dp/B07QGVQ1HH/"]];
-
     }
-    else if (indexPath.row == 6)
+    else if (indexPath.row == 4)
     {
         AboutUsVC *demoController = [[AboutUsVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
@@ -300,7 +276,7 @@
         navigationController.viewControllers = controllers;
         [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
     }
-    else if (indexPath.row == 7)
+    else if (indexPath.row == 5)
     {
         ContactUsVC *demoController = [[ContactUsVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;

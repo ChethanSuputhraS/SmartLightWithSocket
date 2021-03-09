@@ -57,7 +57,6 @@
         swSocket.layer.cornerRadius = 15;
         [lblBack addSubview:swSocket];
         
-        
         btnAlaram = [UIButton buttonWithType:UIButtonTypeCustom];
         btnAlaram.frame = CGRectMake(DEVICE_WIDTH-70, 8.5, 44, 43);
         btnAlaram.backgroundColor = [UIColor clearColor];
@@ -71,15 +70,15 @@
         [imgSwitch setContentMode:UIViewContentModeScaleAspectFit];
         [lblBack addSubview:imgSwitch];
         
-        lblSettings = [[UILabel alloc] initWithFrame:CGRectMake(60, 0, DEVICE_WIDTH-120, 50)];
+        lblSettings = [[UILabel alloc] initWithFrame:CGRectMake(60, 0, DEVICE_WIDTH-120, 60)];
         [lblSettings setBackgroundColor:[UIColor clearColor]];
         lblSettings.textColor = UIColor.whiteColor;
-        [lblSettings setFont:[UIFont fontWithName:CGRegular size:textSizes]];
+        [lblSettings setFont:[UIFont fontWithName:CGRegular size:textSizes+3]];
         [lblSettings setTextAlignment:NSTextAlignmentLeft];
         lblSettings.hidden = true;
         [self.contentView addSubview:lblSettings];
         
-        imgArrow = [[UIImageView alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-50, 10, 30, 30)];
+        imgArrow = [[UIImageView alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-50, 15, 30, 30)];
         [imgArrow setImage:[UIImage imageNamed:@"arrowRight.png"]];
         [imgArrow setContentMode:UIViewContentModeScaleAspectFit];
         imgArrow.hidden = true;

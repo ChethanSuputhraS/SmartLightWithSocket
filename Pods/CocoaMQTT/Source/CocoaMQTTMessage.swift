@@ -43,6 +43,14 @@ import Foundation
         self.dup = dup
     }
     
+    public init(topic: String, alarmpayload: Data, qos: CocoaMQTTQOS = .qos1, retained: Bool = false, dup: Bool = false) {
+           self.topic = topic
+        self.payload = alarmpayload.bytes
+           self.qos = qos
+           self.retained = retained
+           self.dup = dup
+       }
+    
     func convertToFrame() -> CocoaMQTTFramePublish {
         var frame = CocoaMQTTFramePublish(msgid: 0, topic: topic, payload: payload)
         frame.qos = qos.rawValue
@@ -64,5 +72,12 @@ public class CocoaMQTTWill: CocoaMQTTMessage {
         let endian = UInt16(payload.count).hlBytes
         let payloadCoded = endian + payload as [UInt8]
         super.init(topic: topic, payload: payloadCoded)
+    }
+}
+
+
+extension Data {
+    var bytes: [UInt8] {
+        return [UInt8](self)
     }
 }

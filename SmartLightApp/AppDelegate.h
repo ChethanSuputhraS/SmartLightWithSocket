@@ -40,7 +40,6 @@ NSMutableArray *arrConnectedDevices, * arrGlobalDevices, * arrSocketDevices;
 SocketAlarmVC * globalSocketAlarmVC;
 SocketDetailVC * globalSocketDetailVC;
 DashboardVC * globalDashBoardVC;
-SocketWiFiSetupVC * globalSocketWIFiSEtup;
 
 
 NSMutableArray * arrPeripheralsCheck; 
