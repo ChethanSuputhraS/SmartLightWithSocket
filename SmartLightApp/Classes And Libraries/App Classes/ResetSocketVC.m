@@ -210,7 +210,9 @@
     {
         cell = [[HomeCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellReuseIdentifier];
     }
-        cell.lblConnect.text= @"Connect";
+        cell.lblConnect.frame = CGRectMake(DEVICE_WIDTH/2, 0, DEVICE_WIDTH/2-5, 60);
+        cell.lblConnect.textAlignment = NSTextAlignmentRight;
+        cell.lblConnect.text= @"Tap here to reset";
         
         NSMutableArray * arrayDevices = [[NSMutableArray alloc] init];
         arrayDevices =[[BLEManager sharedManager] arrBLESocketDevices];
@@ -221,8 +223,6 @@
         CBPeripheral * p = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"peripheral"];
         if (p.state == CBPeripheralStateConnected)
         {
-            cell.lblConnect.text= @"Disconnect";
-//            [self AskForResetdevice];
         }
         cell.lblDeviceName.text = @"Vithamas Socket";
         cell.lblAddress.text = [[[arrayDevices  objectAtIndex:indexPath.row]valueForKey:@"ble_address"] uppercaseString];
@@ -249,12 +249,7 @@
         
         if (p.state == CBPeripheralStateConnected)
         {
-            [APP_DELEGATE startHudProcess:@"Disconnecting..."];
-            [[BLEManager sharedManager] disconnectDevice:p];
-            [disconnectionTimer invalidate];
-            disconnectionTimer = nil;
-            disconnectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(DisConnectionTimeOutMethod) userInfo:nil repeats:NO];
-            [APP_DELEGATE endHudProcess];
+            [self AskForResetdevice];
         }
         else
         {
@@ -264,8 +259,6 @@
             strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@" " withString:@""];
             strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@">" withString:@""];
             strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@"<" withString:@""];
-            
-         
             
             if ([strManufacture length] >= 22)
             {

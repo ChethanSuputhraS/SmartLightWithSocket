@@ -266,6 +266,9 @@
         {
             if ([classMqttObj connState] == 2)
             {
+                NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMacAddress];
+                UInt16 subTop = [classMqttObj subscribe:publishTopic qos:2];
+
                 isMQTTConfigured = NO;
                 classMqttObj.delegate = self;
                 
@@ -731,6 +734,7 @@
     globalSocketAlarmVC.periphPass = classPeripheral;
     globalSocketAlarmVC.strMacaddress  = strMacAddress;
     globalSocketAlarmVC.delegate = self;
+    globalSocketAlarmVC.dictDeviceDetail = deviceDetail;
     [self.navigationController pushViewController:globalSocketAlarmVC animated:true];
 }
 -(void)timeOutForDeleteDevice
@@ -803,6 +807,21 @@
 {
     [APP_DELEGATE endHudProcess];
     dictFromHomeSwState = dictSwitch;
+    if (globalDashBoardVC)
+    {
+        NSArray * allValues = [dictSwitch allValues];
+        
+        NSMutableArray  * arrStatus = [[NSMutableArray alloc] init];
+        [arrStatus addObject:@"5"];
+        [arrStatus addObject:@"6"];
+
+        for (int i =0 ; i < [allValues count]; i++)
+        {
+            NSInteger intValue = [[allValues objectAtIndex:i] integerValue];
+            [arrStatus addObject:[NSString stringWithFormat:@"%ld",(long)intValue]];
+        }
+        [globalDashBoardVC UpdateSocketSwithchStatus:arrStatus withMacAddress:strMacAddress];
+    }
     [tblView reloadData];
 }
 -(void)ReceivedMQTTStatus:(NSDictionary *)dictSwitch
@@ -1074,6 +1093,10 @@
             {
                 if([arrData count] >= 8)
                 {
+                    if (globalDashBoardVC)
+                    {
+                        [globalDashBoardVC UpdateSocketSwithchStatus:arrData withMacAddress:strReceivedAddress];
+                    }
                     [self UpdateSwitchStatusfromMQTT:arrData];
                 }
             }
@@ -1126,7 +1149,7 @@
                 BOOL isAlarmSuccess = NO;
                 if ([arrData count] >= 4)
                 {
-                    NSString * strStatus = [arrData objectAtIndex:3];
+                    NSString * strStatus = [NSString stringWithFormat:@"%@",[arrData objectAtIndex:3]];
                     if ([strStatus isEqualToString:@"1"])
                     {
                         isAlarmSuccess = YES;
@@ -1134,7 +1157,14 @@
                 }
                 if (globalSocketAlarmVC)
                 {
-                    
+                    [globalSocketAlarmVC MqttAlarmStatusfromServer:isAlarmSuccess];
+                }
+            }
+            else if([strOpcode isEqualToString:@"12"])
+            {
+                if (globalSocketAlarmVC)
+                {
+                    [globalSocketAlarmVC MqttDeleteAlarmStatusfromServer:YES];
                 }
             }
         }
@@ -1211,6 +1241,9 @@
     NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set status ='2',is_sync = '0', wifi_configured = '0' where ble_address = '%@'",strBleAddress];
     [[DataBaseManager dataBaseManager] execute:strUpdate];
     
+    NSString * strDeleteAlarm = [NSString stringWithFormat:@"delete from Socket_Alarm_Table where ble_address ='%@'",strBleAddress];
+    [[DataBaseManager dataBaseManager] execute:strDeleteAlarm];
+
     if ([deviceDetail count] > 0)
     {
         NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
@@ -1514,6 +1547,16 @@
 {
     NSLog(@"===========================================================================================%@",alarmDict);
 
+    if (classMqttObj)
+    {
+        NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+        CocoaMQTTMessage * msg = [[CocoaMQTTMessage alloc] initWithTopic:strTopic alarmpayload:alarmDict qos:2 retained:NO dup:NO];
+        UInt16 subTop = [classMqttObj publish:msg];
+        NSLog(@"MQTT MSG Sent==%hu",subTop);
+    }
+}
+-(void)DeleteAlarm:(NSMutableData *)alarmDict;
+{
     if (classMqttObj)
     {
         NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];

@@ -129,26 +129,24 @@
         [btnOFFTimer setBackgroundColor:[UIColor clearColor]];
         [self.contentView addSubview:btnOFFTimer];
         
-        btnDelete = [[UIButton alloc] initWithFrame:CGRectMake(10, yy-20, DEVICE_WIDTH/2-20, 44)];
+        btnDelete = [[UIButton alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-55, 10, 50, 44)];
         [btnDelete setBackgroundColor:[UIColor clearColor]];
         btnDelete.backgroundColor = UIColor.clearColor;
-        btnDelete.titleLabel.font = [UIFont fontWithName:CGBold size:textSizes+3];
+        btnDelete.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
         btnDelete.titleLabel.textAlignment = NSTextAlignmentRight;
-        [btnDelete setTitle:@"Delete Alarm" forState:UIControlStateNormal];
-        [btnDelete setTitleColor:[UIColor colorWithRed:192.0/255.0f green:57.0/255.0f blue:43.0/255.0f alpha:1.0] forState:UIControlStateNormal];
-//        [btnDelete setImage:[UIImage imageNamed:@"delete_icon.png"] forState:UIControlStateNormal];
+//        [btnDelete setTitle:@" Delete" forState:UIControlStateNormal];
+        [btnDelete setImage:[UIImage imageNamed:@"delete_icon.png"] forState:UIControlStateNormal];
 //        btnDelete.contentVerticalAlignment = UIControlContentHorizontalAlignmentRight;
-        btnDelete.layer.borderColor = UIColor.lightGrayColor.CGColor;
-        btnDelete.layer.borderWidth = 0.6;
         [self.contentView addSubview:btnDelete];
         
-        btnSave = [[UIButton alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2+10, yy-20, DEVICE_WIDTH/2-20, 44)];
+        
+        btnSave = [[UIButton alloc] initWithFrame:CGRectMake(10, yy-20, DEVICE_WIDTH-20, 44)];
         [btnSave setBackgroundColor:[UIColor clearColor]];
-        btnSave.backgroundColor = UIColor.clearColor;
+        btnSave.backgroundColor = [UIColor colorWithRed:39.0/255.0f green:174.0/255.0f blue:96.0/255.0f alpha:1.0];
         btnSave.titleLabel.font = [UIFont fontWithName:CGBold size:textSizes+3];
         btnSave.titleLabel.textAlignment = NSTextAlignmentRight;
         [btnSave setTitle:@"Save Alarm" forState:UIControlStateNormal];
-        [btnSave setTitleColor:[UIColor colorWithRed:39.0/255.0f green:174.0/255.0f blue:96.0/255.0f alpha:1.0] forState:UIControlStateNormal];
+        [btnSave setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
         btnSave.layer.borderColor = UIColor.lightGrayColor.CGColor;
         btnSave.layer.borderWidth = 0.6;
         [self.contentView addSubview:btnSave];

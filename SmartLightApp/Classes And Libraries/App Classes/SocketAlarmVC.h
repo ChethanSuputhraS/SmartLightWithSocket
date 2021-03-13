@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol SocketAlarmDelegate <NSObject>
 @optional
 -(void)SetupAlarm:(NSMutableData *)alarmDict;
+-(void)DeleteAlarm:(NSMutableData *)alarmDict;
+
 @end
 
 @interface SocketAlarmVC : UIViewController
@@ -33,6 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(void)ALaramSuccessResponseFromDevie;
 -(void)DeleteAlarmConfirmFromDevice:(NSMutableDictionary *)dictAlaramID;
 -(void)MqttAlarmStatusfromServer:(BOOL)isSuccess;
+-(void)MqttDeleteAlarmStatusfromServer:(BOOL)isSuccess;
 
 @end
 

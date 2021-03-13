@@ -54,11 +54,13 @@
     UILabel *lblThumbTint;
     UIView *backView;
     double realBrightnessValue;
-
+    NSMutableDictionary * dictSocketSwitchStatus;
 }
 #pragma mark- ALL socket method
 @property(nonatomic,strong)NSString * strMack;
 -(void)NewSocketAddedWithWIFIConfigured:(NSString *)strBleAddress withPeripheral:(CBPeripheral *)peripheral;
 -(void)DisconnectMQTTSocketServer;
+-(void)UpdateSocketSwithchStatus:(NSArray *)arrData withMacAddress:(NSString *)strAddress;
+-(void)removeDevice;
 
 @end

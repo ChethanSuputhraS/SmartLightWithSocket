@@ -32,6 +32,7 @@
     BOOL isAfterWifiConfigured, isRequestedforAddDevice;
     int wifiConnectionStatusRetryCount;
     UIButton *btnShowPass;
+    BOOL viewDisapeared;
 }
 
 @end
@@ -83,10 +84,14 @@
     [[BLEService sharedInstance] setDelegate:self];
     [[BLEService sharedInstance] setAddSocketdelegate:self];
 
+    viewDisapeared = NO;
+
     // Do any additional setup after loading the view.
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+    viewDisapeared = NO;
+
     currentScreen = @"AddSocket";
     [self InitialBLE];
     [self refreshBtnClick];
@@ -197,6 +202,7 @@
 #pragma mark- Buttons Click Events
 -(void)btnBackClick
 {
+    viewDisapeared = YES;
     [self.navigationController popViewControllerAnimated:YES ];
 }
 -(void)refreshBtnClick
@@ -463,6 +469,9 @@
         cell.lblDeviceName.text = [[arrayWifiavl objectAtIndex:indexPath.row] valueForKey:@"SSIDdata"];//;
         cell.lblAddress.hidden = true; //[[arrayWifiList objectAtIndex:indexPath.row] valueForKey:@"SSIDdata"];//@"VithamasTech";
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        NSString * strSSID = [[arrayWifiavl objectAtIndex:indexPath.row] valueForKey:@"SSIDdata"];
+        strSSID = [strSSID stringByReplacingOccurrencesOfString:@"\\U201a\\U00c4\\U00f4" withString:@"' "];
+        cell.lblDeviceName.text = strSSID;//;
     }
     return cell;
 }
@@ -931,32 +940,36 @@
 #pragma mark - Save Device Methods...
 -(void)ShowAlerttoEnterDeviceName
 {
-    NSString * msgPlaceHolder = [NSString stringWithFormat:@"Enter Device Name"];
-    
-    [APP_DELEGATE endHudProcess];
-    
-    [alert removeFromSuperview];
-    alert = [[FCAlertView alloc] init];
-    alert.delegate = self;
-    alert.tag = 123;
-    alert.colorScheme = global_brown_color;
-    
-    UITextField *customField = [[UITextField alloc] init];
-    customField.placeholder = msgPlaceHolder;
-    customField.keyboardAppearance = UIKeyboardAppearanceAlert;
-    customField.textColor = [UIColor blackColor];
-    [APP_DELEGATE getPlaceholderText:customField andColor:[UIColor lightGrayColor]];
+    if ([currentScreen isEqualToString:@"AddSocket"] && viewDisapeared == NO)
+    {
+        NSString * msgPlaceHolder = [NSString stringWithFormat:@"Enter Device Name"];
+        
+        [APP_DELEGATE endHudProcess];
+        
+        [alert removeFromSuperview];
+        alert = [[FCAlertView alloc] init];
+        alert.delegate = self;
+        alert.tag = 123;
+        alert.colorScheme = global_brown_color;
+        
+        UITextField *customField = [[UITextField alloc] init];
+        customField.placeholder = msgPlaceHolder;
+        customField.keyboardAppearance = UIKeyboardAppearanceAlert;
+        customField.textColor = [UIColor blackColor];
+        [APP_DELEGATE getPlaceholderText:customField andColor:[UIColor lightGrayColor]];
 
-    //                        customField.text = strRename;
-    [alert addTextFieldWithCustomTextField:customField andPlaceholder:nil andTextReturnBlock:^(NSString *text) {
-        strDeviceNames = text;
-    }];
-    [alert showAlertInView:self
-                 withTitle:@"Smart socket"
-              withSubtitle:@"Enter name"
-           withCustomImage:nil
-       withDoneButtonTitle:nil
-                andButtons:nil];
+        //                        customField.text = strRename;
+        [alert addTextFieldWithCustomTextField:customField andPlaceholder:nil andTextReturnBlock:^(NSString *text) {
+            strDeviceNames = text;
+        }];
+        [alert showAlertInView:self
+                     withTitle:@"Smart socket"
+                  withSubtitle:@"Enter name"
+               withCustomImage:nil
+           withDoneButtonTitle:nil
+                    andButtons:nil];
+
+    }
 
 }
 -(void)ValidationforAddedMessage:(NSString *)text

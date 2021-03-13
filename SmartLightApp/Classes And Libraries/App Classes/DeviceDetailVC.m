@@ -27,6 +27,11 @@
 #import "AlarmColorSelectVC.h"
 #import "PatternCell.h"
 #import "HRHSVColorUtil.h"
+#import "SettingsVC.h"
+#import "SocketCell.h"
+#import "BridgeVC.h"
+#import "FactoryResetVC.h"
+
 
 #define kColorCellIdentifier @"KPSolidColorViewCellReuseIdentifier"
 
@@ -51,8 +56,12 @@
     UISlider *brightnessSliderColorView;
     UIButton * btnOptions;
     BOOL isfromSolid;
-    UIView * settingView;
+    UIView * settingView,*viewSetting;
     UITableView * tblSettings;
+    UIButton *btnCoolWhite,*btnlastSetColor,*btnWarmWhite,*btnMoodLighting;
+    int intSelectedSettingsValue;
+
+    
 }
 @property (strong, nonatomic) JMMarkSlider * redSlider;
 @property (strong, nonatomic) JMMarkSlider * greenSlider;
@@ -110,6 +119,8 @@
         [self setVoiceArrays];
         [self setSegmentView];
         [self SetViewforColorWheel];
+        [self SetupForSetting];
+
     }
     brighcount = 100;
     isChanged = NO;
@@ -118,7 +129,6 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"GetFavoriteColors" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(GetFavoriteColors:) name:@"GetFavoriteColors" object:nil];
 }
-
 -(void)viewDidAppear:(BOOL)animated
 {
     if (isDeviceWhite == NO)
@@ -286,7 +296,16 @@
     long yy = 0;
 
     [blueSegmentedControl removeFromSuperview];
-    blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music"]];
+    
+    if (isFromAll == YES)
+    {
+        blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music"]];
+    }
+    else
+    {
+        blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music",@"Settings"]];
+    }
+    
     blueSegmentedControl.titleTextColor = [UIColor colorWithRed:0.38f green:0.68f blue:0.93f alpha:1.0f];
     blueSegmentedControl.titleTextColor = global_brown_color;
     blueSegmentedControl.selectedTitleTextColor = [UIColor whiteColor];
@@ -364,12 +383,13 @@
     [self.view addSubview:settingView];
     
     
-    tblSettings = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, settingView.frame.size.width, settingView.frame.size.height)];
+    tblSettings = [[UITableView alloc] initWithFrame:CGRectMake(0, 10, settingView.frame.size.width, settingView.frame.size.height-20)];
     tblSettings.backgroundColor = UIColor.clearColor;
     tblSettings.delegate = self;
     tblSettings.dataSource = self;
+    tblSettings.scrollEnabled = NO;
+    tblSettings.separatorStyle = UITableViewCellSelectionStyleNone;
     [settingView addSubview:tblSettings];
-    
     
 }
 #pragma mark - ===========Here Send COLORS to Device===========
@@ -1717,14 +1737,14 @@
 -(void)segmentClick:(NYSegmentedControl *) sender
 {
     colorSquareView.hidden = YES; patternView.hidden = YES; bgWhiteView.hidden = YES; rgbView.hidden = YES; optionView.hidden = YES;
-    voiceView.hidden = YES; musicView.hidden = YES; solidView.hidden = YES;
+    voiceView.hidden = YES; musicView.hidden = YES; solidView.hidden = YES; settingView.hidden = YES;
     
     isWarmWhite = NO;
     isfromSolid = NO;
     
     if (sender.selectedSegmentIndex==0)
     {
-        colorSquareView.hidden = NO; optionView.hidden = NO; imgBack.hidden = YES;
+        colorSquareView.hidden = NO; optionView.hidden = NO; imgBack.hidden = YES; settingView.hidden = YES;
 
         [UIView transitionWithView:colorSquareView duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
             [colorSquareView setHidden:NO];
@@ -1769,7 +1789,7 @@
             [self setPatternView];
         }
         voiceView.hidden = YES; bgWhiteView.hidden = YES; rgbView.hidden = YES; colorSquareView.hidden = YES; _brightnessSlider.hidden = YES;
-        solidView.hidden = YES; musicView.hidden = YES;
+        solidView.hidden = YES; musicView.hidden = YES; settingView.hidden = YES;
     }
     else if (sender.selectedSegmentIndex==2)
     {
@@ -1784,6 +1804,14 @@
         {
             [self CreateMusicView];
         }
+    }
+    else if (sender.selectedSegmentIndex == 3)
+    {
+        voiceView.hidden = YES; bgWhiteView.hidden = YES; rgbView.hidden = YES; colorSquareView.hidden = YES; _brightnessSlider.hidden = YES;
+        solidView.hidden = YES; musicView.hidden = YES; patternView.hidden = YES;
+        imgBack.hidden = false;
+
+        settingView.hidden = false;
     }
 }
 -(void)updateBleStatus
@@ -1973,24 +2001,29 @@
     }
     return @"";
 }
-
-
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     if (tableView == tblVoices)
     {
         return _dataSource.count;
     }
+    else if (tableView == tblSettings)
+    {
+        return 1;
+    }
     return 1;
 }
-
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if (tableView == tblVoices)
     {
         return 1;
     }
-    return 5;
+    else if (tableView == tblSettings)
+    {
+        return 4;
+    }
+    return 4;
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -2001,6 +2034,52 @@
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
         [self configureCell:cell atIndexPath:indexPath];
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        return cell;
+    }
+    else if (tableView == tblSettings)
+    {
+        static NSString *cellReuseIdentifier = @"cellIdentifier";
+        SocketCell *cell = [tableView dequeueReusableCellWithIdentifier:cellReuseIdentifier];
+        if (cell == nil)
+        {
+            cell = [[SocketCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellReuseIdentifier];
+        }
+        
+        cell.lblSettings.hidden = false;
+        cell.lblDeviceName.hidden = true;
+        cell.imgSwitch.hidden = false;
+        cell.swSocket.hidden = true;
+        cell.btnAlaram.hidden = true;
+        cell.imgArrow.hidden = false;
+        cell.lblLineLower.hidden = true;
+        cell.lblBack.frame = CGRectMake (20, 0,DEVICE_WIDTH-40,60);
+        cell.lblBack.layer.borderColor = UIColor.lightGrayColor.CGColor;
+        cell.lblSettings.frame = CGRectMake (70, 0,DEVICE_WIDTH-140,60);
+        cell.imgSwitch.frame = CGRectMake (5, 15, 32, 30);
+
+        if (indexPath.row == 0)
+        {
+            cell.lblSettings.text = @"Device Connection";
+            cell.imgSwitch.image = [UIImage imageNamed:@"bridge2_icon.png"];
+        }
+       else if (indexPath.row == 1)
+        {
+            cell.lblSettings.text = @"Reset device";
+            cell.imgSwitch.image = [UIImage imageNamed:@"reset.png"];
+        }
+       else if (indexPath.row == 2)
+        {
+            cell.lblSettings.text = @"Delete Devices";
+            cell.imgSwitch.image = [UIImage imageNamed:@"ic_delete_device.png"];
+        }
+       else if (indexPath.row == 3)
+        {
+            cell.lblSettings.text = @"Main Power On Setting";
+            cell.imgSwitch.image = [UIImage imageNamed:@"ic_light_state.png"];
+        }
+        
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.backgroundColor = UIColor.clearColor;
         return cell;
     }
     else
@@ -2026,6 +2105,7 @@
 
         cell.selectionStyle = UITableViewCellSelectionStyleGray;
     }
+
 
     return cell;
 }
@@ -2059,12 +2139,55 @@
             [tblView reloadData];
         }
     }
+    else if(tableView == tblSettings)
+    {
+        if (indexPath.row ==0)
+        {
+            BridgeVC * userDetails = [[BridgeVC alloc] init];
+            [self.navigationController pushViewController:userDetails animated:YES];
+        }
+        else if (indexPath.row == 1)
+        {
+            FactoryResetVC * userDetails = [[FactoryResetVC alloc] init];
+            [self.navigationController pushViewController:userDetails animated:YES];
+        }
+        else if (indexPath.row == 2)
+        {
+            if (globalPeripheral.state == CBPeripheralStateConnected)
+            {
+                FCAlertView *alert = [[FCAlertView alloc] init];
+                alert.colorScheme = [UIColor blackColor];
+                [alert makeAlertTypeWarning];
+                [alert addButton:@"Yes" withActionBlock:
+                 ^{
+                    [globalDashBoardVC removeDevice];
+                 }];
+                [alert showAlertInView:self
+                             withTitle:@"Smart Light"
+                          withSubtitle:@"Are you sure want to delete devices"
+                       withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
+                   withDoneButtonTitle:@"No" andButtons:nil];
+            }
+            else
+            {
+                [self ShowalertCustion:@"There is no devices to delete."];
+            }
+        }
+        else if (indexPath.row == 3)
+        {
+            [self btnPowerOnSettingsClicked];
+        }
+    }
 }
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (tableView == tblVoices)
     {
         return UITableViewAutomaticDimension;
+    }
+    else if (tableView == tblSettings)
+    {
+        return 65;
     }
     else
     {
@@ -3085,6 +3208,237 @@
     
     return outputImage;
 }
+-(void)ShowalertCustion:(NSString *)strmsg
+{
+    FCAlertView *alert = [[FCAlertView alloc] init];
+    alert.colorScheme = [UIColor blackColor];
+    [alert makeAlertTypeCaution];
+    alert.delegate = self;
+    [alert showAlertInView:self
+                 withTitle:@"Smart Light"
+              withSubtitle:strmsg
+           withCustomImage:[UIImage imageNamed:@"logo.png"]
+       withDoneButtonTitle:nil
+                andButtons:nil];
+}
+#pragma mark-Settings for main poser on
+-(void)btnPowerOnSettingsClicked
+{
+    [backView removeFromSuperview];
+    backView = [[UIView alloc]init];
+    backView.frame = CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT);
+    backView.backgroundColor = UIColor.blackColor;
+    backView.alpha = 0.5;
+    [self.view addSubview:backView];
+    
+    [viewSetting removeFromSuperview];
+    viewSetting = [[UIView alloc]init];
+    viewSetting.frame = CGRectMake(10, DEVICE_HEIGHT, DEVICE_WIDTH-20, 320);
+    viewSetting.backgroundColor = UIColor.whiteColor;
+    [self.view addSubview:viewSetting];
+    [viewSetting.layer setBorderWidth:3.0];
+    [viewSetting.layer setBorderColor:[[UIColor whiteColor] CGColor]];
+    viewSetting.layer.cornerRadius = 5;
+    [viewSetting.layer setShadowOffset:CGSizeMake(5, 5)];
+    [viewSetting.layer setShadowColor:[[UIColor whiteColor] CGColor]];
+    [viewSetting.layer setShadowOpacity:0.2];
+    
+    UILabel * lblTitle = [[UILabel alloc]init];
+    lblTitle.frame = CGRectMake(0, 0, viewSetting.frame.size.width, 50);
+    lblTitle.text = @"Main Power On Setting!!!";
+    lblTitle.textAlignment = NSTextAlignmentCenter;
+    lblTitle.textColor = UIColor.blackColor;
+    lblTitle.font = [UIFont fontWithName:CGBold size:textSizes+10];
+    lblTitle.backgroundColor = [UIColor clearColor];
+    [viewSetting addSubview:lblTitle];
+    
+    UIButton *btnCancel = [[UIButton alloc]init];
+    btnCancel.frame = CGRectMake(0, viewSetting.frame.size.height-44, (viewSetting.frame.size.width/2)-1, 44);
+    btnCancel.backgroundColor = global_brown_color;
+    [btnCancel setTitle:@"Cancel" forState:UIControlStateNormal];
+    btnCancel.titleLabel.textColor = UIColor.whiteColor;
+    btnCancel.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+3];
+    [btnCancel addTarget:self action:@selector(btnCancelAction) forControlEvents:UIControlEventTouchUpInside];
+    [viewSetting addSubview:btnCancel];
+    
+    UIButton *btnSave = [[UIButton alloc]init];
+    btnSave.frame = CGRectMake((viewSetting.frame.size.width/2)+1, viewSetting.frame.size.height-44, (viewSetting.frame.size.width/2)-1, 44);
+    btnSave.backgroundColor = global_brown_color;
+    [btnSave setTitle:@"Save" forState:UIControlStateNormal];
+    btnSave.titleLabel.textColor = UIColor.whiteColor;
+    [btnSave addTarget:self action:@selector(btnSaveAction) forControlEvents:UIControlEventTouchUpInside];
+    btnSave.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+3];
+    [viewSetting addSubview:btnSave];
+    
+    int yy = 44+10;
+    btnCoolWhite = [[UIButton alloc]init];
+    btnCoolWhite.frame = CGRectMake(10,yy,viewSetting.frame.size.width-20,44);
+    btnCoolWhite.backgroundColor = [UIColor clearColor];
+    [btnCoolWhite setTitle:@"  Cool White" forState:UIControlStateNormal];
+    [btnCoolWhite setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    btnCoolWhite.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
+    [btnCoolWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    btnCoolWhite.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    [btnCoolWhite addTarget:self action:@selector(btnCoolWhiteAction) forControlEvents:UIControlEventTouchUpInside];
+    [viewSetting addSubview:btnCoolWhite];
+    
+    yy = yy+50;
+    btnlastSetColor = [[UIButton alloc]init];
+    btnlastSetColor.frame = CGRectMake(10,yy,viewSetting.frame.size.width-20,44);
+    btnlastSetColor.backgroundColor = [UIColor clearColor];
+    [btnlastSetColor setTitle:@"  Last Set Color" forState:UIControlStateNormal];
+    [btnlastSetColor setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    btnlastSetColor.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+2];
+    [btnlastSetColor setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    btnlastSetColor.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    [btnlastSetColor addTarget:self action:@selector(btnlastSetColorAction) forControlEvents:UIControlEventTouchUpInside];
+    [viewSetting addSubview:btnlastSetColor];
+    
+    yy = yy+50;
+    btnWarmWhite = [[UIButton alloc]init];
+    btnWarmWhite.frame = CGRectMake(10,yy,viewSetting.frame.size.width-20,44);
+    btnWarmWhite.backgroundColor = [UIColor clearColor];
+    [btnWarmWhite setTitle:@"  Warm White" forState:UIControlStateNormal];
+    [btnWarmWhite setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    btnWarmWhite.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+2];
+    [btnWarmWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    btnWarmWhite.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    [btnWarmWhite addTarget:self action:@selector(btnWarmWhiteAction) forControlEvents:UIControlEventTouchUpInside];
+    [viewSetting addSubview:btnWarmWhite];
+    
+    yy = yy+50;
+    btnMoodLighting = [[UIButton alloc]init];
+    btnMoodLighting.frame = CGRectMake(10,yy,viewSetting.frame.size.width-20,44);
+    btnMoodLighting.backgroundColor = [UIColor clearColor];
+    [btnMoodLighting setTitle:@"  Mood Lightning" forState:UIControlStateNormal];
+    [btnMoodLighting setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    btnMoodLighting.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+2];
+    [btnMoodLighting setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    btnMoodLighting.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    [btnMoodLighting addTarget:self action:@selector(btnMoodLightingAction) forControlEvents:UIControlEventTouchUpInside];
+    [viewSetting addSubview:btnMoodLighting];
+    
+    if ([[[NSUserDefaults standardUserDefaults]valueForKey:@"globalRememberLastColor"] isEqualToString:@"0"])
+    {
+        [btnCoolWhite setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+        
+    }
+    else  if ([[[NSUserDefaults standardUserDefaults]valueForKey:@"globalRememberLastColor"] isEqualToString:@"1"])
+    {
+        [btnlastSetColor setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+        
+    }
+    else  if ([[[NSUserDefaults standardUserDefaults]valueForKey:@"globalRememberLastColor"] isEqualToString:@"2"])
+    {
+        [btnWarmWhite setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+        
+    }
+    else  if ([[[NSUserDefaults standardUserDefaults]valueForKey:@"globalRememberLastColor"] isEqualToString:@"3"])
+    {
+        [btnMoodLighting setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+        
+    }
+    else
+    {
+        [btnCoolWhite setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+    }
+    [self ShowPicker:YES andView:viewSetting];
+
+}
+#pragma mark - Animations
+-(void)ShowPicker:(BOOL)isShow andView:(UIView *)myView
+{
+    if (isShow == YES)
+    {
+        [UIView transitionWithView:myView duration:0.2
+                           options:UIViewAnimationOptionCurveLinear
+                        animations:^{
+                            [myView setFrame:CGRectMake(10,(DEVICE_HEIGHT-320)/2,DEVICE_WIDTH-20, 320)];
+                        }
+                        completion:^(BOOL finished)
+         {
+         }];
+    }
+    else
+    {
+        [UIView transitionWithView:myView duration:0.2
+                           options:UIViewAnimationOptionCurveLinear
+                        animations:^{
+                            [myView setFrame:CGRectMake(10,DEVICE_HEIGHT,DEVICE_WIDTH-20, 320)];
+                        }
+                        completion:^(BOOL finished)
+         {
+             [backView removeFromSuperview];
+             [viewSetting removeFromSuperview];
+         }];
+    }
+}
+-(void)btnSaveAction
+{
+    [self ShowPicker:NO andView:viewSetting];
+
+        [self AlertPopForSetting:@"Main Power Setting Saved."];
+        
+        [[NSUserDefaults standardUserDefaults]setValue:[NSString stringWithFormat:@"%d",intSelectedSettingsValue] forKey:@"globalRememberLastColor"];
+        [[NSUserDefaults standardUserDefaults]synchronize];
+        
+        NSString * strON = [NSString stringWithFormat:@"%d",intSelectedSettingsValue];
+        NSString * strQuery = [NSString stringWithFormat:@"update Device_Table set remember_last_color =%@",strON];
+        [[DataBaseManager dataBaseManager] execute:strQuery];
+}
+-(void)btnCancelAction
+{
+    [self ShowPicker:NO andView:viewSetting];
+}
+-(void)AlertPopForSetting:(NSString *)strMsg
+{
+FCAlertView *alert = [[FCAlertView alloc] init];
+alert.colorScheme = [UIColor blackColor];
+[alert makeAlertTypeSuccess];
+[alert showAlertInView:self
+             withTitle:@"Smart Light"
+          withSubtitle:strMsg
+       withCustomImage:[UIImage imageNamed:@"logo.png"]
+   withDoneButtonTitle:nil
+            andButtons:nil];
+    alert.dismissOnOutsideTouch = true;
+}
+-(void)btnCoolWhiteAction
+{
+    intSelectedSettingsValue = 0;
+    [btnCoolWhite setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+    [btnlastSetColor setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnWarmWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnMoodLighting setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    
+}
+-(void)btnMoodLightingAction
+{
+    intSelectedSettingsValue = 3;
+    [btnMoodLighting setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+    [btnlastSetColor setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnWarmWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnCoolWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+}
+-(void)btnWarmWhiteAction
+{
+    intSelectedSettingsValue = 2;
+    [btnWarmWhite setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+    [btnlastSetColor setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnCoolWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnMoodLighting setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    
+}
+-(void)btnlastSetColorAction
+{
+    intSelectedSettingsValue = 1;
+    [btnlastSetColor setImage:[UIImage imageNamed:@"radioSelectedBlack.png"] forState:UIControlStateNormal];
+    [btnCoolWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnWarmWhite setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    [btnMoodLighting setImage:[UIImage imageNamed:@"radioUnselectedBlack.png"] forState:UIControlStateNormal];
+    
+}
+
 /*- (void)changeBrightness:(id)sender {
     hellSlider = (UISlider *)sender;
     

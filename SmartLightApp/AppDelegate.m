@@ -84,10 +84,15 @@ typedef signed long                     SInt32;
 }
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    long long mills = (long long)([[NSDate date]timeIntervalSince1970]);
-    NSData *dates = [NSData dataWithBytes:&mills length:4];
+    NSDate * datetime = [NSDate date];
+    NSTimeInterval  timeinterval = floor(datetime.timeIntervalSinceReferenceDate / 60) * 60;
+    datetime = [NSDate dateWithTimeIntervalSinceReferenceDate:timeinterval];
+    
+    
+//    long long mills = (long long)([[NSDate date]timeIntervalSince1970]);
+//    NSData *dates = [NSData dataWithBytes:&mills length:4];
 
-    NSLog(@"0000000999999999999==%@",dates);
+    NSLog(@"0000000999999999999==%@",datetime);
 
 //    NSArray * r = @[buf,buf];
     

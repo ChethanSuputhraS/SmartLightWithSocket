@@ -240,6 +240,11 @@
         cell.lblDeviceName.text = [[arrayWifiavl objectAtIndex:indexPath.row] valueForKey:@"SSIDdata"];//;
         cell.lblAddress.hidden = true; //[[arrayWifiList objectAtIndex:indexPath.row] valueForKey:@"SSIDdata"];//@"VithamasTech";
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        
+        NSString * strSSID = [[arrayWifiavl objectAtIndex:indexPath.row] valueForKey:@"SSIDdata"];
+        strSSID = [strSSID stringByReplacingOccurrencesOfString:@"\\U201a\\U00c4\\U00f4" withString:@"' "];
+        cell.lblDeviceName.text = strSSID;//;
+
     }
     
     return cell;

@@ -65,6 +65,8 @@
 #pragma mark - Life Cycle
 - (void)viewDidLoad
 {
+    dictSocketSwitchStatus = [[NSMutableDictionary alloc] init];
+    
     sideBtnIndex = 1;
 
     [APP_DELEGATE startAdvertisingBeacons];
@@ -381,9 +383,9 @@
     [self.view addSubview:noMsgView];
     
     blbImg = [[UIImageView alloc] init];
-    blbImg.image = [UIImage imageNamed:@"bulb_icon.png"];
+//    blbImg.image = [UIImage imageNamed:@"bulb_icon.png"];
     blbImg.frame = CGRectMake((DEVICE_WIDTH-70)/2, (noMsgView.frame.size.height-103)/2-60-60, 70, 103);
-    [noMsgView addSubview:blbImg];
+//    [noMsgView addSubview:blbImg];
     
     if (IS_IPHONE_4)
     {
@@ -502,7 +504,7 @@
         blbFrame.size.height = 103;
         blbFrame.origin.x = (DEVICE_WIDTH-70)/2;
         blbImg.frame = blbFrame;
-        blbImg.image = [UIImage imageNamed:@"plus.png"];
+//        blbImg.image = [UIImage imageNamed:@"plus.png"];
         
         isForGroup = NO;
         lblSuccessMsg.hidden = NO;
@@ -552,8 +554,8 @@
         blbFrame.size.height = 103;
         blbFrame.origin.x = (DEVICE_WIDTH-121)/2;
         blbImg.frame = blbFrame;
-        blbImg.image = [UIImage imageNamed:@"navbulb_icon.png"];
-        [addFloatButton ChangeImage:[UIImage imageNamed:@"navbulb_icon.png"]];
+        blbImg.image = [UIImage imageNamed:@"group_icon.png"];
+        [addFloatButton ChangeImage:[UIImage imageNamed:@"add_group.png"]];
         imgNetworkStatus.frame = CGRectMake(DEVICE_WIDTH-10, 32+0, 10, 18);
         imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
 
@@ -1018,6 +1020,10 @@
     NSString * strBleAddress = [[[sectionArr objectAtIndex:selectedIndex.row] valueForKey:@"ble_address"] uppercaseString];
     NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set status ='2',is_sync = '0', wifi_configured = '0' where ble_address = '%@'",strBleAddress];
     [[DataBaseManager dataBaseManager] execute:strUpdate];
+    
+    NSString * strDeleteAlarm = [NSString stringWithFormat:@"delete from Socket_Alarm_Table where ble_address ='%@'",strBleAddress];
+    [[DataBaseManager dataBaseManager] execute:strDeleteAlarm];
+
     if ([sectionArr count] > selectedIndexPathl.row)
     {
         NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
@@ -1455,7 +1461,6 @@
         cell.lblLine.frame = CGRectMake(4, 59.5, DEVICE_WIDTH-8, 0.5);
         cell.optionView.frame = CGRectMake(4, 60, DEVICE_WIDTH-8, 40);
         cell.btnSettings.tag = indexx.row;
-        
     }
     else
     {
@@ -1463,7 +1468,20 @@
         cell.optionView.hidden = YES;
         cell.lblLine.hidden = YES;
         cell.btnSettings.tag = indexx.row;
-        
+    }
+    
+    if ([[[sectionArr objectAtIndex:indexx.row] allKeys] containsObject:@"switch_status"])
+    {
+        if ([[[sectionArr objectAtIndex:indexx.row] valueForKey:@"switch_status"] isEqualToString:@"Yes"])
+        {
+            [cell._switchLight setIsOn:YES];
+            [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+        else
+        {
+            [cell._switchLight setIsOn:NO];
+            [cell._switchLight setCustomKnobImage:[UIImage imageNamed:@"off_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
     }
 
 }
@@ -1534,7 +1552,6 @@
         cell.lblLine.frame = CGRectMake(7, cell.brightnessSlider.frame.size.height-0.5, DEVICE_WIDTH-14, 0.5);
         cell.optionView.frame = CGRectMake(7, cell.brightnessSlider.frame.size.height, DEVICE_WIDTH-14, 40);
     }
-
 }
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath;
 {
@@ -1577,6 +1594,7 @@
                 {
                     detailVC.isDeviceWhite = YES;
                 }
+                
                 [self.navigationController pushViewController:detailVC animated:YES];
             }
         }
@@ -2361,6 +2379,21 @@
             {
                 NSString * strIdentifier = [self checkforValidString:[[sectionArr objectAtIndex:i] valueForKey:@"identifier"]];
                 NSString * strBleAddress = [self checkforValidString:[[sectionArr objectAtIndex:i] valueForKey:@"ble_address"]];
+                if ([[dictSocketSwitchStatus allKeys] containsObject:[strBleAddress uppercaseString]])
+                {
+                    NSString * strStatus = [self checkforValidString:[dictSocketSwitchStatus valueForKey:[strBleAddress uppercaseString]]];
+                    if ([strStatus isEqualToString:@"56111111"])
+                    {
+                        [[sectionArr objectAtIndex:i] setValue:@"Yes" forKey:@"switch_status"];
+                    }
+                    else
+                    {
+                        [[sectionArr objectAtIndex:i] setValue:@"No" forKey:@"switch_status"];
+                    }
+                    
+                }
+//                [dictSocketSwitchStatus setValue:strStatus forKey:strAddress];
+
                 CBPeripheral * p;
 
                 if(![strIdentifier isEqualToString:@"NA"])
@@ -3937,7 +3970,6 @@ alert.colorScheme = [UIColor blackColor];
             {
                 if([sectionArr count] > foundIndex)
                 {
-
                     NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
                     [dict setValue:arrReceive forKey:@"data"];
                     [dict setValue:strAddress forKey:@"ble_address"];
@@ -3995,8 +4027,45 @@ alert.colorScheme = [UIColor blackColor];
 {
     
 }
-
-
+-(void)UpdateSocketSwithchStatus:(NSArray *)arrData withMacAddress:(NSString *)strAddress
+{
+    if([[sectionArr valueForKey:@"ble_address"] containsObject:strAddress])
+    {
+        NSInteger foundIndex  = [[sectionArr valueForKey:@"ble_address"] indexOfObject:strAddress];
+        if(foundIndex != NSNotFound)
+        {
+            if([sectionArr count] > foundIndex)
+            {
+                if([arrData count] >= 1)
+                {
+                    NSString * strOpcode = [self checkforValidString:[NSString stringWithFormat:@"%@",[arrData objectAtIndex:0]]];
+                    if([strOpcode isEqualToString:@"5"])
+                    {
+                        if([arrData count] >= 8)
+                        {
+                            NSString * strStatus = [NSString stringWithFormat:@"%@",[arrData componentsJoinedByString:@""]];
+                            [dictSocketSwitchStatus setValue:strStatus forKey:strAddress];
+                            if ([strStatus isEqualToString:@"56111111"])
+                            {
+                                [[sectionArr objectAtIndex:foundIndex] setValue:@"Yes" forKey:@"switch_status"];
+                            }
+                            else
+                            {
+                                [[sectionArr objectAtIndex:foundIndex] setValue:@"No" forKey:@"switch_status"];
+                            }
+//                            dispatch_async(dispatch_get_main_queue(), ^(void){
+                                [tblView reloadData];
+//                            });
+                        }
+                    }
+                
+                }
+//                [[sectionArr objectAtIndex:foundIndex] setValue:@"" forKey:<#(nonnull NSString *)#>];
+//                switch_status
+            }
+        }
+    }
+}
 //
 /*
  #pragma mark - Navigation

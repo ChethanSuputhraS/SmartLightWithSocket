@@ -39,6 +39,9 @@
     NSMutableArray * arrTitle,*arrAlarmDetail;
     NSString * strAlramID1,*strAlramID2;
     int selectedAlarmIndex;
+    BOOL isAlarmSavedSucessfully, isViewDisapeared, isDeletedManually;
+    NSTimer * timerForSaveAlarm;
+    NSMutableData * mqttAlarmData, * bleAlarmData;
 
 }
 @end
@@ -48,6 +51,8 @@
 @synthesize intSelectedSwitch,periphPass,intswitchState,strTAg,strMacaddress,delegate, dictDeviceDetail;
 - (void)viewDidLoad
 {
+    isViewDisapeared = NO;
+    
     globalStatusHeight = 20;
     if (IS_IPHONE_4 || IS_IPHONE_5)
     {
@@ -202,7 +207,6 @@
 
     NSLog(@"All Alarams===>>>>%@",arrAlarmDetail);
     
-//    [self btnSaveClick];
     [super viewDidLoad];
     // Do any additional setup after loading the view.
 }
@@ -259,16 +263,7 @@
     btnBack.backgroundColor = [UIColor clearColor];
     [viewHeader addSubview:btnBack];
     
-    UIButton * btnSave = [UIButton buttonWithType:UIButtonTypeCustom];
-    btnSave.frame = CGRectMake(DEVICE_WIDTH-50, 20, 50, 44);
-    btnSave.layer.masksToBounds = YES;
-    [btnSave setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    btnSave.titleLabel.textAlignment = NSTextAlignmentCenter;
-    [btnSave setTitle:@"Save" forState:UIControlStateNormal];
-    [btnSave.titleLabel setFont:[UIFont systemFontOfSize:30 weight:UIFontWeightRegular]];
-    [btnSave.titleLabel setFont:[UIFont fontWithName:CGBold size:textSizes]];
-    [btnSave addTarget:self action:@selector(btnSaveClick) forControlEvents:UIControlEventTouchUpInside];
-    [viewHeader addSubview:btnSave];
+ 
     
     tblAlarms = [[UITableView alloc]initWithFrame:CGRectMake(0, yy+globalStatusHeight, DEVICE_WIDTH, DEVICE_HEIGHT-headerhHeight-80)];
     tblAlarms.backgroundColor = UIColor.clearColor;
@@ -286,7 +281,6 @@
         backImg.frame = CGRectMake(10, 12+44, 12, 20);
         btnBack.frame = CGRectMake(0, 0, 88, 88);
         lblBack.frame = CGRectMake(0, 0, DEVICE_WIDTH, 88);
-        btnSave.frame = CGRectMake(DEVICE_WIDTH-60, 40, 60, 44);
     }
     
     [self setMainViewContentFrame:headerhHeight];
@@ -344,6 +338,8 @@
 }
 -(void)btnBackClick
 {
+    isViewDisapeared = YES;
+    
     NSInteger intPacket = [@"0" integerValue];
     NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
     [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"04" withLength:@"01" withPeripheral:periphPass];
@@ -615,17 +611,17 @@
 }
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    
     if ([[[arrTitle objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
     {
-        return 230;
+        return 290;
     }
     else
     {
-        return 150;
+        return 200;
     }
-    return 150;
+    return 200;
 }
+
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *cellReuseIdentifier = @"cellIdentifier";
@@ -644,14 +640,10 @@
     [self setButtonContent:cell.btn6 withTag:indexPath.row withBtnIndex:6];
     cell.btnRepeate.tag = indexPath.row;
     
-//    NSMutableDictionary * dict = [arrTitle objectAtIndex:indexPath.row];
-//    [cell UpdateDaysStatus:dict];
-    
     int yy = 130;
     
     if ([[[arrTitle objectAtIndex:indexPath.row] valueForKey:@"isExpanded"] isEqualToString:@"1"])
     {
-        
         yy = yy +10;
         
         cell.imgCheck.image = [UIImage imageNamed:@"checked.png"];
@@ -666,10 +658,7 @@
         cell.lblOFFtime.frame = CGRectMake(DEVICE_WIDTH/2, yy+20,DEVICE_WIDTH/2,60);
         cell.btnONTimer.frame = CGRectMake(0, yy+20,DEVICE_WIDTH/2,60);
         cell.btnOFFTimer.frame = CGRectMake(DEVICE_WIDTH/2, yy+20,DEVICE_WIDTH/2,60);
-        cell.btnDelete.frame = CGRectMake(10, yy+90,DEVICE_WIDTH/2-20,44);
-//        cell.btnSave.frame = CGRectMake(DEVICE_WIDTH/2+10, yy+90,DEVICE_WIDTH/2-20,44);
-
-
+        cell.btnSave.frame = CGRectMake(10, yy+90,DEVICE_WIDTH-20,44);
     }
     else
     {
@@ -687,36 +676,23 @@
         cell.lblOFFtime.frame = CGRectMake(DEVICE_WIDTH/2, 80,DEVICE_WIDTH/2,60);
         cell.btnONTimer.frame = CGRectMake(0, 80,DEVICE_WIDTH/2,60);
         cell.btnOFFTimer.frame = CGRectMake(DEVICE_WIDTH/2, 80,DEVICE_WIDTH/2,60);
-        cell.btnDelete.frame = CGRectMake(10, yy-20,DEVICE_WIDTH/2-20,44);
-//        cell.btnSave.frame = CGRectMake(DEVICE_WIDTH/2+10, yy-20,DEVICE_WIDTH/2-20,44);
-
-
+        cell.btnSave.frame = CGRectMake(10, yy-20,DEVICE_WIDTH-20,44);
     }
-    
      isRepeate = NO;
     
     cell.btnTime.tag = indexPath.row+100;
     cell.btnon.tag = indexPath.row+500;
     cell.btnoff.tag = indexPath.row+600;
-    cell.btnDelete.tag = indexPath.row+900;
+    cell.btnDelete.tag = indexPath.row+200;
     cell.btnTime.tag = indexPath.row+100;
-    
-    
+    cell.btnSave.tag = indexPath.row+200;
+
     [cell.btnTime addTarget:self action:@selector(btnTimerClick:) forControlEvents:UIControlEventTouchUpInside];
     [cell.btnDelete addTarget:self action:@selector(btnDeleteClick:) forControlEvents:UIControlEventTouchUpInside];//btndeleteClick
     [cell.btnONTimer addTarget:self action:@selector(btnONTimerClick:) forControlEvents:UIControlEventTouchUpInside];
     [cell.btnOFFTimer addTarget:self action:@selector(btnOFFTimerClick:) forControlEvents:UIControlEventTouchUpInside];
     [cell.btnRepeate addTarget:self action:@selector(btnRepeateClick:) forControlEvents:UIControlEventTouchUpInside];
-    [cell.btnSave addTarget:self action:@selector(btnSaveClick) forControlEvents:UIControlEventTouchUpInside];
-
-    double timestampval =  [[[arrTitle objectAtIndex:indexPath.row] valueForKey:@"OffTimestamp"] doubleValue];
-    NSTimeInterval timestamp = (NSTimeInterval)timestampval;
-    NSDate *updatetimestamp = [NSDate dateWithTimeIntervalSince1970:timestamp];
-    NSDateFormatter * dateFormat = [[NSDateFormatter alloc] init];
-    [dateFormat setDateFormat:@"hh:mm a"];
-    dateFormat.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT+5:30"];
-    NSString * strOnTime = [dateFormat stringFromDate:updatetimestamp];//
-
+    [cell.btnSave addTarget:self action:@selector(btnSaveClick:) forControlEvents:UIControlEventTouchUpInside];
     
     if (indexPath.row == 0)
     {
@@ -800,8 +776,6 @@
 
     [tblAlarms reloadData];
 }
-
-
 #pragma mark - Button Events
 -(void)btnDoneClicked:(UIButton *)sender
 {
@@ -809,9 +783,14 @@
     btnTmp.tag = sender.tag;
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"hh:mm a"];
-    NSString *currentTime = [dateFormatter stringFromDate:datePicker.date];
     
-    NSTimeInterval timeStamp = [datePicker.date timeIntervalSince1970];
+    NSDate * datetime = datePicker.date;
+    NSTimeInterval  timeinterval = floor(datetime.timeIntervalSinceReferenceDate / 60) * 60;
+    datetime = [NSDate dateWithTimeIntervalSinceReferenceDate:timeinterval];
+
+    NSString *currentTime = [dateFormatter stringFromDate:datetime];
+    
+    NSTimeInterval timeStamp = [datetime timeIntervalSince1970];
     NSString *decStr = [NSString stringWithFormat:@"%f",timeStamp];
     
     NSLog(@"chethan Timestamp====>>>>%@",decStr);
@@ -824,7 +803,6 @@
     {
         [[arrTitle objectAtIndex:0] setObject:decStr forKey:@"OnTimestamp"];
         [[arrTitle objectAtIndex:0] setObject:currentTime forKey:@"On_original"];
-       
     }
    else if (sender.tag == 701)
    {
@@ -905,47 +883,14 @@
 }
 -(void)btnDeleteClick:(UIButton *)sender
 {
-    NSString * strAlD = @"NA";
-    if (sender.tag == 900)
-    {
-        strAlD =[[arrTitle objectAtIndex:0] valueForKey:@"alarm_id"];
-    }
-    else
-    {
-        strAlD =[[arrTitle objectAtIndex:1] valueForKey:@"alarm_id"];
-    }
-    NSMutableArray * tmpArry = [[NSMutableArray alloc]init];
-    NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%@'",strMacaddress,strAlD];
-    [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:tmpArry];
-    
-    if ([tmpArry count] > 0)
-    {
-        if (sender.tag == 900)
-        {
-            NSString * strAlID = [[arrTitle objectAtIndex:0] valueForKey:@"alarm_id"];
-            NSInteger intPacket = [strAlID integerValue];
-            NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"12" withLength:@"01" withPeripheral:periphPass];
-            selectedAlarmIndex = 0;
-
-        }
-        else if (sender.tag == 901)
-        {
-            NSString * strAlID = [[arrTitle objectAtIndex:1] valueForKey:@"alarm_id"];
-            NSInteger intPacket = [strAlID integerValue];
-            NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"12" withLength:@"01" withPeripheral:periphPass];
-            selectedAlarmIndex = 1;
-        }
-    }
-    else
-    {
-        [self AlertViewFCTypeCautionCheck:@"No alarm set."];
-    }
-
+    NSInteger tagValue = [sender tag] - 200;
+    isDeletedManually = YES;
+    [self DeleteAlarmWithIndex:tagValue];
 }
--(void)btnSaveClick
+-(void)DeleteAlarmWithIndex:(NSInteger)sender
 {
+    NSInteger tagValue = sender;
+
     int isSourcetoConnectAvailable = 0;
     if (periphPass != nil || periphPass.state == CBPeripheralStateConnected)
     {
@@ -957,33 +902,72 @@
     }
     if (isSourcetoConnectAvailable == 0)
     {
-        [self AlertViewFCTypeCautionCheck:@"Please connect device with Bluetooth or Configure device with WIFI to set alarm."];
+        [APP_DELEGATE endHudProcess];
+        [self AlertViewFCTypeCautionCheck:@"Please connect device with Bluetooth or Configure device with WIFI to delete alarm."];
     }
     else
     {
-        int alarm1Check = [self getStatusOfSavedAlarm:0];
-        int alarm2Check = [self getStatusOfSavedAlarm:1];
-
-        if (alarm1Check == 0 && alarm2Check == 0)
+        if ([arrTitle count] > tagValue)
         {
-            //both are empty, show error that select time
-            [self AlertViewFCTypeCautionCheck:@"Please select ON and OFF time"];
-        }
-        else
-        {
-            if (alarm1Check == 1)
+            NSString *  strAlD =[[arrTitle objectAtIndex:tagValue] valueForKey:@"alarm_id"];
+            NSMutableArray * tmpArry = [[NSMutableArray alloc]init];
+            NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%@'",strMacaddress,strAlD];
+            [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:tmpArry];
+            
+            if ([tmpArry count] > 0)
             {
-                selectedAlarmIndex = 0;
-                [self SendAlarmtoDevice:0];
+                NSString * strAlID = [[arrTitle objectAtIndex:tagValue] valueForKey:@"alarm_id"];
+                NSInteger intPacket = [strAlID integerValue];
+                NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+                [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"12" withLength:@"01" withPeripheral:periphPass];
+                selectedAlarmIndex = tagValue;
             }
-            else if (alarm2Check == 1)
+            else
             {
-                selectedAlarmIndex = 1;
-                [self SendAlarmtoDevice:1];
+                if (isDeletedManually == YES)
+                {
+                    [self AlertViewFCTypeCautionCheck:@"No alarm set."];
+                }
             }
         }
     }
 }
+-(void)btnSaveClick:(id)sender
+{
+        [APP_DELEGATE endHudProcess];
+        [APP_DELEGATE startHudProcess:@"Saving Alarm..."];
+        NSInteger tagValue = [sender tag] - 200;
+        int isSourcetoConnectAvailable = 0;
+        if (periphPass != nil || periphPass.state == CBPeripheralStateConnected)
+        {
+            isSourcetoConnectAvailable = 1;
+        }
+        else if([[dictDeviceDetail valueForKey:@"wifi_configured"] isEqualToString:@"1"])
+        {
+            isSourcetoConnectAvailable = 2;
+        }
+        if (isSourcetoConnectAvailable == 0)
+        {
+            [APP_DELEGATE endHudProcess];
+            [self AlertViewFCTypeCautionCheck:@"Please connect device with Bluetooth or Configure device with WIFI to set alarm."];
+        }
+        else
+        {
+            int alarm1Check = [self getStatusOfSavedAlarm:tagValue];
+
+            if (alarm1Check == 0)
+            {
+                [APP_DELEGATE endHudProcess];
+                //both are empty, show error that select time
+                [self AlertViewFCTypeCautionCheck:@"Please select ON and OFF time"];
+            }
+            else
+            {
+                selectedAlarmIndex = tagValue;
+                [self SendAlarmtoDevice:tagValue];
+            }
+        }
+ }
 -(void)btnRepeateClick:sender
 {
     if ([[[arrTitle objectAtIndex:[sender tag]] valueForKey:@"isExpanded"] isEqualToString:@"1"])
@@ -994,16 +978,12 @@
     {
         [[arrTitle objectAtIndex:[sender tag]] setValue:@"1" forKey:@"isExpanded"];
     }
-    
     [tblAlarms reloadData];
 }
-
-
-
 #pragma mark :- DATABASE METHODS
 -(void)InsertAndUpdateTheAlaramTable:(NSDictionary *)dictData
 {
-    NSString * strAlarmId = [self stringFroHex:[dictData valueForKey:@"alarm_id"]];
+    NSString * strAlarmId = [dictData valueForKey:@"alarm_id"];
     NSString * strsocketID = [dictData valueForKey:@"socket_id"];
     NSString * strdayValue = [dictData valueForKey:@"totalCount"];
     NSString * strOnTime =  [dictData valueForKey:@"OnTimestamp"];
@@ -1011,19 +991,18 @@
     NSString * stralarmState = @"1";
     NSString * strONoriginal = [dictData valueForKey:@"On_original"];
     NSString * strOffOriginal = [dictData valueForKey:@"Off_original"];
-    NSString * strDaySelected = @"NA";
-    
+//    NSString * strDaySelected = @"NA";
     
     NSMutableArray * tmpArry = [[NSMutableArray alloc]init];
     NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%@'",strMacaddress,strAlarmId];
     [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:tmpArry];
     
-
     int correctValue = 200;
     if (selectedAlarmIndex == 1)
     {
         correctValue = 300;
     }
+    
     NSMutableArray * arrDayStatus = [[NSMutableArray alloc] init];
     for (int j=0; j<7; j++)
     {
@@ -1039,7 +1018,6 @@
     
     if ([tmpArry count] > 0)
     {
-
         NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_value='%@', OnTimestamp ='%@', OffTimestamp = '%@', On_original = '%@', Off_original = '%@', alarm_state = '%@',  day_selected = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,strONoriginal,strOffOriginal,stralarmState,strDayStatus,strMacaddress,strAlarmId];
         [[DataBaseManager dataBaseManager] execute:update];
     }
@@ -1049,7 +1027,6 @@
         [[DataBaseManager dataBaseManager] executeSw:strInsert];
     }
 }
-
 -(void)DeleteAlarmInDatabase:(NSInteger)strAlaramID
 {
     NSString * deleteQuery =[NSString stringWithFormat:@"delete from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%ld'",strMacaddress,(long)strAlaramID];
@@ -1072,10 +1049,10 @@
     }
     
     NSString * strOnTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"On_original"]];
-    NSString * strOFFTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"Off_original"]];
+    NSString * strOffTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"Off_original"]];
     
     NSString *time1 = strOnTimestamp;
-    NSString *time2 = strOFFTimestamp;
+    NSString *time2 = strOffTimestamp;
 
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"HH:mm a"];
@@ -1087,7 +1064,7 @@
     NSComparisonResult result = [date1 compare:date2];
 
     BOOL isDateCorrect = YES;
-    if (![strOnTimestamp  isEqualToString:@"NA"] &&  ![strOFFTimestamp  isEqualToString:@"NA"])
+    if (![strOnTimestamp  isEqualToString:@"NA"] &&  ![strOffTimestamp  isEqualToString:@"NA"])
     {
         if(result == NSOrderedSame)
         {
@@ -1111,8 +1088,8 @@
         [arrTitle setValue:[NSString stringWithFormat:@"%ld",(long)intSelectedSwitch] forKey:@"socket_id"];
         
         NSInteger intDayID = 0;
-//        intDayID = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"totalCount"] intValue];
-        intDayID = 127;
+        intDayID = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"totalCount"] intValue];
+//        intDayID = 127;
 
         NSData * dataDaytID = [[NSData alloc] initWithBytes:&intDayID length:1];
         
@@ -1130,7 +1107,7 @@
         
         NSData * dataEndTime = [[NSData alloc] initWithBytes:&totallength length:4];
         double intEndTime = 0;
-        if (![strOFFTimestamp isEqualToString:@"NA"])
+        if (![strOffTimestamp isEqualToString:@"NA"])
         {
             intEndTime = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"OffTimestamp"] doubleValue];//1611663180; //  ON timestap
              NSString * decStr = [NSString stringWithFormat:@"%f",intEndTime];
@@ -1145,6 +1122,11 @@
         [completeData appendData:dataStartTime];
         [completeData appendData:dataEndTime];
         
+        isAlarmSavedSucessfully = NO;
+        [timerForSaveAlarm invalidate];
+        timerForSaveAlarm = nil;
+        timerForSaveAlarm = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(RequestTimeOutofBLEMQTT) userInfo:nil repeats:NO];
+        
         if (periphPass.state == CBPeripheralStateDisconnected || periphPass == nil)
         {
             NSInteger intLength = 11;
@@ -1158,8 +1140,28 @@
             [completeData appendData:dataStartTime];
             [completeData appendData:dataEndTime];
             NSLog(@"MQTT Alram Compleate Data =====>>>>>%@",completeData);
+            isDeletedManually = NO;
+            
 
-            [delegate SetupAlarm:completeData];
+//            [self DeleteAlarmWithIndex:selectedIndex];
+            bleAlarmData =  [[NSMutableData alloc] init];
+            mqttAlarmData = [completeData mutableCopy];
+            
+            //Code to Delete Alarm via MQTT
+            NSString * strAlID = [[arrTitle objectAtIndex:selectedIndex] valueForKey:@"alarm_id"];
+            NSInteger intPacket = [strAlID integerValue];
+            NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+            
+            NSInteger intDeleteOpcode = 12;
+            NSData * dataDeleteOpcode = [[NSData alloc] initWithBytes:&intDeleteOpcode length:1];
+
+            NSInteger intDeleteLength = 1;
+            NSData * dataDeleteLength = [[NSData alloc] initWithBytes:&intDeleteLength length:1];
+
+            NSMutableData * deleteDataPackets = [dataDeleteOpcode mutableCopy];
+            [deleteDataPackets appendData:dataDeleteLength];
+            [deleteDataPackets appendData:dataPacket];
+            [delegate DeleteAlarm:deleteDataPackets];
             return;
         }
         NSString * StrData = [NSString stringWithFormat:@"%@",completeData];
@@ -1168,7 +1170,16 @@
         StrData = [StrData stringByReplacingOccurrencesOfString:@">" withString:@""];
 
         NSLog(@"Alram Compleate Data =====>>>>>%@",completeData);
-        [[BLEService sharedInstance] WriteSocketData:completeData withOpcode:@"11" withLength:@"11" withPeripheral:periphPass];// 0b0b01017fOntimeOfftim
+        isDeletedManually = NO;
+        mqttAlarmData =  [[NSMutableData alloc] init];
+        bleAlarmData = [completeData mutableCopy];
+//        [self DeleteAlarmWithIndex:selectedIndex];
+        NSString * strAlID = [[arrTitle objectAtIndex:selectedIndex] valueForKey:@"alarm_id"];
+        NSInteger intPacket = [strAlID integerValue];
+        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"12" withLength:@"01" withPeripheral:periphPass];
+
+//        [[BLEService sharedInstance] WriteSocketData:completeData withOpcode:@"11" withLength:@"11" withPeripheral:periphPass];// 0b0b01017fOntimeOfftim
     }
 }
 -(void)SendSecondAlarmAfterSomeDelay
@@ -1177,6 +1188,7 @@
 }
 -(void)ALaramSuccessResponseFromDevie
 {
+    isAlarmSavedSucessfully = YES;
     if ([arrTitle count] > selectedAlarmIndex)
     {
         [self InsertAndUpdateTheAlaramTable:[arrTitle objectAtIndex:selectedAlarmIndex]];
@@ -1192,47 +1204,46 @@
     }
     else if(selectedAlarmIndex == 0)
     {
-        int alarm2Check = [self getStatusOfSavedAlarm:1];
-        if (alarm2Check == 2)
-        {
-            selectedAlarmIndex = 1;
-            [self SendAlarmtoDevice:1];
-        }
-        else
-        {
-            //show successpopup saying alarm saved
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [APP_DELEGATE endHudProcess];
-                [self AlertViewFCTypeSuccess:[NSString stringWithFormat:@"Alarm set for socket %ld succcessfully",(long)self->intSelectedSwitch]];
-            });
-        }
+        //show successpopup saying alarm saved
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [APP_DELEGATE endHudProcess];
+            [self AlertViewFCTypeSuccess:[NSString stringWithFormat:@"Alarm set for socket %ld succcessfully",(long)self->intSelectedSwitch]];
+        });
     }
 }
 -(void)DeleteAlarmConfirmFromDevice:(NSMutableDictionary *)dictDeleteCofirmID
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if ([[dictDeleteCofirmID  valueForKey:@"deleteSate"] isEqual:@"01"])
-        {
-            [self AlertViewFCTypeSuccess:@"Alarm deleted sucessfully..."];
-            NSString * strALid = [dictDeleteCofirmID valueForKey:@"alarm_id"];
-            NSInteger inrval = [strALid integerValue];
-            [self DeleteAlarmInDatabase:inrval];
-            
-            if ([arrTitle count] > selectedAlarmIndex)
+    if (isDeletedManually == YES)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if ([[dictDeleteCofirmID  valueForKey:@"deleteSate"] isEqual:@"01"])
             {
-                [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"On_original"];
-                [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"Off_original"];
-                [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"OnTimeStamp"];
-                [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"OffTimestamp"];
-                [tblAlarms reloadData];
-                selectedAlarmIndex = 0;
+                [self AlertViewFCTypeSuccess:@"Alarm deleted sucessfully..."];
+                NSString * strALid = [self stringFroHex:[dictDeleteCofirmID valueForKey:@"alarm_id"]];
+                NSInteger inrval = [strALid integerValue];
+                [self DeleteAlarmInDatabase:inrval];
+               
+                if ([arrTitle count] > selectedAlarmIndex)
+                {
+                    [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"On_original"];
+                    [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"Off_original"];
+                    [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"OnTimestamp"];
+                    [[arrTitle objectAtIndex:selectedAlarmIndex] setValue:@"NA" forKey:@"OffTimestamp"];
+                    [tblAlarms reloadData];
+                    selectedAlarmIndex = 0;
+                }
             }
-        }
-        else
-        {
-            [self AlertViewFCTypeCautionCheck:@"Something went wrong."];
-        }
-    });
+            else
+            {
+                [self AlertViewFCTypeCautionCheck:@"Something went wrong."];
+            }
+        });
+
+    }
+    else
+    {
+        [[BLEService sharedInstance] WriteSocketData:bleAlarmData withOpcode:@"11" withLength:@"11" withPeripheral:periphPass];
+    }
 }
 -(int)getStatusOfSavedAlarm:(int)indexx //0 : Both NA, 1 : Any one NA, 2: Both OK
 {
@@ -1246,16 +1257,38 @@
     }
     return 0;
 }
+-(void)MqttDeleteAlarmStatusfromServer:(BOOL)isSuccess;
+{
+    [delegate SetupAlarm:mqttAlarmData];
+}
 #pragma mark - MQTT Callbacks
 -(void)MqttAlarmStatusfromServer:(BOOL)isSuccess;
 {
     if (isSuccess == YES)
     {
+        isAlarmSavedSucessfully = YES;
         [self ALaramSuccessResponseFromDevie];
     }
     else
     {
-        //Show Something Went Wrong Popup...
+        isAlarmSavedSucessfully = NO;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [APP_DELEGATE endHudProcess];
+            [self AlertViewFCTypeCautionCheck:@"Alarm not set properly. Please try again."];
+        });
+    }
+}
+-(void)RequestTimeOutofBLEMQTT
+{
+    if (isViewDisapeared == NO)
+    {
+        if (isAlarmSavedSucessfully == NO)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^{
+            [APP_DELEGATE endHudProcess];
+            [self AlertViewFCTypeCautionCheck:@"Alarm not set properly. Please try again."];
+            });
+        }
     }
 }
 
