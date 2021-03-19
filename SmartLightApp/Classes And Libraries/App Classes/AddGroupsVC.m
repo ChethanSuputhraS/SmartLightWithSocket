@@ -54,9 +54,10 @@
     groupDeviceSelectedArr = [[NSMutableArray alloc] init];
     selectedDict = [[NSMutableDictionary alloc] init];
     
-    NSString * strQuery = [NSString stringWithFormat:@"Select * from Device_Table where user_id ='%@' and status = '1' group by ble_address",CURRENT_USER_ID];
+    NSString * strQuery = [NSString stringWithFormat:@"Select * from Device_Table where user_id ='%@' and status = '1' and device_type != '4' group by ble_address",CURRENT_USER_ID];
     [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:deviceListArray];
     
+
     NSString * tmpStr = [NSString stringWithFormat:@"select * from GroupsTable where user_id = '%@' and status = '1'group by local_group_id",CURRENT_USER_ID];
     NSMutableArray * tmpArr = [[NSMutableArray alloc] init];
     [[DataBaseManager dataBaseManager] execute:tmpStr resultsArray:tmpArr];
@@ -330,10 +331,10 @@
     {
         cell.imgIcon.image = [UIImage imageNamed:@"default_switch_icon.png"];
     }
-    else if ([strType isEqualToString:@"4"])
-    {
-        cell.imgIcon.image = [UIImage imageNamed:@"default_socket_icon.png"];
-    }
+//    else if ([strType isEqualToString:@"4"])
+//    {
+//        cell.imgIcon.image = [UIImage imageNamed:@"default_socket_icon.png"];
+//    }
     else if ([strType isEqualToString:@"5"])
     {
         cell.imgIcon.image = [UIImage imageNamed:@"default_fan_icon.png"];

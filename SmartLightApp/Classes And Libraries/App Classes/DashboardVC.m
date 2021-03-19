@@ -219,7 +219,7 @@
     imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
     imgNotConnected.contentMode = UIViewContentModeScaleAspectFit;
     imgNotConnected.layer.masksToBounds = true;
-    [self.view addSubview:imgNotConnected];
+//    [self.view addSubview:imgNotConnected];
     
     if (IS_IPHONE_X)
     {
@@ -397,11 +397,11 @@
         yy = yy + (noMsgView.frame.size.height-103)/2-60-60 + 0;
     }
     
-    lblSuccessMsg = [[UILabel alloc] initWithFrame:CGRectMake(10, yy, DEVICE_WIDTH-20, 60)];
+    lblSuccessMsg = [[UILabel alloc] initWithFrame:CGRectMake(10, yy, DEVICE_WIDTH-20, 80)];
     [lblSuccessMsg setTextColor:UIColor.whiteColor];
     [lblSuccessMsg setFont:[UIFont fontWithName:CGRegular size:textSizes+2]];
     [lblSuccessMsg setTextAlignment:NSTextAlignmentCenter];
-    [lblSuccessMsg setNumberOfLines:3];
+    [lblSuccessMsg setNumberOfLines:5];
     [lblSuccessMsg setText:@"No devices found. Tap on + button to add device."];
     [noMsgView addSubview:lblSuccessMsg];
     
@@ -566,7 +566,7 @@
         isForGroup = YES;
         lblSuccessMsg.hidden = NO;
 
-        [lblSuccessMsg setText:@"No rooms found. Tap on + button to add rooms."];
+        [lblSuccessMsg setText:@"No rooms found. Tap on + button to add rooms. \n ( You can add Smart Lights only )"];
         
         groupsArr = [[NSMutableArray alloc] init];
         NSString * str0 = [NSString stringWithFormat:@"Select * from GroupsTable where user_id ='%@' and status = '1' group by local_group_id ORDER BY is_favourite ASC",CURRENT_USER_ID];
@@ -767,7 +767,7 @@
             }
         }
         socketWifi.strBleAddress = strMacaddress;
-        socketWifi.strWifiConfig = strWifiConfig;
+        socketWifi.isWIFIconfig = strWifiConfig; 
         [self.navigationController pushViewController:socketWifi animated:true];
     }
     else
@@ -1389,7 +1389,7 @@
 }
 -(void)CellforAllDevices:(NewCustomGroupCell *)cell WithIndexPath:(NSIndexPath *)indexx
 {
-    cell.lblName.text = @"All Devices";
+    cell.lblName.text = @"All Samrt light's";//@"All Devices"
     cell._switchLight.tag = 123;
     cell._switchLight.frame = CGRectMake(DEVICE_WIDTH-110+30+15, 0+10, 60, 40);
     cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
@@ -1552,6 +1552,7 @@
         cell.lblLine.frame = CGRectMake(7, cell.brightnessSlider.frame.size.height-0.5, DEVICE_WIDTH-14, 0.5);
         cell.optionView.frame = CGRectMake(7, cell.brightnessSlider.frame.size.height, DEVICE_WIDTH-14, 40);
     }
+
 }
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath;
 {
@@ -1594,7 +1595,6 @@
                 {
                     detailVC.isDeviceWhite = YES;
                 }
-                
                 [self.navigationController pushViewController:detailVC animated:YES];
             }
         }
@@ -3848,7 +3848,7 @@ alert.colorScheme = [UIColor blackColor];
         [mqttObj didDisconnect];
         self->mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
         self->mqttObj.delegate = self;
-    
+        mqttObj.autoReconnect = YES;
     
         [self->mqttObj selfSignedSSLSetting];
         BOOL isConnected =  [self->mqttObj connect];
@@ -3922,6 +3922,7 @@ alert.colorScheme = [UIColor blackColor];
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didConnectAck:(enum CocoaMQTTConnAck)ack
 {
+    
     NSMutableArray * tmpArr = [[NSMutableArray alloc] init];
     NSString * str = [NSString stringWithFormat:@"Select * from Device_Table where device_type = '4' and status = '1' group by ble_address"];
     [[DataBaseManager dataBaseManager] execute:str resultsArray:tmpArr];
@@ -4004,14 +4005,14 @@ alert.colorScheme = [UIColor blackColor];
                 strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
             }
 
-            mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
-            mqttObj.delegate = self;
-            [mqttObj selfSignedSSLSetting];
-            BOOL isConnected =  [mqttObj connect];
-            if (isConnected)
-            {
-                NSLog(@"MQTT is CONNECTING....");
-            }
+//            mqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
+//            mqttObj.delegate = self;
+//            [mqttObj selfSignedSSLSetting];
+//            BOOL isConnected =  [mqttObj connect];
+//            if (isConnected)
+//            {
+//                NSLog(@"MQTT is CONNECTING....");
+//            }
         }
     }
 }

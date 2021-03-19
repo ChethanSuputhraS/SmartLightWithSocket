@@ -492,7 +492,7 @@
     alert.delegate = self;
     [alert showAlertInView:self
                  withTitle:@"Smart Light"
-              withSubtitle:@"All devices has been deleted successfully."
+              withSubtitle:@"Devices has been deleted successfully."
            withCustomImage:[UIImage imageNamed:@"logo.png"]
        withDoneButtonTitle:nil
                 andButtons:nil];

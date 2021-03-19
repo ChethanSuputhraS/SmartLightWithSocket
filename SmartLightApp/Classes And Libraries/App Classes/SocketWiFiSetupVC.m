@@ -34,7 +34,7 @@
 
 
 }
-@synthesize strWifiConfig,peripheralPss,strBleAddress, dictData, delegate;
+@synthesize isWIFIconfig,peripheralPss,strBleAddress, dictData, delegate;
 - (void)viewDidLoad
 {
     globalStatusHeight = 20;
@@ -110,7 +110,6 @@
     btnBack.backgroundColor = [UIColor clearColor];
     [viewHeader addSubview:btnBack];
     
-    // chethan added
     imgWifiState = [[UIImageView alloc] initWithFrame:CGRectMake((DEVICE_WIDTH-40)/2, globalStatusHeight+70, 40, 40)];
     [imgWifiState setContentMode:UIViewContentModeScaleAspectFit];
     imgWifiState.backgroundColor = [UIColor clearColor];
@@ -152,7 +151,7 @@
     btnRemoveWifi.titleLabel.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:btnRemoveWifi];
     
-    if ([strWifiConfig  isEqual: @"1"])
+    if ([isWIFIconfig isEqualToString:@"1"])
     {
         [lblWifiConfigure setText:@"Wi-Fi configured"];
         [btnConfigWifi setTitle:@"Modify\nWi-Fi configuration" forState:UIControlStateNormal];
@@ -431,10 +430,11 @@
     {
         [APP_DELEGATE startHudProcess:@"Connecting..."];
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
-        if ([APP_DELEGATE isNetworkreachable]) 
-        {
+//        if ([APP_DELEGATE isNetworkreachable])
+//        {
             isRequestSentWifi = YES;
             isWifiWritePasswordResponded = NO;
+        
             [connectionTimer invalidate];
             connectionTimer = nil;
             connectionTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil  repeats:NO];
@@ -450,11 +450,11 @@
             }completion:(^(BOOL finished){
                 [self-> viewTxtfld removeFromSuperview];
             })];
-        }
-        else
-        {
-            [self AlertViewFCTypeCautionCheck:@"Please connect to the internet."];
-        }
+//        }
+//        else
+//        {
+//            [self AlertViewFCTypeCautionCheck:@"Please connect to the internet."];
+//        }
     }
 }
 -(void)btnCancelClick
@@ -472,15 +472,17 @@
 {
     if (peripheralPss.state == CBPeripheralStateConnected)
     {
-        if ([strWifiConfig isEqualToString:@"1"])
+        if ([isWIFIconfig isEqualToString:@"1"])
         {
-            [APP_DELEGATE startHudProcess:@"Cheking for availble Wi-Fi..."];
+            [APP_DELEGATE startHudProcess:@"Checking for availble Wi-Fi..."];
             NSInteger intPacket = [@"0" integerValue];
             NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
             [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->peripheralPss];
             isWifiListFound = NO;
+            [WifiScanTimer invalidate];
             WifiScanTimer = nil;
             wifiConnectionStatusRetryCount = 0;
+            
             WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
         }
         else
@@ -490,29 +492,37 @@
     }
     else
     {
-        [self AlertViewFCTypeCautionCheck:@"Please connect device."];
+        [self AlertViewFCTypeCautionCheck:@"Make sure \n1.Socket is ON\n2.Socket is Nearby\n3. Phone Bluetooth is ON.\nBecause to Configure WIFI, App needs to connect with Socket via Bluetooth."];
     }
 }
 -(void)btnRemoveWifiClick
 {
-   FCAlertView * alert = [[FCAlertView alloc] init];
+    if (peripheralPss.state == CBPeripheralStateConnected)
+    {
+           FCAlertView * alert = [[FCAlertView alloc] init];
 
-    alert.colorScheme = [UIColor blackColor];
-    [alert makeAlertTypeCaution];
-    alert.delegate = self;
-    [alert addButton:@"Yes" withActionBlock:
-     ^{
-//        [APP_DELEGATE startHudProcess:@"Removeing..."];
-        NSInteger intPacket = [@"0" integerValue];
-        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"26" withLength:@"00" withPeripheral:self->peripheralPss];
-//        timerWifiConfig = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiConfigMethod) userInfo:nil repeats:NO];
-    }];
-    [alert showAlertInView:self
-                 withTitle:@"Smart socket"
-              withSubtitle:@"Do you want to Remove  Wi-Fi ?"
-           withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
-       withDoneButtonTitle:@"Cancel" andButtons:nil];
+            alert.colorScheme = [UIColor blackColor];
+            [alert makeAlertTypeCaution];
+            alert.delegate = self;
+            [alert addButton:@"Yes" withActionBlock:
+             ^{
+        //        [APP_DELEGATE startHudProcess:@"Removeing..."];
+                NSInteger intPacket = [@"0" integerValue];
+                NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+                [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"26" withLength:@"00" withPeripheral:self->peripheralPss];
+        //        timerWifiConfig = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiConfigMethod) userInfo:nil repeats:NO];
+            }];
+            [alert showAlertInView:self
+                         withTitle:@"Smart socket"
+                      withSubtitle:@"Do you want to Remove  Wi-Fi ?"
+                   withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
+               withDoneButtonTitle:@"Cancel" andButtons:nil];
+
+    }
+    else
+    {
+        [self AlertViewFCTypeCautionCheck:@"Make sure \n1.Socket is ON\n2.Socket is Nearby\n3. Phone Bluetooth is ON.\nBecause to Configure WIFI, App needs to connect with Socket via Bluetooth."];
+    }
 }
 -(void)wifiConfigMethod
 {
@@ -608,14 +618,15 @@
     [alert addButton:@"Yes" withActionBlock:
      ^{
         
-        [APP_DELEGATE startHudProcess:@"Cheking for availble Wi-Fi..."];
+        [APP_DELEGATE startHudProcess:@"Checking for availble Wi-Fi..."];
         
         NSInteger intPacket = [@"0" integerValue];
         NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
         [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->peripheralPss];
         isWifiListFound = NO;
-        WifiScanTimer = nil;
         wifiConnectionStatusRetryCount = 0;
+        [WifiScanTimer invalidate];
+        WifiScanTimer = nil;
         WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
     }];
     [alert showAlertInView:self
@@ -811,6 +822,8 @@
             if (wifiConnectionStatusRetryCount == 0)
             {
                 wifiConnectionStatusRetryCount = 1;
+                [connectionTimer invalidate];
+                connectionTimer = nil;
                 connectionTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
                 [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(CheckforWifiStatus) userInfo:nil repeats:NO];
             }
@@ -867,7 +880,7 @@
                 [imgWifiState setImage:[UIImage imageNamed:@"tick.png"]];
                 btnRemoveWifi.hidden = false;
                 [btnRemoveWifi setTitle:@"Remove\nWi-Fi configured" forState:UIControlStateNormal];
-                strWifiConfig = @"1";
+                isWIFIconfig = @"1";
         }
     }
     else
@@ -897,7 +910,7 @@
         btnConfigWifi.frame = CGRectMake((DEVICE_WIDTH-150)/2, globalStatusHeight+110+yy,150 , 70);
         [imgWifiState setImage:[UIImage imageNamed:@"redcross.png"]];
         btnRemoveWifi.hidden = true;
-        strWifiConfig = @"0";
+        isWIFIconfig = @"1";
         NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '0' where ble_address = '%@'",strBleAddress];
         [[DataBaseManager dataBaseManager] execute:strUpdate];
         

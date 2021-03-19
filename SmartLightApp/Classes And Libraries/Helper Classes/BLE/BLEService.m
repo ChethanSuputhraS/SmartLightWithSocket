@@ -73,7 +73,6 @@ static BLEService    *sharedInstance    = nil;
     }
     return self;
 }
-
 + (instancetype)sharedInstance
 {
     if (!sharedInstance)
@@ -81,7 +80,6 @@ static BLEService    *sharedInstance    = nil;
     
     return sharedInstance;
 }
-
 -(id)initWithDevice:(CBPeripheral*)device andDelegate:(id /*<BLEServiceDelegate>*/)delegate{
     self = [super init];
     if (self)
@@ -93,14 +91,12 @@ static BLEService    *sharedInstance    = nil;
     }
     return self;
 }
-
 -(void)startDeviceService:(CBPeripheral *)kpb
 {
     [servicePeripheral discoverServices:@[[CBUUID UUIDWithString:@"0000AB00-0100-0800-0008-05F9B34FB000"]]];
     
     //    [servicePeripheral discoverServices:[CBUUID UUIDWithString:@"0000AB00-0100-0800-0008-05F9B34FB000"]];
 }
-
 -(void) readDeviceBattery:(CBPeripheral *)device
 {
     
@@ -113,7 +109,6 @@ static BLEService    *sharedInstance    = nil;
         [self notification:TI_KEYFOB_BATT_SERVICE_UUID characteristicUUID:TI_KEYFOB_LEVEL_SERVICE_UUID p:device on:YES];
     }
 }
-
 -(void)readDeviceRSSI:(CBPeripheral *)device
 {
     if (device.state == CBPeripheralStateConnected)
@@ -1788,6 +1783,20 @@ static BLEService    *sharedInstance    = nil;
                             {
                                 if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
                                 {
+                                    NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+                                    if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+                                    {
+                                        NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                                        if (foudIndex != NSNotFound)
+                                        {
+                                            if ([arrSocketDevices count] > foudIndex)
+                                            {
+                                                NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                                                [dataDict setObject:@"0" forKey:@"BLE_WIFI_CONFIG_STATUS"];
+                                                [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                                            }
+                                        }
+                                    }
                                     [_delegate RecievedRemoveWifiConfiguration];
                                 }
                             }

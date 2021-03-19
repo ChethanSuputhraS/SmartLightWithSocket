@@ -34,6 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSMutableArray * arryDevices, * arrAlarmIdsofDevices;
     BOOL isMQTTConfigured;
     NSTimer * mqttRequestTimeOut;
+    NSString * mqttSwithPreviousStatus;
 }
 @property(nonatomic,strong) NSMutableDictionary *  deviceDetail;
 @property(nonatomic,strong) NSString *  isMQTTselect;

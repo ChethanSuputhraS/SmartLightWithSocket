@@ -273,7 +273,7 @@
     alert.delegate = self;
     [alert showAlertInView:self
                  withTitle:@"Smart Light"
-              withSubtitle:@"All devices has been reset successfully."
+              withSubtitle:@"Devices has been reset successfully."
            withCustomImage:[UIImage imageNamed:@"logo.png"]
        withDoneButtonTitle:nil
                 andButtons:nil];

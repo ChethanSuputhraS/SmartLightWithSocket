@@ -263,8 +263,8 @@
     {
         [APP_DELEGATE startHudProcess:@"Connecting..."];
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
-        if ([APP_DELEGATE isNetworkreachable])
-        {
+//        if ([APP_DELEGATE isNetworkreachable])
+//        {
             isWifiWritePasswordResponded = NO;
             [connectionTimer invalidate];
             connectionTimer = nil;
@@ -280,11 +280,11 @@
             }completion:(^(BOOL finished){
                 [self-> viewTxtfld removeFromSuperview];
             })];
-        }
-        else
-        {
-            [self TostNotification:@"Please connect to the internet."];
-        }
+//        }
+//        else
+//        {
+//            [self TostNotification:@"Please connect to the internet."];
+//        }
     }
 }
 -(void)ConnectWifiTimeout

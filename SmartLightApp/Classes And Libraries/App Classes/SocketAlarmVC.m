@@ -85,7 +85,6 @@
     [self.view addSubview:btnBack];
     
     dictSw = [[NSMutableDictionary alloc] init];
-
     
     dayArr = [[NSMutableArray alloc] init];
     
@@ -938,6 +937,7 @@
         [APP_DELEGATE startHudProcess:@"Saving Alarm..."];
         NSInteger tagValue = [sender tag] - 200;
         int isSourcetoConnectAvailable = 0;
+    
         if (periphPass != nil || periphPass.state == CBPeripheralStateConnected)
         {
             isSourcetoConnectAvailable = 1;
@@ -1142,7 +1142,6 @@
             NSLog(@"MQTT Alram Compleate Data =====>>>>>%@",completeData);
             isDeletedManually = NO;
             
-
 //            [self DeleteAlarmWithIndex:selectedIndex];
             bleAlarmData =  [[NSMutableData alloc] init];
             mqttAlarmData = [completeData mutableCopy];
@@ -1238,7 +1237,6 @@
                 [self AlertViewFCTypeCautionCheck:@"Something went wrong."];
             }
         });
-
     }
     else
     {
