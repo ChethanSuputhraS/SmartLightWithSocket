@@ -44,7 +44,7 @@ DashboardVC * globalDashBoardVC;
 
 NSMutableArray * arrPeripheralsCheck; 
 
-
+NSMutableDictionary * dictCheckDeviceNotified;
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate,CLLocationManagerDelegate,UITabBarControllerDelegate,URLManagerDelegate,CBPeripheralManagerDelegate,CBPeripheralDelegate>
 {
@@ -60,8 +60,7 @@ NSMutableArray * arrPeripheralsCheck;
 }
 
 @property (strong, nonatomic) UIWindow *window;
-
-
+ 
 #pragma mark - Helper Methods
 -(void)goToDashboard;
 -(void)logoutAndGoToLogin;
@@ -111,7 +110,6 @@ NSMutableArray * arrPeripheralsCheck;
 - (NSDictionary *)getCountryCodeDictionary;
 -(NSString*)stringFroHex:(NSString *)hexStr;
 -(void)getPlaceholderText:(UITextField *)txtField  andColor:(UIColor*)color;
-
 
 
 //SOCKET METHOD

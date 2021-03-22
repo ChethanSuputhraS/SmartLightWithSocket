@@ -42,7 +42,7 @@
     BOOL isAlarmSavedSucessfully, isViewDisapeared, isDeletedManually;
     NSTimer * timerForSaveAlarm;
     NSMutableData * mqttAlarmData, * bleAlarmData;
-
+    UIScrollView *scrllView;
 }
 @end
 
@@ -54,16 +54,27 @@
     isViewDisapeared = NO;
     
     globalStatusHeight = 20;
+    int yy = 40;
+    
     if (IS_IPHONE_4 || IS_IPHONE_5)
     {
         textSizes = 14;
     }
+    
     if (IS_IPHONE_X)
     {
         globalStatusHeight = 44;
+        
     }
 
     self.navigationController.navigationBarHidden = true;
+    
+    scrllView = [[UIScrollView alloc]initWithFrame:CGRectMake(0, yy, DEVICE_WIDTH, DEVICE_HEIGHT-yy)];
+    scrllView.contentSize = CGSizeMake(DEVICE_WIDTH, DEVICE_HEIGHT);
+    scrllView.backgroundColor = UIColor.clearColor;
+    [scrllView setScrollEnabled:true];
+//    [self.view addSubview:scrllView];
+    
     
     UIImageView * imgBack = [[UIImageView alloc] init];
     imgBack.contentMode = UIViewContentModeScaleAspectFit;
@@ -127,7 +138,9 @@
 
             [dict setValue:@"NA" forKey:@"OnTimestamp"];
             [dict setValue:@"NA" forKey:@"OffTimestamp"];
-
+            
+        //    [dict setValue:@"1" forKey:@"isExpanded"];
+            
             if ([arrAlarm count] > 0)
             {
                 strONtime = [[arrAlarm objectAtIndex:0] valueForKey:@"On_original"];
@@ -135,7 +148,19 @@
                 
                 [dict setValue:[[arrAlarm objectAtIndex:0] valueForKey:@"OnTimestamp"] forKey:@"OnTimestamp"];
                 [dict setValue:[[arrAlarm objectAtIndex:0] valueForKey:@"OffTimestamp"] forKey:@"OffTimestamp"];
+                
+                if ([[[arrAlarm  objectAtIndex:0] valueForKey:@"day_selected"] isEqualToString:@"0,0,0,0,0,0,0"])
+                {
+                    [dict setValue:@"0" forKey:@"isExpanded"];
+                    [arrTitle setValue:@"0" forKey:@"isExpanded"];
+                }
+                else
+                {
+                    [dict setValue:@"1" forKey:@"isExpanded"];
+                    [arrTitle setValue:@"1" forKey:@"isExpanded"];
+                }
             }
+           
             [dict setValue:strONtime forKey:@"On_original"];
             [dict setValue:strOFFtime forKey:@"Off_original"];
         }
@@ -158,7 +183,19 @@
                 
                 [dict setValue:[[arrAlarm objectAtIndex:0] valueForKey:@"OnTimestamp"] forKey:@"OnTimestamp"];
                 [dict setValue:[[arrAlarm objectAtIndex:0] valueForKey:@"OffTimestamp"] forKey:@"OffTimestamp"];
+                
+                if ([[[arrAlarm  objectAtIndex:0] valueForKey:@"day_selected"] isEqualToString:@"0,0,0,0,0,0,0"])
+                {
+                    [dict setValue:@"0" forKey:@"isExpanded"];
+                    [arrTitle setValue:@"0" forKey:@"isExpanded"];
 
+                }
+                else
+                {
+                    [dict setValue:@"1" forKey:@"isExpanded"];
+                    [arrTitle setValue:@"1" forKey:@"isExpanded"];
+                }
+                
             }
             [dict setValue:strONtime forKey:@"On_original"];
             [dict setValue:strOFFtime forKey:@"Off_original"];
@@ -181,6 +218,7 @@
                 NSInteger alarmId = (intSelectedSwitch * 2) - 1;
                 [dict setObject:[NSString stringWithFormat:@"%ld",(long)alarmId] forKey:@"alarm_id"];
                 [dict setObject:@"0" forKey:[NSString stringWithFormat:@"%d",200 + j]];
+                
                 if ([arrDayStatus count] >j)
                 {
                     [dict setObject:[NSString stringWithFormat:@"%@",[arrDayStatus objectAtIndex:j]] forKey:[NSString stringWithFormat:@"%d",200 + j]];
@@ -202,8 +240,8 @@
         [arrTitle addObject:dict];
     }
     
-    [arrTitle setValue:@"0" forKey:@"isExpanded"]; //css added
-
+//    [arrTitle setValue:@"0" forKey:@"isExpanded"];
+    
     NSLog(@"All Alarams===>>>>%@",arrAlarmDetail);
     
     [super viewDidLoad];
@@ -235,8 +273,6 @@
     lblBack.alpha = 0.5;
     [viewHeader addSubview:lblBack];
     
-
-    
     UILabel * lblLine = [[UILabel alloc] initWithFrame:CGRectMake(0, yy + globalStatusHeight-1, DEVICE_WIDTH,1)];
     [lblLine setBackgroundColor:[UIColor lightGrayColor]];
 //    [viewHeader addSubview:lblLine];
@@ -263,8 +299,7 @@
     [viewHeader addSubview:btnBack];
     
  
-    
-    tblAlarms = [[UITableView alloc]initWithFrame:CGRectMake(0, yy+globalStatusHeight, DEVICE_WIDTH, DEVICE_HEIGHT-headerhHeight-80)];
+    tblAlarms = [[UITableView alloc]initWithFrame:CGRectMake(0, yy+globalStatusHeight, DEVICE_WIDTH, DEVICE_HEIGHT-yy+globalStatusHeight)];
     tblAlarms.backgroundColor = UIColor.clearColor;
     tblAlarms.delegate = self;
     tblAlarms.dataSource = self;
@@ -272,16 +307,16 @@
     tblAlarms.scrollEnabled = false;
     [self.view addSubview:tblAlarms];
     
-    
     if (IS_IPHONE_X)
     {
+        yy = 64;
+        tblAlarms.frame = CGRectMake(0, yy+globalStatusHeight, DEVICE_WIDTH, DEVICE_HEIGHT-yy+globalStatusHeight);
         viewHeader.frame = CGRectMake(0, 0, DEVICE_WIDTH, 88);
         lblTitle.frame = CGRectMake(50, 40, DEVICE_WIDTH-100, 44);
         backImg.frame = CGRectMake(10, 12+44, 12, 20);
         btnBack.frame = CGRectMake(0, 0, 88, 88);
         lblBack.frame = CGRectMake(0, 0, DEVICE_WIDTH, 88);
     }
-    
     [self setMainViewContentFrame:headerhHeight];
 }
 -(void)btnTimerSelect:(NSInteger)Tag
@@ -391,10 +426,8 @@
 //    [self.view addSubview:lblSubHint];
     
     NSDateFormatter * dateFormat = [[NSDateFormatter alloc] init];
-    [dateFormat setDateFormat:@"hh:mm a"];
+    [dateFormat setDateFormat:@"hh:mm aa"];
     NSString * strCurrentTime = [dateFormat stringFromDate:[NSDate date]];
-    
-
     
       strTimeSelected = strCurrentTime;
 //
@@ -501,6 +534,7 @@
     int btnTag = [sender tag];
     int correctValue = 0;
     int arrIndx = 0;
+    
     if (btnTag - 300 >= 0)
     {
         arrIndx = 1;
@@ -575,6 +609,7 @@
         wholeByte = strtoul(byteChars, NULL, 16);
         [data appendBytes:&wholeByte length:1];
     }
+    
     return data;
 }
 -(NSString*)stringFroHex:(NSString *)hexStr
@@ -598,7 +633,6 @@
            withDoneButtonTitle:nil
                     andButtons:nil];
 }
-
 #pragma mark- UITableView Methods
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
@@ -620,7 +654,6 @@
     }
     return 200;
 }
-
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *cellReuseIdentifier = @"cellIdentifier";
@@ -692,7 +725,7 @@
     [cell.btnOFFTimer addTarget:self action:@selector(btnOFFTimerClick:) forControlEvents:UIControlEventTouchUpInside];
     [cell.btnRepeate addTarget:self action:@selector(btnRepeateClick:) forControlEvents:UIControlEventTouchUpInside];
     [cell.btnSave addTarget:self action:@selector(btnSaveClick:) forControlEvents:UIControlEventTouchUpInside];
-    
+
     if (indexPath.row == 0)
     {
         cell.lblONtime.text = [[arrTitle objectAtIndex:indexPath.row] valueForKey:@"On_original"];
@@ -703,6 +736,8 @@
         cell.lblONtime.text = [[arrTitle objectAtIndex:indexPath.row] valueForKey:@"On_original"];;
         cell.lblOFFtime.text = [[arrTitle objectAtIndex:indexPath.row] valueForKey:@"Off_original"];
     }
+    
+    
     
     if (indexPath.row == 0)
     {
@@ -948,7 +983,6 @@
         }
         if (isSourcetoConnectAvailable == 0)
         {
-            [APP_DELEGATE endHudProcess];
             [self AlertViewFCTypeCautionCheck:@"Please connect device with Bluetooth or Configure device with WIFI to set alarm."];
         }
         else
@@ -967,6 +1001,7 @@
                 [self SendAlarmtoDevice:tagValue];
             }
         }
+    [self ShowPicker:NO andView:timeBackView];
  }
 -(void)btnRepeateClick:sender
 {
@@ -985,7 +1020,7 @@
 {
     NSString * strAlarmId = [dictData valueForKey:@"alarm_id"];
     NSString * strsocketID = [dictData valueForKey:@"socket_id"];
-    NSString * strdayValue = [dictData valueForKey:@"totalCount"];
+//    NSString * strdayValue = [dictData valueForKey:@"totalCount"];
     NSString * strOnTime =  [dictData valueForKey:@"OnTimestamp"];
     NSString * strOffTime = [dictData valueForKey:@"OffTimestamp"];
     NSString * stralarmState = @"1";
@@ -1018,12 +1053,12 @@
     
     if ([tmpArry count] > 0)
     {
-        NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_value='%@', OnTimestamp ='%@', OffTimestamp = '%@', On_original = '%@', Off_original = '%@', alarm_state = '%@',  day_selected = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,strONoriginal,strOffOriginal,stralarmState,strDayStatus,strMacaddress,strAlarmId];
+        NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@', OnTimestamp ='%@', OffTimestamp = '%@', On_original = '%@', Off_original = '%@', alarm_state = '%@',  day_selected = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strOnTime,strOffTime,strONoriginal,strOffOriginal,stralarmState,strDayStatus,strMacaddress,strAlarmId];
         [[DataBaseManager dataBaseManager] execute:update];
     }
     else
     {
-        NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_value','OnTimestamp','OffTimestamp','On_original','Off_original','alarm_state','ble_address','day_selected') values('%@','%@','%@','%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,strONoriginal,strOffOriginal,stralarmState,strMacaddress,strDayStatus];
+        NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','OnTimestamp','OffTimestamp','On_original','Off_original','alarm_state','ble_address','day_selected') values('%@','%@','%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strOnTime,strOffTime,strONoriginal,strOffOriginal,stralarmState,strMacaddress,strDayStatus];
         [[DataBaseManager dataBaseManager] executeSw:strInsert];
     }
 }
@@ -1041,13 +1076,23 @@
     {
         strAlarmType = @"Alarm 2";
     }
-    
-    if ([[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"totalCount"] isEqual:@"0"])
+    NSInteger daysCountPrefix = 200;
+    if (selectedIndex == 1)
     {
-//        [self AlertViewFCTypeCautionCheck:[NSString stringWithFormat:@"Please select day for %@.",strAlarmType]];
-//        return;
+        daysCountPrefix = 300;
     }
-    
+    NSInteger daysATotalCount = 0;
+    NSArray * countsArr = [NSArray arrayWithObjects:@"1",@"2",@"4",@"8",@"16",@"32",@"64", nil];
+
+    for (int i = 0; i < 7; i++)
+    {
+        NSString * strKey = [NSString stringWithFormat:@"%ld",daysCountPrefix + i];
+        if ([[[arrTitle objectAtIndex:selectedIndex] valueForKey:strKey] isEqualToString:@"1"])
+        {
+            daysATotalCount = daysATotalCount + [[countsArr objectAtIndex:i] intValue];
+        }
+    }
+   
     NSString * strOnTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"On_original"]];
     NSString * strOffTimestamp = [self checkforValidString:[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"Off_original"]];
     
@@ -1087,9 +1132,7 @@
         NSData * dataSocketID = [[NSData alloc] initWithBytes:&strSktID length:1]; // switch index
         [arrTitle setValue:[NSString stringWithFormat:@"%ld",(long)intSelectedSwitch] forKey:@"socket_id"];
         
-        NSInteger intDayID = 0;
-        intDayID = [[[arrTitle objectAtIndex:selectedIndex] valueForKey:@"totalCount"] intValue];
-//        intDayID = 127;
+        NSInteger intDayID = daysATotalCount;
 
         NSData * dataDaytID = [[NSData alloc] initWithBytes:&intDayID length:1];
         
@@ -1289,34 +1332,10 @@
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #pragma mark :- Extra Methods
 -(void)AlertViewFCTypeCautionCheck:(NSString *)strMsg
 {
+    [APP_DELEGATE endHudProcess];
         FCAlertView *alert = [[FCAlertView alloc] init];
         alert.colorScheme = [UIColor blackColor];
         [alert makeAlertTypeCaution];
@@ -1349,6 +1368,14 @@
     
     return strValid;
 }
-
-
+-(NSString *)getHoursfromString:(NSString *)strTimestamp
+    {
+        double timeStamp = [strTimestamp intValue];
+        NSTimeInterval timeInterval=timeStamp;
+        NSDate *date = [NSDate dateWithTimeIntervalSince1970:timeInterval];
+        NSDateFormatter *dateformatter=[[NSDateFormatter alloc]init];
+        [dateformatter setDateFormat:@"hh mm aa"];
+        NSString *dateString=[dateformatter stringFromDate:date];
+        return dateString;
+    }
 @end

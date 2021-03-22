@@ -419,21 +419,21 @@
 }
 -(void)setPeripheraltoCheckKeyUsage:(CBPeripheral *)tmpPerphrl
 {
-    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:tmpPerphrl.identifier])
+    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",tmpPerphrl.identifier]])
     {
-        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:tmpPerphrl.identifier];
+        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",tmpPerphrl.identifier]];
         if (foundIndex != NSNotFound)
         {
             if ([arrPeripheralsCheck count] > foundIndex)
             {
-                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl.identifier,@"identifier", nil];
+                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", [NSString stringWithFormat:@"%@",tmpPerphrl.identifier],@"identifier", nil];
                 [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
             }
         }
     }
     else
     {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl.identifier,@"identifier", nil];
+        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", [NSString stringWithFormat:@"%@",tmpPerphrl.identifier],@"identifier", nil];
         [arrPeripheralsCheck addObject:dict];
     }
 }
@@ -758,6 +758,7 @@
 }
 -(void)btnBackClick
 {
+//    NSLog(@"terwe=%@",[[NSArray new] objectAtIndex:3]);
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidConnectNotificationSocket" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidDisConnectNotificationSocket" object:nil];
     [self.navigationController popViewControllerAnimated:true];
@@ -789,34 +790,112 @@
     NSString *strServerUrl = @"http://vithamastech.com/smartlight/api/check_user_details";
     [manager urlCall:strServerUrl withParameters:dict];
 }
-#pragma mark- Recieve Data from BLE
+-(NSString *)getSelectedDaysforDayByteValue:(NSString *)strDayValue
+{
+    NSInteger intMsg = [strDayValue intValue];
+    NSData * data = [[NSData alloc] initWithBytes:&intMsg length:1];
+    const char *byte = [data bytes];
+    unsigned int length = [data length];
+    NSString * strBits;
 
+    for (int i=0; i<length; i++)
+    {
+        char n = byte[i];
+        char buffer[9];
+        buffer[8] = 0; //for null
+        int j = 8;
+        while(j > 0)
+        {
+            if(n & 0x01)
+            {
+                buffer[--j] = '1';
+            } else
+        {
+            buffer[--j] = '0';
+        }
+        n >>= 1;
+        }
+        strBits = [NSString stringWithFormat:@"%s",buffer];
+//        NSLog(@"opopoppopop=%@",strBits);
+    }
+    NSMutableArray * arrSelected = [[NSMutableArray alloc] init];
+
+    for (int i = 0; i < strBits.length; i++)
+    {
+        NSString * strStatus = [strBits substringWithRange:NSMakeRange((i*1), 1)];
+//        NSLog(@"KAKPKPKPK=%@",[strBits substringWithRange:NSMakeRange((i*1), 1)]);
+        if ([strStatus isEqualToString:@"1"])
+        {
+            [arrSelected addObject:@"1"];
+        }
+        else
+        {
+            [arrSelected addObject:@"0"];
+        }
+    }
+    NSString * strDaySelected = [arrSelected componentsJoinedByString:@","];
+    return strDaySelected;
+}
+#pragma mark- Recieve Data from BLE
 -(void)AlarmListStoredinDevice:(NSMutableDictionary *)arrDictDetails
 {
     [arrAlarmIdsofDevices addObject:arrDictDetails];
     
-    if ([arrAlarmIdsofDevices count] >= 12)
+    if ([arrAlarmIdsofDevices count] > 0)
     {
         dispatch_async(dispatch_get_main_queue(), ^(void)
         {
-            NSMutableArray * arrdata = [[NSMutableArray alloc] init];
-            NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table  where ble_address = '%@' ",strMacAddress];
-            [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
-            
             for (int i = 0; i < [arrAlarmIdsofDevices count]; i++)
             {
+                NSString * strOnTime = [self checkforValidString:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"onTime"]];
+                NSString * strOffTime = [self checkforValidString:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"offTime"]];
+                
+                if ([strOnTime isEqualToString:@"ffffffff"] && [strOffTime isEqualToString:@"ffffffff"])
+                {
+                    strOnTime = @"NA";
+                    strOffTime = @"NA";
+                }
+                else if([strOnTime isEqualToString:@"ffffffff"] || [strOffTime isEqualToString:@"ffffffff"])
+                {
+                    if ([strOnTime isEqualToString:@"ffffffff"])
+                    {
+                        strOnTime = @"NA";
+                    }
+                    if([strOffTime isEqualToString:@"ffffffff"])
+                    {
+                        strOffTime = @"NA";
+                    }
+                }
+                
+                NSString * strOnOriginal = @"NA";
+                NSString * strOffOriginal= @"NA";
+                
+                if (![strOnTime isEqualToString:@"NA"])
+                {
+                    strOnTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"onTime"]];
+                    strOnOriginal = [self getHoursfromString:strOnTime];
+                }
+                if (![strOffTime isEqualToString:@"NA"])
+                {
+                    strOffTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"offTime"]];
+                    strOffOriginal = [self getHoursfromString:strOffTime];
+                }
+                
                 NSString * strAlarmId = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"]];
                 NSString * strsocketID = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"socketID"];
-                NSString * strdayValue = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"dayValue"];
-                NSString * strOnTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"onTime"]];
-                NSString * strOffTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"offTime"]];
+                NSString * strdayValue = [self getSelectedDaysforDayByteValue:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"dayValue"]];
                 NSString * stralarmState = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alarmState"];
+
+                NSMutableArray * arrdata = [[NSMutableArray alloc] init];
+                NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table  where ble_address = '%@' and alarm_id = '%@'",strMacAddress,strAlarmId];
+                [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
+
                 
                 if ([arrdata count] == 0)
                 {
                     if (![[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"] isEqual:@"0"])
                     {
-                        NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_value','OnTimestamp','OffTimestamp','alarm_state','ble_address') values('%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress];
+                        NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_value','OnTimestamp','OffTimestamp','alarm_state','ble_address','On_original','Off_original') values('%@','%@','%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress,strOnOriginal,strOffOriginal];
                         [[DataBaseManager dataBaseManager] execute:strInsert];
                     }
                 }
@@ -824,13 +903,23 @@
                 {
                     if (![[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"] isEqual:@"0"])
                     {
-                        NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_value='%@', onTimestamp ='%@', offTimestamp = '%@', alarm_state = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress,[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"]];
+                        NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_value='%@', onTimestamp ='%@', offTimestamp = '%@', alarm_state = '%@', On_original = '%@', Off_original = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strOnOriginal,strOffOriginal,strMacAddress,[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"]];
                         [[DataBaseManager dataBaseManager] execute:update];
                     }
                 }
             }
         });
     }
+}
+-(NSString *)getHoursfromString:(NSString *)strTimestamp
+{
+    double timeStamp = [strTimestamp intValue];
+    NSTimeInterval timeInterval=timeStamp;
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:timeInterval];
+    NSDateFormatter *dateformatter=[[NSDateFormatter alloc]init];
+    [dateformatter setDateFormat:@"hh:mm aa"];
+    NSString *dateString=[dateformatter stringFromDate:date];
+    return dateString;
 }
 -(void)ReceiveAllSoketONOFFState:(NSString *)strState
 {

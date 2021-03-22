@@ -92,7 +92,7 @@
     
     UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(50, globalStatusHeight, DEVICE_WIDTH-100, yy)];
     [lblTitle setBackgroundColor:[UIColor clearColor]];
-    [lblTitle setText:@"Wi-Fi setting"];
+    [lblTitle setText:@"Wi-Fi settings"];
     [lblTitle setTextAlignment:NSTextAlignmentCenter];
     [lblTitle setFont:[UIFont fontWithName:CGRegular size:textSizes+2]];
     [lblTitle setTextColor:[UIColor whiteColor]];

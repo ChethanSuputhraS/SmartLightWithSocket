@@ -265,21 +265,21 @@
                 NSRange rangeCheck = NSMakeRange(18, 4);
                 NSString * strOpCodeCheck = [strManufacture substringWithRange:rangeCheck];
                 
-                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:p.identifier])
+                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",p.identifier]])
                 {
-                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:p.identifier];
+                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",p.identifier]];
                     if (foundIndex != NSNotFound)
                     {
                         if ([arrPeripheralsCheck count] > foundIndex)
                         {
-                            NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
+                            NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", [NSString stringWithFormat:@"%@",p.identifier],@"identifier", nil];
                             [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
                         }
                     }
                 }
                 else
                 {
-                    NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
+                    NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", [NSString stringWithFormat:@"%@",p.identifier],@"identifier", nil];
                     [arrPeripheralsCheck addObject:dict];
                 }
             }

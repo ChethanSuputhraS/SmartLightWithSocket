@@ -84,6 +84,8 @@ typedef signed long                     SInt32;
 }
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    dictCheckDeviceNotified = [[NSMutableDictionary alloc] init];
+    
     NSDate * datetime = [NSDate date];
     NSTimeInterval  timeinterval = floor(datetime.timeIntervalSinceReferenceDate / 60) * 60;
     datetime = [NSDate dateWithTimeIntervalSinceReferenceDate:timeinterval];

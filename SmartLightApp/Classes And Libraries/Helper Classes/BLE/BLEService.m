@@ -1367,9 +1367,10 @@ static BLEService    *sharedInstance    = nil;
                     NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
                     if ([strOpcode isEqualToString:@"01"] || [strOpcode isEqualToString:@"02"])
                     {
-                        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+//                        arrSocketDevices
+                        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
                         {
-                            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+                            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
                             if (foundIndex != NSNotFound)
                             {
                                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -1460,9 +1461,9 @@ static BLEService    *sharedInstance    = nil;
                         {
                             if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
                             {
-                                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+                                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
                                 {
-                                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+                                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
                                     if (foundIndex != NSNotFound)
                                     {
                                         if ([arrPeripheralsCheck count] > foundIndex)
@@ -1639,7 +1640,7 @@ static BLEService    *sharedInstance    = nil;
                                             
                                     NSString * strALID = [NSString stringWithFormat:@"%d",[[strDecrypted substringWithRange:NSMakeRange(0, 2)] intValue]];
                                     NSString * strSocketID = [strDecrypted substringWithRange:NSMakeRange(2, 2)];
-                                    NSString * strDayVal = [strDecrypted substringWithRange:NSMakeRange(4, 2)];
+                                    NSString * strDayVal = [self stringFroHex:[strDecrypted substringWithRange:NSMakeRange(4, 2)]];
                                     NSString * strONTime = [strDecrypted substringWithRange:NSMakeRange(6, 8)];
                                     NSString * strOffTime = [strDecrypted substringWithRange:NSMakeRange(14, 8)];
                                     NSString * strAlarmSate = [strDecrypted substringWithRange:NSMakeRange(22, 2)];
@@ -1835,9 +1836,9 @@ static BLEService    *sharedInstance    = nil;
     dispatch_async(dispatch_get_main_queue(), ^(void){
         
         NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
-        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
         {
-            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
             if (foundIndex != NSNotFound)
             {
                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -1908,9 +1909,9 @@ static BLEService    *sharedInstance    = nil;
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
         NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
-        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
         {
-            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
             if (foundIndex != NSNotFound)
             {
                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -1970,9 +1971,9 @@ static BLEService    *sharedInstance    = nil;
     dispatch_async(dispatch_get_main_queue(), ^(void){
         
         NSString * strEncryptKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
-        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
         {
-            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
             if (foundIndex != NSNotFound)
             {
                 if ([arrPeripheralsCheck count] > foundIndex)

@@ -510,21 +510,21 @@
                     NSRange rangeCheck = NSMakeRange(18, 4);
                     NSString * strOpCodeCheck = [strManufacture substringWithRange:rangeCheck];
                     
-                    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:p.identifier])
+                    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",p.identifier]])
                     {
-                        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:p.identifier];
+                        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",p.identifier]];
                         if (foundIndex != NSNotFound)
                         {
                             if ([arrPeripheralsCheck count] > foundIndex)
                             {
-                                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
+                                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", [NSString stringWithFormat:@"%@",p.identifier],@"identifier", nil];
                                 [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
                             }
                         }
                     }
                     else
                     {
-                        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
+                        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", [NSString stringWithFormat:@"%@",p.identifier],@"identifier", nil];
                         [arrPeripheralsCheck addObject:dict];
                     }
                 }
@@ -542,9 +542,9 @@
                 NSString * strManudata = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"Manufac"];
                 NSString * strIsAdded = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"isAdded"];
                 strCurrentSelectedAddress = strAddress;
-                if ([[arrConnectedSockets valueForKey:@"identifier"] containsObject:p.identifier])
+                if ([[arrConnectedSockets valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",p.identifier]])
                 {
-                    NSInteger foundIndex = [[arrConnectedSockets valueForKey:@"identifier"] indexOfObject:p.identifier];
+                    NSInteger foundIndex = [[arrConnectedSockets valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",p.identifier]];
                     if (foundIndex != NSNotFound)
                     {
                         if ([arrConnectedSockets count] > foundIndex)
@@ -556,7 +556,7 @@
                 }
                 else
                 {
-                    NSDictionary * dict  = [[NSDictionary alloc] initWithObjectsAndKeys:p,@"peripheral",strAddress,@"ble_address",strManudata,@"Manufac", strIsAdded,@"isAdded",p.identifier,@"identifier",nil];
+                    NSDictionary * dict  = [[NSDictionary alloc] initWithObjectsAndKeys:p,@"peripheral",strAddress,@"ble_address",strManudata,@"Manufac", strIsAdded,@"isAdded",[NSString stringWithFormat:@"%@",p.identifier],@"identifier",nil];
                     [arrConnectedSockets addObject:dict];
                 }
             }
@@ -922,7 +922,7 @@
         alert.tag = 333;
         [alert showAlertInView:self
                      withTitle:@"Smart Light"
-                  withSubtitle:@"Device can controleed over Bluetooth. You can configure device over Wi-Fi by going to device setting later."
+                  withSubtitle:@"Device can  be controlled over Bluetooth. You can configure Wi-Fi in the device settings later."
                withCustomImage:[UIImage imageNamed:@"logo.png"]
            withDoneButtonTitle:nil
                     andButtons:nil];
@@ -1017,7 +1017,7 @@
         {
             if ([tmpArr count] > foudIndex)
             {
-                NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
+                NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",[NSString stringWithFormat:@"%@",classPeripheral.identifier]];
                 NSString * strName = [[tmpArr  objectAtIndex:foudIndex]valueForKey:@"name"];
                 NSString * strAddress = [[[tmpArr  objectAtIndex:foudIndex]valueForKey:@"ble_address"] uppercaseString];
                 
@@ -1049,7 +1049,7 @@
     }
     else
     {
-        NSString * requestStr =[NSString stringWithFormat:@"insert into 'Device_Table'('device_id','hex_device_id','real_name','device_name','ble_address','device_type','device_type_name','switch_status','user_id','is_favourite','is_sync',status, 'identifier') values('%@','%@','%@',\"%@\",\"%@\",'%@','%@','Yes','%@','2','0','1', \"%@\")",newDeviceID,strHexDeviceId,@"NA",strDeviceNames,strMckAddress  ,strType,strDeviceType,CURRENT_USER_ID, classPeripheral.identifier];
+        NSString * requestStr =[NSString stringWithFormat:@"insert into 'Device_Table'('device_id','hex_device_id','real_name','device_name','ble_address','device_type','device_type_name','switch_status','user_id','is_favourite','is_sync',status, 'identifier') values('%@','%@','%@',\"%@\",\"%@\",'%@','%@','Yes','%@','2','0','1', \"%@\")",newDeviceID,strHexDeviceId,@"NA",strDeviceNames,strMckAddress  ,strType,strDeviceType,CURRENT_USER_ID, [NSString stringWithFormat:@"%@",classPeripheral.identifier]];
         
         int savedID = [[DataBaseManager dataBaseManager] executeSw:requestStr];
         strSavedTableID = [NSString stringWithFormat:@"%d",savedID];

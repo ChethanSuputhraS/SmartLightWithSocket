@@ -171,5 +171,7 @@
 -(void)ConnectDevicePeripheralforSocket:(CBPeripheral *)peripheral;
 -(NSArray *)getLastDiscoveredSocketDevices:(NSString *)strIdentifier;
 
+-(void)discoverServicesforSocketsConnected:(CBPeripheral *)peripheral;
+
 @property (nonatomic)   float batteryLevel;
 @end

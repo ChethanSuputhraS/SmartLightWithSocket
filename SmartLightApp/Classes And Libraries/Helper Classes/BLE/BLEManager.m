@@ -1075,6 +1075,7 @@ static BLEManager    *sharedManager    = nil;
         [[BLEService sharedInstance] EnableNotificationsForCommandSKT:peripheral withType:YES];
         [[BLEService sharedInstance] EnableNotificationsForDATASKT:peripheral withType:YES];
         NSLog(@"Enabled socket Notication successfully----->");
+        [dictCheckDeviceNotified setValue:@"1" forKey:[NSString stringWithFormat:@"%@",peripheral.identifier]];
         
 //        arrPeripheralsCheck
         [[BLEService sharedInstance] GetAuthcodeforSocket:peripheral withValue:@"1"];//Ask for Authentication Value
@@ -1422,7 +1423,46 @@ static BLEManager    *sharedManager    = nil;
 - (void)batterySignalValueUpdated:(CBPeripheral *)device withBattLevel:(NSString *)batLevel {
     
 }
+-(void)discoverServicesforSocketsConnected:(CBPeripheral *)peripheral;
+{
+    NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+    if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+    {
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:strCurrentIdentifier forKey:@"identifier"];
+        [dict setValue:peripheral forKey:@"peripheral"];
+        [arrSocketDevices addObject:dict];
+    }
+    else
+    {
+        if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+        {
+            NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+            if (foudIndex != NSNotFound)
+            {
+                if ([arrSocketDevices count] > foudIndex)
+                {
+                    NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                    [dataDict setValue:peripheral forKey:@"peripheral"];
+                    [dataDict setValue:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
+                    [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                }
+            }
+        }
+    }
 
+    if (peripheral.services)
+    {
+        NSLog(@"Peripheral disciver all services------>");
+        [self peripheral:peripheral didDiscoverServices:nil];
+    }
+    else
+    {
+        NSLog(@"Peripheral disciver one services------>");
+        [peripheral discoverServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]];
+    }
+
+}
 @end
 //    kCBAdvDataManufacturerData = <0a00640b 00009059 22590161 00007f0c 09fb0069 00>;
 //0a00 0002 32ac 6057 26

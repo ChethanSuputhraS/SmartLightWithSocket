@@ -2398,32 +2398,46 @@
 
                 if(![strIdentifier isEqualToString:@"NA"])
                 {
+                    [self setPeripheraltoCheckKeyUsage:strIdentifier];
+
                     NSArray * arrDevie = [[BLEManager sharedManager] getLastDiscoveredSocketDevices:strIdentifier];
                     if ([arrDevie count] > 0)
                     {
                          p = [arrDevie objectAtIndex:0];
                     }
                 }
+                
                 if (p != nil)
                 {
-                    NSString * strPeripheralIdentifier = [NSString stringWithFormat:@"%@",p.identifier];
-                    if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strPeripheralIdentifier])
+
+                    if (![[dictCheckDeviceNotified allKeys] containsObject:strIdentifier])
                     {
-                        [[sectionArr objectAtIndex:i] setObject:p forKey:@"peripheral"];
-                        [arrSocketDevices addObject:[sectionArr objectAtIndex:i]];
+                        if (p.state == CBPeripheralStateConnected)
+                        {
+                            [[BLEManager sharedManager] discoverServicesforSocketsConnected:p];
+                        }
                     }
                     else
                     {
-                        NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strBleAddress];
-                        if (foudIndex != NSNotFound)
+                        NSString * strPeripheralIdentifier = [NSString stringWithFormat:@"%@",p.identifier];
+                        if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strPeripheralIdentifier])
                         {
-                            if ([arrSocketDevices count] > foudIndex)
+                            [[sectionArr objectAtIndex:i] setObject:p forKey:@"peripheral"];
+                            [arrSocketDevices addObject:[sectionArr objectAtIndex:i]];
+                        }
+                        else
+                        {
+                            NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strBleAddress];
+                            if (foudIndex != NSNotFound)
                             {
-                                NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
-                                [dataDict setValue:p forKey:@"peripheral"];
-                                [dataDict setValue:strBleAddress forKey:@"ble_address"];
-                                [dataDict setValue:[NSString stringWithFormat:@"%@",p.identifier] forKey:@"identifier"];
-                                [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                                if ([arrSocketDevices count] > foudIndex)
+                                {
+                                    NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                                    [dataDict setValue:p forKey:@"peripheral"];
+                                    [dataDict setValue:strBleAddress forKey:@"ble_address"];
+                                    [dataDict setValue:[NSString stringWithFormat:@"%@",p.identifier] forKey:@"identifier"];
+                                    [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                                }
                             }
                         }
                     }
@@ -3635,6 +3649,7 @@ alert.colorScheme = [UIColor blackColor];
                 CBPeripheral * p = [[arrSocketDevices objectAtIndex:i] objectForKey:@"peripheral"];
                 if (p.state == CBPeripheralStateConnected)
                 {
+
                     bool isNotified = NO;
                     if ([[[arrSocketDevices objectAtIndex:i] allKeys] containsObject:@"IsNotified"])
                     {
@@ -3655,11 +3670,9 @@ alert.colorScheme = [UIColor blackColor];
                         [[BLEService sharedInstance] GetAuthcodeforSocket:p withValue:@"1"];//Ask for Authentication Value
                         [[arrSocketDevices objectAtIndex:i] setValue:@"1" forKey:@"IsNotified"];
                     }
-
                 }
                 else
                 {
-                    [self setPeripheraltoCheckKeyUsage:p];
                     if (p.state == CBPeripheralStateDisconnected)
                     {
                        if (![currentScreen isEqualToString: @"AddSocket"])
@@ -3693,22 +3706,33 @@ alert.colorScheme = [UIColor blackColor];
 
                         if (p != nil)
                         {
-                            if (![[arrSocketDevices valueForKey:@"ble_address"] containsObject:strBleAddress])
+
+                            if (![[dictCheckDeviceNotified allKeys] containsObject:strIdentifier])
                             {
-                                [[sectionArr objectAtIndex:i] setObject:p forKey:@"peripheral"];
-                                [arrSocketDevices addObject:[sectionArr objectAtIndex:i]];
+                                if (p.state == CBPeripheralStateConnected)
+                                {
+                                    [[BLEManager sharedManager] discoverServicesforSocketsConnected:p];
+                                }
                             }
                             else
                             {
-                                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strBleAddress];
-                                if (foudIndex != NSNotFound)
+                                if (![[arrSocketDevices valueForKey:@"ble_address"] containsObject:strBleAddress])
                                 {
-                                    if ([arrSocketDevices count] > foudIndex)
+                                    [[sectionArr objectAtIndex:i] setObject:p forKey:@"peripheral"];
+                                    [arrSocketDevices addObject:[sectionArr objectAtIndex:i]];
+                                }
+                                else
+                                {
+                                    NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strBleAddress];
+                                    if (foudIndex != NSNotFound)
                                     {
-                                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
-                                        [dataDict setValue:p forKey:@"peripheral"];
-                                        [dataDict setValue:[NSString stringWithFormat:@"%@",p.identifier] forKey:@"identifier"];
-                                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                                        if ([arrSocketDevices count] > foudIndex)
+                                        {
+                                            NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                                            [dataDict setValue:p forKey:@"peripheral"];
+                                            [dataDict setValue:[NSString stringWithFormat:@"%@",p.identifier] forKey:@"identifier"];
+                                            [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                                        }
                                     }
                                 }
                             }
@@ -3718,59 +3742,25 @@ alert.colorScheme = [UIColor blackColor];
             }
         }
     }
-//    else
-//    {
-//        for (int i=0; i<[arrCnt count]; i++)
-//        {
-//            CBPeripheral * tmpPerphrl = [[arrCnt objectAtIndex:i] objectForKey:@"peripheral"];
-//
-//            if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:[[arrCnt objectAtIndex:i] valueForKey:@"ble_address"]])
-//            {
-//                NSInteger idxAddress = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:[[arrCnt objectAtIndex:i] valueForKey:@"ble_address"]];
-//                if (idxAddress != NSNotFound)
-//                {
-//                    if (idxAddress < [arrSocketDevices count])
-//                    {
-//                        [[arrSocketDevices objectAtIndex:idxAddress]setObject:tmpPerphrl forKey:@"peripheral"];
-//                        [[arrSocketDevices objectAtIndex:idxAddress]setValue:[NSString stringWithFormat:@"%@",tmpPerphrl.identifier] forKey:@"identifier"];
-//                        if (tmpPerphrl.state == CBPeripheralStateConnected)
-//                        {
-//                        }
-//                        else
-//                        {
-//                            [self setPeripheraltoCheckKeyUsage:tmpPerphrl];
-//                            if (tmpPerphrl.state == CBPeripheralStateDisconnected)
-//                            {
-////                                [[BLEManager sharedManager] connectDevice:tmpPerphrl];
-//                                if (![currentScreen isEqualToString: @"AddSocket"])
-//                                {
-//                                    [[BLEManager sharedManager] ConnectDevicePeripheralforSocket:tmpPerphrl];
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
+
 }
--(void)setPeripheraltoCheckKeyUsage:(CBPeripheral *)tmpPerphrl
+-(void)setPeripheraltoCheckKeyUsage:(NSString *)tmpPerphrl
 {
-    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:tmpPerphrl.identifier])
+    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:tmpPerphrl])
     {
-        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:tmpPerphrl.identifier];
+        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:tmpPerphrl];
         if (foundIndex != NSNotFound)
         {
             if ([arrPeripheralsCheck count] > foundIndex)
             {
-                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl.identifier,@"identifier", nil];
+                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl,@"identifier", nil];
                 [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
             }
         }
     }
     else
     {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl.identifier,@"identifier", nil];
+        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl,@"identifier", nil];
         [arrPeripheralsCheck addObject:dict];
     }
 }
