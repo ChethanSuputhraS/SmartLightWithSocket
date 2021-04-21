@@ -41,13 +41,6 @@
         lblBack.layer.borderColor = [UIColor whiteColor].CGColor;
         [self.contentView addSubview:lblBack];
         
-        lblLine = [[UILabel alloc] initWithFrame:CGRectMake(10, 240,DEVICE_WIDTH-20,.6)];
-        lblLine.backgroundColor = [UIColor whiteColor];
-//        lblLine.alpha = 0.7;
-        lblLine.layer.cornerRadius = 10;
-        lblLine.layer.masksToBounds = YES;
-        lblLine.layer.borderColor = [UIColor whiteColor].CGColor;
-//        [self.contentView addSubview:lblLine];
         
         lblLineParall = [[UILabel alloc] initWithFrame:CGRectMake(DEVICE_WIDTH/2, 130,.8,60)];
         lblLineParall.backgroundColor = [UIColor whiteColor];
@@ -91,7 +84,8 @@
         lblON.backgroundColor = [UIColor clearColor];
         lblON.textAlignment = NSTextAlignmentCenter;
         lblON.layer.masksToBounds = YES;
-        lblON.textColor = [UIColor whiteColor];
+        lblON.textColor = [UIColor lightGrayColor];
+        lblON.font = [UIFont fontWithName:CGRegular size:textSizes - 2];
         lblON.text = @"ON Time";
 
         [self.contentView addSubview:lblON];
@@ -100,8 +94,9 @@
         lblOFF.backgroundColor = [UIColor clearColor];
         lblOFF.textAlignment = NSTextAlignmentCenter;
         lblOFF.layer.masksToBounds = YES;
-        lblOFF.textColor = [UIColor whiteColor];
+        lblOFF.textColor = [UIColor lightGrayColor];
         lblOFF.text = @"OFF Time";
+        lblOFF.font = [UIFont fontWithName:CGRegular size:textSizes - 2];
         [self.contentView addSubview:lblOFF];
         
         yy = yy +30;
@@ -150,48 +145,7 @@
         btnSave.layer.borderColor = UIColor.lightGrayColor.CGColor;
         btnSave.layer.borderWidth = 0.6;
         [self.contentView addSubview:btnSave];
-        
-        btnDay = [[UIButton alloc] initWithFrame:CGRectMake(15, 50, btnWidth-10, 50)];
-        [btnDay setBackgroundColor:[UIColor clearColor]];
-        btnDay.backgroundColor = UIColor.clearColor;
-        btnDay.titleLabel.numberOfLines = 0;
-        btnDay.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes];
-        btnDay.titleLabel.textAlignment = NSTextAlignmentLeft;
-        [btnDay setTitle:@"Select \n Day" forState:UIControlStateNormal];
-        btnDay.layer.borderWidth = 0.6;
-        btnDay.layer.borderColor = UIColor.lightGrayColor.CGColor;
-        btnDay.layer.cornerRadius = 6;
-//        [self.contentView addSubview:btnDay];
-        
-        btnon = [[UIButton alloc] initWithFrame:CGRectMake(aa+10, 10, btnWidth, 50)];
-        [btnon setBackgroundColor:[UIColor clearColor]];
-        btnon.backgroundColor = UIColor.clearColor;
-        btnon.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+2];
-        btnon.titleLabel.textAlignment = NSTextAlignmentLeft;
-        [btnon setTitle:@" ON" forState:UIControlStateNormal];
-        [btnon setImage:[UIImage imageNamed:@"RadioON.png"] forState:UIControlStateNormal];
-        btnon.contentVerticalAlignment = UIControlContentHorizontalAlignmentLeft;
-//        [self.contentView addSubview:btnon];
-        
-        btnoff = [[UIButton alloc] initWithFrame:CGRectMake(btnWidth*2, 10, btnWidth, 50)];
-        [btnoff setBackgroundColor:[UIColor clearColor]];
-        btnoff.backgroundColor = UIColor.clearColor;
-        btnoff.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+2];
-        btnon.titleLabel.textAlignment = NSTextAlignmentRight;
-        [btnoff setTitle:@" OFF" forState:UIControlStateNormal];
-        [btnoff setImage:[UIImage imageNamed:@"RadioOff.png"] forState:UIControlStateNormal];
-        btnoff.contentVerticalAlignment = UIControlContentHorizontalAlignmentLeft;
-//        [self.contentView addSubview:btnoff];
-        
-//        lbltime = [[UILabel alloc] initWithFrame:CGRectMake(0, 130,DEVICE_WIDTH/2-5, 50)];
-//        lbltime.numberOfLines = 0;
-//        [lbltime setBackgroundColor:[UIColor clearColor]];
-//        lbltime.textColor = UIColor.whiteColor;
-//        [lbltime setFont:[UIFont fontWithName:CGRegular size:textSizes+17]];
-//        [lbltime setTextAlignment:NSTextAlignmentCenter];
-////        lbltime.text = @"Device name";
-//        [self.contentView addSubview:lbltime];
-        
+                
   
         lblWifiSetup = [[UILabel alloc] initWithFrame:CGRectMake(0, 10,btnWidth,30)];
         lblWifiSetup.backgroundColor = [UIColor clearColor];

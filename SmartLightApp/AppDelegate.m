@@ -84,6 +84,10 @@ typedef signed long                     SInt32;
 }
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    
+  
+    dictCheckDeviceNotified = [[NSMutableDictionary alloc] init];
+    
     NSDate * datetime = [NSDate date];
     NSTimeInterval  timeinterval = floor(datetime.timeIntervalSinceReferenceDate / 60) * 60;
     datetime = [NSDate dateWithTimeIntervalSinceReferenceDate:timeinterval];
@@ -92,7 +96,8 @@ typedef signed long                     SInt32;
 //    long long mills = (long long)([[NSDate date]timeIntervalSince1970]);
 //    NSData *dates = [NSData dataWithBytes:&mills length:4];
 
-    NSLog(@"0000000999999999999==%@",datetime);
+
+//    NSLog(@"0000000999999999999==%@",datetime);
 
 //    NSArray * r = @[buf,buf];
     
@@ -186,8 +191,72 @@ typedef signed long                     SInt32;
         }
     }];
     
-//    -(void)WriteWifiPassword:(NSString *)strPassword
-    [[BLEService sharedInstance] WriteWifiPassword:@"#Newbusiness$"];
+    
+    // css add this for youtube link
+    if ([[self checkforValidString:[[NSUserDefaults standardUserDefaults] valueForKey:@"isFirst"]] isEqualToString:@"NA"])
+    {
+        [UIApplication sharedApplication].applicationIconBadgeNumber = 0;
+        [[NSUserDefaults standardUserDefaults] setValue:@"No" forKey:@"isFirst"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        
+        NSMutableArray * arrTitle = [[NSMutableArray alloc] initWithObjects:@"How to use different scenes",@"Voice control",@"Colour setting",@"Manual connection",@"How to Factory Reset a Device",@"User registration", nil];
+        NSMutableArray * arrvedioID = [[NSMutableArray alloc] initWithObjects:@"-H08l5mwP5E",@"3wx-g3nBA4I",@"AMsA20iaMPY",@"pz1jHVtdquw",@"xLlaBD-7PlM",@"w4ezy3UTCvs", nil];
+
+        for (int i =0 ; i<[arrTitle count] ; i++)
+        {
+            NSString * strTitle  = [arrTitle objectAtIndex:i];
+            NSString * strVid = [arrvedioID objectAtIndex:i];
+
+            NSString * requestStr =  [NSString stringWithFormat:@"insert into 'youtubeLink_Table' ('title','video_id') values(\"%@\",\"%@\")",strTitle,strVid];
+            [[DataBaseManager dataBaseManager] executeSw:requestStr];
+        }
+    }
+        
+     /*   {
+            "created_date" = "2021-04-05 12:28:37";
+            id = 1;
+            title = "How to use different scenes";
+            "updated_date" = "";
+            "video_id" = "-H08l5mwP5E";
+        },
+        {
+            "created_date" = "2021-04-05 12:28:37";
+            id = 2;
+            title = "Voice control";
+            "updated_date" = "";
+            "video_id" = "3wx-g3nBA4I";
+        },
+        {
+            "created_date" = "2021-04-05 12:28:37";
+            id = 3;
+            title = "Colour setting";
+            "updated_date" = "";
+            "video_id" = AMsA20iaMPY;
+        },
+        {
+            "created_date" = "2021-04-05 12:28:37";
+            id = 4;
+            title = "Manual connection";
+            "updated_date" = "";
+            "video_id" = pz1jHVtdquw;
+        },
+        {
+            "created_date" = "2021-04-05 12:28:37";
+            id = 5;
+            title = "How to Factory Reset a Device";
+            "updated_date" = "";
+            "video_id" = "xLlaBD-7PlM";
+        },
+        {
+            "created_date" = "2021-04-05 12:28:37";
+            id = 6;
+            title = "User registration";
+            "updated_date" = "";
+            "video_id" = w4ezy3UTCvs;
+        }
+        )
+        
+    }*/
 
     return YES;
 }
@@ -259,6 +328,10 @@ typedef signed long                     SInt32;
     [[DataBaseManager dataBaseManager] AddSocketStatusColumntoDeviceTable];
     [[DataBaseManager dataBaseManager] AddWifi_ConfigureColumntoDeviceTable];
     [[DataBaseManager dataBaseManager] Create_Socket_AlarmDetail_Table];
+    [[DataBaseManager dataBaseManager] Create_Socket_NameAndImg_Table];
+    [[DataBaseManager dataBaseManager] Create_YoutubeLink_Table];
+
+
     [[NSUserDefaults standardUserDefaults] setValue:@"Yes" forKey:@"FreshDatabased"];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -720,10 +793,6 @@ typedef signed long                     SInt32;
     NSString * currentdate = [df stringFromDate:date];
     return currentdate;
 }
-
-
-
-
 -(BOOL)isNetworkreachable
 {
     Reachability *networkReachability = [[Reachability alloc] init];
@@ -737,7 +806,6 @@ typedef signed long                     SInt32;
         return YES;
     }
 }
-
 #pragma mark Hud Method
 -(void)startHudProcess:(NSString *)text
 {
@@ -746,7 +814,6 @@ typedef signed long                     SInt32;
     HUD.labelText = text;
     [self.window addSubview:HUD];
     [HUD show:YES];
-    
 }
 -(void)endHudProcess
 {
@@ -2758,6 +2825,28 @@ typedef signed long                     SInt32;
 
     NSData *hmac2 = [self hmacForHexKey:hexKey andStringData:data];
     NSLog(@"hmacForHexKey: %@", hmac2);
+}
+-(NSString *)checkforValidString:(NSString *)strRequest
+{
+    NSString * strValid;
+    if (![strRequest isEqual:[NSNull null]])
+    {
+        if (strRequest != nil && strRequest != NULL && ![strRequest isEqualToString:@""])
+        {
+            strValid = strRequest;
+        }
+        else
+        {
+            strValid = @"NA";
+        }
+    }
+    else
+    {
+        strValid = @"NA";
+    }
+    strValid = [strValid stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+    
+    return strValid;
 }
 @end
 /*

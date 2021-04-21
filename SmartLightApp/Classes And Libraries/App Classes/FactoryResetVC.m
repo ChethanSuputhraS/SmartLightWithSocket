@@ -582,7 +582,6 @@
     [[BLEService sharedInstance] readAuthValuefromManager:peripheral];
     [self ShowResetNotification:peripheral];
 }
-
 -(void)sentConnectRequest:(CBPeripheral *)peripheral
 {
     if (peripheral.state == CBPeripheralStateConnected)

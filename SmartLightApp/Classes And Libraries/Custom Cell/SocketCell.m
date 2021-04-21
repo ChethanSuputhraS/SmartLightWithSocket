@@ -9,12 +9,13 @@
 #import "SocketCell.h"
 
 @implementation SocketCell
-@synthesize lblDeviceName,lblBack,swSocket,imgSwitch,btnAlaram,lblLine,lblSettings,imgArrow,lblLineLower;
-- (void)awakeFromNib {
+@synthesize lblDeviceName,lblBack,swSocket,imgSwitch,btnAlaram,lblLine,lblSettings,imgArrow,lblLineLower,txtOTA,btnMore,btnSocket;
+- (void)awakeFromNib
+{
+    
     [super awakeFromNib];
     // Initialization code
 }
-
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
     [super setSelected:selected animated:animated];
 
@@ -39,15 +40,16 @@
         lblBack.userInteractionEnabled = YES;
         [self.contentView addSubview:lblBack];
         
-        lblDeviceName = [[UILabel alloc] initWithFrame:CGRectMake(80, 0, DEVICE_WIDTH-30, 60)];
+        lblDeviceName = [[UILabel alloc] initWithFrame:CGRectMake(60, 0, DEVICE_WIDTH-100-60, 60)];
         lblDeviceName.numberOfLines = 0;
         [lblDeviceName setBackgroundColor:[UIColor clearColor]];
         lblDeviceName.textColor = UIColor.whiteColor;
         [lblDeviceName setFont:[UIFont fontWithName:CGRegular size:textSizes+3]];
         [lblDeviceName setTextAlignment:NSTextAlignmentLeft];
         lblDeviceName.text = @"";
-
-        swSocket = [[UISwitch alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-150, 15, 44, 44)];
+        
+        
+        swSocket = [[UISwitch alloc] initWithFrame:CGRectMake(DEVICE_WIDTH-130, 15, 44, 44)];
         swSocket.backgroundColor = UIColor.clearColor;
         swSocket.clipsToBounds = true;
         swSocket.onTintColor = UIColor.greenColor;
@@ -57,13 +59,30 @@
         swSocket.layer.cornerRadius = 15;
         [lblBack addSubview:swSocket];
         
+        
+        btnSocket = [[UIButton alloc] initWithFrame:CGRectMake(10, 5, 44, 50)];
+        btnSocket.backgroundColor = UIColor.clearColor;
+        btnSocket.clipsToBounds = true;
+        btnSocket.layer.cornerRadius = 15;
+        btnSocket.hidden = true;
+        [lblBack addSubview:btnSocket];
+        
+        
         btnAlaram = [UIButton buttonWithType:UIButtonTypeCustom];
         btnAlaram.frame = CGRectMake(DEVICE_WIDTH-70, 8.5, 44, 43);
         btnAlaram.backgroundColor = [UIColor clearColor];
         [btnAlaram setImage:[UIImage imageNamed:@"active_alarm_icon.png"] forState:UIControlStateNormal];
-        [lblBack addSubview:btnAlaram];
+//        [lblBack addSubview:btnAlaram];
         
-        imgSwitch = [[UIImageView alloc] initWithFrame:CGRectMake(20, 15, 32, 30)];
+        btnMore = [UIButton buttonWithType:UIButtonTypeCustom];
+        btnMore.frame = CGRectMake(DEVICE_WIDTH-70, 8.5, 44, 44);
+        btnMore.backgroundColor = [UIColor clearColor];
+        [btnMore setImage:[UIImage imageNamed:@"more_icon.png"] forState:UIControlStateNormal];
+        btnMore.hidden = true;
+        [lblBack addSubview:btnMore];
+        
+        
+        imgSwitch = [[UIImageView alloc] initWithFrame:CGRectMake(15, 15, 32, 30)];
         imgSwitch.backgroundColor = UIColor.clearColor;
         imgSwitch.clipsToBounds = true;
         [imgSwitch setImage:[UIImage imageNamed:@"sw.png"]];
@@ -88,6 +107,12 @@
         [lblLine setBackgroundColor:[UIColor lightGrayColor]];
         lblLine.hidden = true;
         [lblBack addSubview:lblLine];
+        
+        txtOTA = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, 50)];
+        txtOTA.hidden = true;
+        txtOTA.placeholder = @"Vithamas";
+        [self.contentView addSubview:txtOTA];
+        
         
         [lblBack addSubview:lblDeviceName];
     }

@@ -61,7 +61,7 @@
     btnBack.frame = CGRectMake(0, 0, 70, 64);
     btnBack.backgroundColor = [UIColor clearColor];
     [viewHeader addSubview:btnBack];
-
+    
     
     self.view.backgroundColor = [UIColor colorWithPatternImage:[UIImage imageNamed:[[NSUserDefaults standardUserDefaults]valueForKey:@"globalBackGroundImage"]]];
 

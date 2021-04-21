@@ -46,6 +46,8 @@
 -(BOOL)Create_SocketStrip_Table;
 -(BOOL)Create_Socket_AlarmDetail_Table;
 -(void)addnewBrigthcolumnstoDevice; 
+-(BOOL)Create_Socket_NameAndImg_Table;
+-(BOOL)Create_YoutubeLink_Table;
 
 
 #pragma mark - SOCKET METHODS

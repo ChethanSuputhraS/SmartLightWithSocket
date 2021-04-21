@@ -12,13 +12,40 @@
 #import "BLEManager.h"
 #import <CoreBluetooth/CoreBluetooth.h>
 #import "ResetSocketVC.h"
+#import "CollectionCustomCell.h"
 
-@interface SocketDetailVC ()<UITableViewDelegate,UITableViewDataSource,CBCentralManagerDelegate, CocoaMQTTDelegate, BLEManagerDelegate,FCAlertViewDelegate,URLManagerDelegate, SocketWifiSettingDelegate, SocketAlarmDelegate>
+@interface SocketDetailVC ()<UITableViewDelegate,UITableViewDataSource,CBCentralManagerDelegate, CocoaMQTTDelegate, BLEManagerDelegate,FCAlertViewDelegate,URLManagerDelegate, SocketWifiSettingDelegate, SocketAlarmDelegate,UITextFieldDelegate,UIActionSheetDelegate,UICollectionViewDelegate,UICollectionViewDataSource,UIGestureRecognizerDelegate>
 {
     NYSegmentedControl * blueSegmentedControl;
     UIView  *controlView,*settingsView;
     UITableView * tblSettings;
     UIImageView * imgBack;
+    NSMutableArray * arrMQTTalarmState;
+    NSString * strVersionNo,* strOTAstring;
+    
+    UIView * viewForCollectionBG,*viewForCollectionImgView;
+    UICollectionView *collectionView;;
+    
+    NSArray *ArrImgForCollectionView,* arrImgHeight,*arrImgWidth;;
+    NSInteger selectedSocketIndex;
+
+//    NSMutableArray * arraySelctedImgs;
+    NSMutableDictionary * dictImgs ;
+//    NSString * strSocketName;
+ 
+    UIView * viewForsocketNameBG,*viewForTxtName;
+    UIButton *btnCancelName,*btnSave;
+    UITextField *txtName;
+    
+//    long imgIdCollectionView;
+    
+    NSIndexPath * selectedIndexPath;
+    
+    CBCentralManager * mangerSate;
+    NSMutableDictionary * dictImgAndSize;
+     
+
+
 }
 @end
 
@@ -28,6 +55,7 @@
 #pragma mark - View Life Cycle
 - (void)viewDidLoad
 {
+    isTopicSubscribed = NO;
     globalStatusHeight = 20;
     if (IS_IPHONE_4 || IS_IPHONE_5)
     {
@@ -49,28 +77,95 @@
     
     dictFromHomeSwState = [[NSMutableDictionary alloc] init];
     arryDevices = [[NSMutableArray alloc] init];
+    arrMQTTalarmState = [[NSMutableArray alloc] init];
+
+    dictSocketDetail = [[NSMutableArray alloc] init];
+    NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_NameImg_Table  where ble_address = '%@'",strMacAddress];
+    [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:dictSocketDetail];
+   
+    arrSocketNames = [[NSMutableArray alloc] init];
+    for (int i =0; i < 7; i++)
+    {
+        if ([[dictSocketDetail valueForKey:@"socket_id"] containsObject:[NSString stringWithFormat:@"%ld",(long)i]])
+        {
+            NSInteger foundIndex = [[dictSocketDetail valueForKey:@"socket_id"] indexOfObject:[NSString stringWithFormat:@"%ld",(long)i]];
+            if (foundIndex != NSNotFound)
+            {
+                if ([dictSocketDetail count] > foundIndex)
+                {
+                    NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                    [dict setValue:[[dictSocketDetail objectAtIndex:foundIndex] valueForKey:@"socket_name"] forKey:@"socket_name"];
+                    [dict setValue:[[dictSocketDetail objectAtIndex:foundIndex] valueForKey:@"image_type"] forKey:@"image_type"];
+                    [dict setValue:[NSString stringWithFormat:@"%d",i] forKey:@"socket_id"];
+
+                    [arrSocketNames addObject:dict];
+                }
+            }
+        }
+        else
+        {
+            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+            [dict setValue:[NSString stringWithFormat:@"Socket %d",i+1] forKey:@"socket_name"];
+            [dict setValue:@"0" forKey:@"image_type"];
+            [dict setValue:[NSString stringWithFormat:@"%d",i] forKey:@"socket_id"];
+            [arrSocketNames addObject:dict];
+        }
+    }
 
     [self setNavigationViewFrames];
     
     [self ConnectPeripheralIfnotConnected];
-    
-    imgNotConnected = [[UIImageView alloc]init];
-       imgNotConnected.image = [UIImage imageNamed:@"notconnect_iconWhite.png"];
-       imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
-       imgNotConnected.contentMode = UIViewContentModeScaleAspectFit;
-       imgNotConnected.layer.masksToBounds = true;
-       [self.view addSubview:imgNotConnected];
        
-       imgNotWifiConnected = [[UIImageView alloc]init];
-       imgNotWifiConnected.image = [UIImage imageNamed:@"wifigreen.png"];
-       imgNotWifiConnected.frame = CGRectMake(DEVICE_WIDTH-60, 32, 30, 22);
-       imgNotWifiConnected.contentMode = UIViewContentModeScaleAspectFit;
-       imgNotWifiConnected.layer.masksToBounds = true;
-       [self.view addSubview:imgNotWifiConnected];
+    imgNotConnected = [[UIImageView alloc]init];
+    imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
+    imgNotConnected.frame = CGRectMake(DEVICE_WIDTH-30, 32, 30, 22);
+    imgNotConnected.contentMode = UIViewContentModeScaleAspectFit;
+    imgNotConnected.layer.masksToBounds = true;
+    [self.view addSubview:imgNotConnected];
+    
+    imgWifiNotConnected = [[UIImageView alloc]init];
+    imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+    imgWifiNotConnected.frame = CGRectMake(DEVICE_WIDTH-60, 32, 30, 22);
+    imgWifiNotConnected.contentMode = UIViewContentModeScaleAspectFit;
+    imgWifiNotConnected.layer.masksToBounds = true;
+    [self.view addSubview:imgWifiNotConnected];
+    
+    
+    NSInteger intPacket = [@"0" integerValue];
+    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"25" withLength:@"00" withPeripheral:classPeripheral];
+
+    if (classPeripheral)
+    {
+        if (classPeripheral.state == CBPeripheralStateConnected)
+        {
+            [[BLEService sharedInstance] sendNotificationsSKT:classPeripheral withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
+            [[BLEService sharedInstance] EnableNotificationsForCommandSKT:classPeripheral withSocketReset:NO];
+            [[BLEService sharedInstance] EnableNotificationsForDATASKT:classPeripheral withSocketReset:NO];
+        }
+    }
+    
+    UILongPressGestureRecognizer *lpgr = [[UILongPressGestureRecognizer alloc]
+    initWithTarget:self action:@selector(handleLongPress:)];
+    lpgr.minimumPressDuration = 1.1; //seconds
+    lpgr.delegate = self;
+    [tblView addGestureRecognizer:lpgr];
+    
+    
+    if (IS_USER_SKIPPED == NO)
+    {
+        [self GetSocketNameandImgefromServer:deviceDetail];
+    }
+    
+    ArrImgForCollectionView = [NSArray arrayWithObjects:@"1.png",@"2.png",@"3.png",@"4.png",@"5.png",@"6.png",@"7.png",@"8.png",@"9.png",@"10.png",@"11.png",@"12.png",@"13.png",@"14.png",@"15.png",@"16.png", nil];
+
+    
+    mangerSate = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+
+    [[BLEManager sharedManager] setDelegate:self];
     [super viewDidLoad];
     // Do any additional setup after loading the view.
 }
-
 -(void)viewWillAppear:(BOOL)animated
 {
     if (classPeripheral.state == CBPeripheralStateConnected)
@@ -80,7 +175,7 @@
         [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
     }
 
-    if (imgNotConnected && imgNotWifiConnected)
+    if (imgNotConnected && imgWifiNotConnected)
     {
         if (IS_IPHONE_X)
         {
@@ -93,24 +188,63 @@
         }
         else
         {
-            imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+            if (mangerSate.state == CBCentralManagerStatePoweredOn)
+            {
+//                imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+            }
+            else if(mangerSate.state == CBCentralManagerStatePoweredOff)
+            {
+                imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
+            }
+            else if(mangerSate.state == CBCentralManagerStateUnknown)
+            {
+//                imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+            }
         }
+        
             if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
             {
-                imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
             }
             else
             {
-                imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
+                if ([APP_DELEGATE isNetworkreachable])
+                {
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+                }
+                else
+                {
+                    isMQTTConfigured = NO;
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+                }
             }
             
             if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
             {
-                imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
                 isMQTTConfigured = YES;
             }
     }
     
+//    if (![APP_DELEGATE isNetworkreachable]) // css commented
+//    {
+//        imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+//        isMQTTConfigured = NO;
+//    }
+    
+//    if (mangerSate.state == CBCentralManagerStatePoweredOn)
+//    {
+//        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+//    }
+//    else if(mangerSate.state == CBCentralManagerStatePoweredOff)
+//    {
+//        imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
+//    }
+//    else
+//    {
+//
+//    }
+//
     [self.navigationController setNavigationBarHidden:YES animated:NO];
     
     [[BLEManager sharedManager] setDelegate:self];
@@ -157,7 +291,6 @@
     btnBack.backgroundColor = [UIColor clearColor];
     [viewHeader addSubview:btnBack];
     
-    
     [blueSegmentedControl removeFromSuperview];
     blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Socket cotrol",@"Settings"]];
     blueSegmentedControl.titleTextColor = [UIColor colorWithRed:0.38f green:0.68f blue:0.93f alpha:1.0f];
@@ -176,7 +309,6 @@
     blueSegmentedControl.layer.cornerRadius = 20;
     blueSegmentedControl.layer.masksToBounds = YES;
     [self.view addSubview:blueSegmentedControl];
-
 
     if (IS_IPHONE_6 || IS_IPHONE_6plus)
     {
@@ -252,22 +384,51 @@
         
     if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
     {
-        imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+        imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
     }
     else
     {
-        imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
-    }
-//    else
-    {
-        if (classMqttObj == nil)
+        if ([APP_DELEGATE isNetworkreachable])
         {
-            [self ConnecttoMQTTSocketServer];
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
         }
         else
         {
-            if ([classMqttObj connState] == 2)
-            {
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+        }
+    }
+    
+    [statusCheckTimer invalidate];
+    statusCheckTimer = nil;
+
+    [intialConnectHud removeFromSuperview];
+    intialConnectHud = [[MBProgressHUD alloc] initWithView:self.view];
+    [self.view addSubview:intialConnectHud];
+
+    if (classPeripheral.state == CBPeripheralStateConnected)
+    {
+        intialConnectHud.labelText = @"Connecting...";
+        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:4 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+    }
+    else
+    {
+        if([APP_DELEGATE isNetworkreachable])
+        {
+            intialConnectHud.labelText = @"Checking Status...";
+        }
+        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+    }
+    [intialConnectHud show:YES];
+
+
+    if (classMqttObj == nil)
+    {
+        [self ConnecttoMQTTSocketServer];
+    }
+    else
+    {
+        if ([classMqttObj connState] == 2)
+        {
                 NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMacAddress];
                 UInt16 subTop = [classMqttObj subscribe:publishTopic qos:2];
 
@@ -275,23 +436,22 @@
                 classMqttObj.delegate = self;
                 classMqttObj.autoReconnect = YES;
 
-//                [APP_DELEGATE endHudProcess];
-//                [APP_DELEGATE startHudProcess:@"Checking Status..."];
-                
-                NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
-                NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
-                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
-                
-                [mqttRequestTimeOut invalidate];
-                mqttRequestTimeOut = nil;
-                mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+                if (classPeripheral.state != CBPeripheralStateConnected)
+                {
+                    NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+                    NSArray * arrPackets = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
+                    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+
+                    arrMQTTalarmState = [[NSMutableArray alloc] init];
+                    NSArray * arrAlarm = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:21],[NSNumber numberWithInt:0], nil];
+                    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrAlarm];
+                }
             }
             else if ([classMqttObj connState] == 3)
             {
                 [self ConnecttoMQTTSocketServer];
             }
         }
-    }
         
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidConnectNotificationSocket" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidDisConnectNotificationSocket" object:nil];
@@ -398,6 +558,8 @@
         {
             NSInteger intPacket = [@"0" integerValue];
             NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+            
+            arrAlarmIdsofDevices = [[NSMutableArray alloc] init];
             [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
             [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"21" withLength:@"00" withPeripheral:classPeripheral];
         }
@@ -410,30 +572,34 @@
 {
     if (central.state == CBCentralManagerStatePoweredOn)
     {
-//        imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
-
-    } else if(central.state == CBCentralManagerStatePoweredOff)
+//        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+    }
+    else if(central.state == CBCentralManagerStatePoweredOff)
+    {
+        imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
+    }
+    else
     {
         imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
     }
 }
 -(void)setPeripheraltoCheckKeyUsage:(CBPeripheral *)tmpPerphrl
 {
-    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:tmpPerphrl.identifier])
+    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",tmpPerphrl.identifier]])
     {
-        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:tmpPerphrl.identifier];
+        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",tmpPerphrl.identifier]];
         if (foundIndex != NSNotFound)
         {
             if ([arrPeripheralsCheck count] > foundIndex)
             {
-                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl.identifier,@"identifier", nil];
+                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", [NSString stringWithFormat:@"%@",tmpPerphrl.identifier],@"identifier", nil];
                 [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
             }
         }
     }
     else
     {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", tmpPerphrl.identifier,@"identifier", nil];
+        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:@"1700", @"status", [NSString stringWithFormat:@"%@",tmpPerphrl.identifier],@"identifier", nil];
         [arrPeripheralsCheck addObject:dict];
     }
 }
@@ -462,7 +628,7 @@
     }
     else
     {
-        return 3;
+        return 6;
     }
     return  7; // array have to pass
 }
@@ -488,16 +654,27 @@
         cell = [[SocketCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellReuseIdentifier];
     }
     
+    
     [cell.swSocket addTarget:self action:@selector(switchSocketStateClick:) forControlEvents:UIControlEventValueChanged];
     [cell.btnAlaram addTarget:self action:@selector(btnAlarmClick:) forControlEvents:UIControlEventTouchUpInside];
     cell.btnAlaram.tag = indexPath.row;
     
+    cell.btnMore.hidden = false;
+    [cell.btnMore addTarget:self action:@selector(btnMoreClick:) forControlEvents:UIControlEventTouchUpInside];
+    cell.btnMore.tag = indexPath.row;
+    
+//    cell.btnSocket.hidden = false;
+//    [cell.btnSocket addTarget:self action:@selector(btnSocketClick:) forControlEvents:UIControlEventTouchUpInside];
+//    cell.btnSocket.tag = indexPath.row;
+
+    
     NSInteger indexNo = indexPath.row + 1;
-    NSString * strSocketName = [NSString stringWithFormat:@"Socket %ld",(long)indexNo];
-    cell.lblDeviceName.text = strSocketName;
+//    NSString * strSocketName = [NSString stringWithFormat:@"Socket %ld",(long)indexNo];
+    
     cell.swSocket.tag = 100 + indexPath.row + 1;
     NSString * strSwitchStatus = [NSString stringWithFormat:@"Switch%ld",(long)indexNo];
     int swithcStatus = [[dictFromHomeSwState valueForKey:strSwitchStatus] intValue];
+    
     if (swithcStatus == 1)
     {
         [cell.swSocket setOn:YES animated:YES];
@@ -514,6 +691,10 @@
         cell.imgSwitch.hidden = true;
         cell.lblDeviceName.frame = CGRectMake(10, 0, DEVICE_WIDTH-20, 60);
         cell.btnAlaram.hidden = true;
+        cell.btnMore.hidden = true;
+        cell.btnSocket.hidden = true;
+        [self handleLongPress:nil];
+        
         NSArray * allValues = [dictFromHomeSwState allValues];
         NSString * strAllSwitches = [allValues componentsJoinedByString:@""];
         
@@ -526,6 +707,20 @@
             [cell.swSocket setOn:NO animated:YES];
         }
     }
+    else
+    {
+        if (![[[arrSocketNames objectAtIndex:indexPath.row] valueForKey:@"image_type"] isEqual:@"0"])
+        {
+            cell.imgSwitch.image = [UIImage imageNamed:[[arrSocketNames objectAtIndex:indexPath.row] valueForKey:@"image_type"]];
+            cell.lblDeviceName.text = [[arrSocketNames objectAtIndex:indexPath.row] valueForKey:@"socket_name"];
+        }
+        else
+        {
+            cell.imgSwitch.image = [UIImage imageNamed:@"sw.png"];
+            cell.lblDeviceName.text = [[arrSocketNames objectAtIndex:indexPath.row] valueForKey:@"socket_name"];
+        }
+    }
+    
     
     if (tableView == tblSettings)
     {
@@ -536,13 +731,14 @@
         cell.btnAlaram.hidden = true;
         cell.imgArrow.hidden = false;
         cell.lblLineLower.hidden = true;
+        cell.btnMore.hidden = true;
+
         cell.lblBack.frame = CGRectMake (20, 0,DEVICE_WIDTH-40,60);
         cell.lblBack.layer.borderColor = UIColor.lightGrayColor.CGColor;
         
         cell.imgSwitch.frame =  CGRectMake(10, 20, 20, 20);
-        NSArray * imgArr = [[NSArray alloc]initWithObjects:@"wifiWhite.png",@"delete_icon.png",@"reset.png", nil];
+        NSArray * imgArr = [[NSArray alloc]initWithObjects:@"wifiWhite.png",@"delete_icon.png",@"reset.png",@"",@"",@"", nil];
         cell.imgSwitch.image =  [UIImage imageNamed:[NSString stringWithFormat:@"%@",[imgArr objectAtIndex:indexPath.row]]];
-
 
         if (indexPath.row == 0)
         {
@@ -555,6 +751,18 @@
         else if (indexPath.row == 2)
         {
             cell.lblSettings.text = @"Reset device";
+        }
+        else if (indexPath.row == 3)
+        {
+            cell.lblSettings.text = [NSString stringWithFormat:@"Hardware Version - %@",strVersionNo];
+        }
+        else if (indexPath.row == 4)
+        {
+            cell.lblSettings.text = @"Factory test Dileep";
+        }
+        else if (indexPath.row == 5)
+        {
+            cell.lblSettings.text = @"OTA Dileep";
         }
     }
     
@@ -572,7 +780,7 @@
             NSString * strMacaddress = [deviceDetail  valueForKey:@"ble_address"];
 
             SocketWiFiSetupVC * socketWifi = [[SocketWiFiSetupVC alloc] init];
-            socketWifi.peripheralPss = classPeripheral;
+            socketWifi.classPeripheral = classPeripheral;
             socketWifi.strBleAddress = strMacaddress;
             socketWifi.isWIFIconfig = strWifiConfig; 
             socketWifi.dictData = deviceDetail;
@@ -631,6 +839,16 @@
             ResetSocketVC * rstSVC = [[ResetSocketVC alloc] init];
             [self.navigationController pushViewController:rstSVC animated:true];
         }
+        else if (indexPath.row == 4)
+        {
+            NSInteger intPacket = [@"0" integerValue];
+            NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"35" withLength:@"00" withPeripheral:classPeripheral];
+        }
+        else if (indexPath.row == 5)
+        {
+            [self OTAFordileep];
+        }
     }
 }
 #pragma mark- Socket Switch Status & Buton Click Events
@@ -670,12 +888,12 @@
         if ([strIndex  isEqual: @"06"])
         {
             [[BLEService sharedInstance] WriteSocketData:dataSwitchStatus withOpcode:@"10" withLength:@"1" withPeripheral:classPeripheral];
-            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
+//            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
         }
         else
         {
             [[BLEService sharedInstance] WriteSocketData:completeData withOpcode:@"09" withLength:@"2" withPeripheral:classPeripheral];
-            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
+//            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"05" withLength:@"00" withPeripheral:classPeripheral];
         }
     }
     else //MQTT
@@ -708,7 +926,10 @@
         }
         else
         {
+            
             [APP_DELEGATE endHudProcess];
+            
+            [self TostNotification:@"Please conect with bluetooth or internet."];
 
             if ([RecntSwitch isOn])
             {
@@ -744,7 +965,6 @@
             for (int i =0; i < 6; i++)
             {
                 [dictFromHomeSwState setValue:[NSString stringWithFormat:@"%@",strStatus] forKey:[NSString stringWithFormat:@"Switch%d",i+1 ]];
-
             }
         }
         else
@@ -758,6 +978,7 @@
 }
 -(void)btnBackClick
 {
+//    NSLog(@"terwe=%@",[[NSArray new] objectAtIndex:3]);
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidConnectNotificationSocket" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidDisConnectNotificationSocket" object:nil];
     [self.navigationController popViewControllerAnimated:true];
@@ -769,13 +990,54 @@
     globalSocketAlarmVC.intSelectedSwitch = sender.tag + 1; 
     globalSocketAlarmVC.periphPass = classPeripheral;
     globalSocketAlarmVC.strMacaddress  = strMacAddress;
-//    globalSocketAlarmVC.delegate = self;
-//    globalSocketAlarmVC.dictDeviceDetail = deviceDetail;
+    globalSocketAlarmVC.delegate = self;
+    globalSocketAlarmVC.dictDeviceDetail = deviceDetail;
     [self.navigationController pushViewController:globalSocketAlarmVC animated:true];
 }
 -(void)timeOutForDeleteDevice
 {
     [APP_DELEGATE endHudProcess];
+}
+-(void)btnMoreClick:(id)sender
+{
+    [self btnAction:sender];
+    selectedSocketIndex = [sender tag];
+    [dictImgs setValue:[NSString stringWithFormat:@"%ld",(long)selectedSocketIndex] forKey:@"Index"];
+}
+
+-(void)btnAction:(UIButton *)sender
+{
+    UIAlertController *actionSheet = [UIAlertController alertControllerWithTitle:@"Vithamas socket" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Alarm" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
+        {
+        //  alarm.
+        
+            globalSocketAlarmVC  = [[SocketAlarmVC alloc] init];
+            globalSocketAlarmVC.intSelectedSwitch = sender.tag + 1;
+            globalSocketAlarmVC.periphPass = classPeripheral;
+            globalSocketAlarmVC.strMacaddress  = strMacAddress;
+            globalSocketAlarmVC.delegate = self;
+            globalSocketAlarmVC.dictDeviceDetail = deviceDetail;
+            [self.navigationController pushViewController:globalSocketAlarmVC animated:true];
+
+            // Code for Alarm
+    }]];
+
+    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Set Name & image" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
+    {
+        [self SetupForSetSocketNameImages:[sender tag]];
+    }]];
+
+    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action)
+    {   }]];
+    
+    [actionSheet setModalPresentationStyle:UIModalPresentationPopover];
+
+    UIPopoverPresentationController *popPresenter = [actionSheet popoverPresentationController];
+    popPresenter.sourceView = sender;
+    popPresenter.sourceRect = sender.bounds; // You can set position of popover
+    [self presentViewController:actionSheet animated:TRUE completion:nil];
 }
 -(void)CheckUserCredentialDetials
 {
@@ -789,34 +1051,122 @@
     NSString *strServerUrl = @"http://vithamastech.com/smartlight/api/check_user_details";
     [manager urlCall:strServerUrl withParameters:dict];
 }
-#pragma mark- Recieve Data from BLE
+-(NSString *)getSelectedDaysforDayByteValue:(NSString *)strDayValue
+{
+    NSInteger intMsg = [strDayValue intValue];
+    NSData * data = [[NSData alloc] initWithBytes:&intMsg length:1];
+    const char *byte = [data bytes];
+    unsigned int length = [data length];
+    NSString * strBits;
 
+    for (int i=0; i<length; i++)
+    {
+        char n = byte[i];
+        char buffer[9];
+        buffer[8] = 0; //for null
+        int j = 8;
+        while(j > 0)
+        {
+            if(n & 0x01)
+            {
+                buffer[--j] = '1';
+            } else
+        {
+            buffer[--j] = '0';
+        }
+        n >>= 1;
+        }
+        strBits = [NSString stringWithFormat:@"%s",buffer];
+//        NSLog(@"opopoppopop=%@",strBits);
+    }
+    NSMutableArray * arrSelected = [[NSMutableArray alloc] init];
+
+    for (int i = 0; i < strBits.length; i++)
+    {
+        NSString * strStatus = [strBits substringWithRange:NSMakeRange((i*1), 1)];
+//        NSLog(@"KAKPKPKPK=%@",[strBits substringWithRange:NSMakeRange((i*1), 1)]);
+        if ([strStatus isEqualToString:@"1"])
+        {
+            [arrSelected addObject:@"1"];
+        }
+        else
+        {
+            [arrSelected addObject:@"0"];
+        }
+    }
+    if ([arrSelected count] > 0)
+    {
+        [arrSelected removeObjectAtIndex:0];
+    }
+    NSString * strDaySelected = [arrSelected componentsJoinedByString:@","];
+    return strDaySelected;
+}
+#pragma mark- Recieve Data from BLE
 -(void)AlarmListStoredinDevice:(NSMutableDictionary *)arrDictDetails
 {
     [arrAlarmIdsofDevices addObject:arrDictDetails];
     
     if ([arrAlarmIdsofDevices count] >= 12)
     {
+//        NSLog(@"Received Alarm from Device=%@",arrAlarmIdsofDevices);
         dispatch_async(dispatch_get_main_queue(), ^(void)
         {
-            NSMutableArray * arrdata = [[NSMutableArray alloc] init];
-            NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table  where ble_address = '%@' ",strMacAddress];
-            [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
-            
             for (int i = 0; i < [arrAlarmIdsofDevices count]; i++)
             {
-                NSString * strAlarmId = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"]];
-                NSString * strsocketID = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"socketID"];
-                NSString * strdayValue = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"dayValue"];
-                NSString * strOnTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"onTime"]];
-                NSString * strOffTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"offTime"]];
+                NSString * strOnTime = [self checkforValidString:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"onTime"]];
+                NSString * strOffTime = [self checkforValidString:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"offTime"]];
                 NSString * stralarmState = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alarmState"];
+
+                if ([stralarmState isEqualToString:@"01"])
+                {
+                    
+                }
+                if ([strOnTime isEqualToString:@"ffffffff"] && [strOffTime isEqualToString:@"ffffffff"])
+                {
+                    strOnTime = @"NA";
+                    strOffTime = @"NA";
+                }
+                else if([strOnTime isEqualToString:@"ffffffff"] || [strOffTime isEqualToString:@"ffffffff"])
+                {
+                    if ([strOnTime isEqualToString:@"ffffffff"])
+                    {
+                        strOnTime = @"NA";
+                    }
+                    if([strOffTime isEqualToString:@"ffffffff"])
+                    {
+                        strOffTime = @"NA";
+                    }
+                }
+                
+                NSString * strOnOriginal = @"NA";
+                NSString * strOffOriginal= @"NA";
+                NSString * strTotalDaysCount = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"dayValue"];
+
+                if (![strOnTime isEqualToString:@"NA"])
+                {
+                    strOnTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"onTime"]];
+                    strOnOriginal = [self getHoursfromString:strOnTime withDaysCount:strTotalDaysCount];
+                }
+                if (![strOffTime isEqualToString:@"NA"])
+                {
+                    strOffTime = [self stringFroHex:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"offTime"]];
+                    strOffOriginal = [self getHoursfromString:strOffTime withDaysCount:strTotalDaysCount];
+                }
+                
+                NSString * strAlarmId = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"];
+                NSString * strsocketID = [[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"socketID"];
+                NSString * strdayValue = [self getSelectedDaysforDayByteValue:[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"dayValue"]];
+
+                NSMutableArray * arrdata = [[NSMutableArray alloc] init];
+                NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table  where ble_address = '%@' and alarm_id = '%@'",strMacAddress,strAlarmId];
+                [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
+
                 
                 if ([arrdata count] == 0)
                 {
                     if (![[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"] isEqual:@"0"])
                     {
-                        NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_value','OnTimestamp','OffTimestamp','alarm_state','ble_address') values('%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress];
+                        NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_selected','OnTimestamp','OffTimestamp','alarm_state','ble_address','On_original','Off_original') values('%@','%@','%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress,strOnOriginal,strOffOriginal];
                         [[DataBaseManager dataBaseManager] execute:strInsert];
                     }
                 }
@@ -824,7 +1174,7 @@
                 {
                     if (![[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"] isEqual:@"0"])
                     {
-                        NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_value='%@', onTimestamp ='%@', offTimestamp = '%@', alarm_state = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress,[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"]];
+                        NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_selected='%@', onTimestamp ='%@', offTimestamp = '%@', alarm_state = '%@', On_original = '%@', Off_original = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strOnOriginal,strOffOriginal,strMacAddress,[[arrAlarmIdsofDevices objectAtIndex:i] valueForKey:@"alaramID"]];
                         [[DataBaseManager dataBaseManager] execute:update];
                     }
                 }
@@ -832,11 +1182,50 @@
         });
     }
 }
--(void)ReceiveAllSoketONOFFState:(NSString *)strState
+-(NSString *)getHoursfromString:(NSString *)strTimestamp withDaysCount:(NSString *)strDayCount
+{
+    double timeStamp = [strTimestamp intValue];
+    NSTimeInterval timeInterval=timeStamp;
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:timeInterval];
+    NSDateFormatter *dateformatter=[[NSDateFormatter alloc]init];
+    if ([strDayCount isEqualToString:@"0"] || [strDayCount isEqualToString:@"00"])
+    {
+        date = [NSDate dateWithTimeIntervalSince1970:timeStamp];
+        [dateformatter setDateFormat:@"dd/MM/yyyy hh:mm aa"];
+    }
+    else
+    {
+        [dateformatter setDateFormat:@"hh:mm aa"];
+    }
+    NSString *dateString=[dateformatter stringFromDate:date];
+    return dateString;
+}
+-(void)ReceiveAllSoketONOFFState:(NSString *)strState withStatus:(BOOL)isSuccess;
 {
     dispatch_async(dispatch_get_main_queue(),
     ^{
-        self->strAllSwSatate = strState;
+            for (int i =0; i < 6; i++)
+            {
+                if ([strState length] >= 12)
+                {
+                    [dictFromHomeSwState setValue:[NSString stringWithFormat:@"%@",[strState substringWithRange:NSMakeRange(i * 2, 2)]] forKey:[NSString stringWithFormat:@"Switch%d",i+1 ]];
+                }
+            }
+        if (([strState length] >= 12) && isSuccess == YES)
+        {
+            [tblView reloadData];
+            if (globalDashBoardVC)
+            {
+                if ([[strState substringWithRange:NSMakeRange(0, 12)] isEqualToString:@"010101010101"])
+                {
+                    [globalDashBoardVC UpdateSocketSwithwithBLE:YES withMacAddress:strMacAddress];
+                }
+                else
+                {
+                    [globalDashBoardVC UpdateSocketSwithwithBLE:NO withMacAddress:strMacAddress];
+                }
+            }
+        }
     });
 }
 -(void)ReceivedSwitchStatusfromDevice:(NSMutableDictionary *)dictSwitch;
@@ -860,18 +1249,20 @@
     }
     [tblView reloadData];
 }
+-(void)ReceivedFirmwareVersionFromDevice:(NSString *)strVersion
+{
+    strVersionNo = strVersion ;
+    [tblSettings reloadData];
+}
 -(void)ReceivedMQTTStatus:(NSDictionary *)dictSwitch
 {
     
 }
 -(void)ConnecttoMQTTSocketServer
 {
-    NSString * strClientId = [self checkforValidString:deviceTokenStr];
-    if ([strClientId isEqualToString:@"NA"])
-    {
-        strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
-    }
-    
+    NSUUID *uuid = [NSUUID UUID];
+    NSString *strClientId = [uuid UUIDString];
+
     classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
     classMqttObj.delegate = self;
     [classMqttObj selfSignedSSLSetting];
@@ -884,19 +1275,31 @@
 }
 -(void)TimeOutforWifiConfiguration
 {
+    [intialConnectHud hide:YES];
+    [intialConnectHud removeFromSuperview];
+    intialConnectHud=nil;
+    
     if (isMQTTConfigured == YES)
     {
-        imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+        imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
     }
     else
     {
-        imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
+        if ([APP_DELEGATE isNetworkreachable])
+        {
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+        }
+        else
+        {
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+        }
 //        [APP_DELEGATE endHudProcess];
     }
 }
 #pragma mark - Common Method to Publish on MQTT
 -(void)PublishMessageonMQTTwithTopic:(NSString *)strTopic withDataArray:(NSArray *)arrData
 {
+//    [APP_DELEGATE startHudProcess:@"Conneting..."];
     NSLog(@"===========================================================================================%hhu",[classMqttObj connState]);
     CocoaMQTTMessage * msg = [[CocoaMQTTMessage alloc] initWithTopic:strTopic payload:arrData qos:2 retained:NO dup:NO];
     UInt16 subTop = [classMqttObj publish:msg];
@@ -913,12 +1316,18 @@
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didConnectAck:(enum CocoaMQTTConnAck)ack
 {
-    imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+    [APP_DELEGATE endHudProcess];
+
+    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
     NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMacAddress];
     UInt16 subTop = [mqtt subscribe:publishTopic qos:2];
     NSLog(@"%d",subTop);
     NSLog(@"MQTT Connected --->");
     [self.delegate ConnectedSocketfromSocketDetailPage:mqtt];
+    if (globalSocketAlarmVC)
+    {
+        
+    }
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didPublishMessage:(CocoaMQTTMessage *)message id:(uint16_t)id
 {
@@ -935,7 +1344,7 @@
 -(void)mqtt:(CocoaMQTT *)mqtt didReceiveMessage:(CocoaMQTTMessage *)message id:(uint16_t)id
 {
     //Whenever message received we will send it to socketdtailvc.
-    NSLog(@"Socket Detail mqtt didReceiveMessage =%@",[message payload]);
+//    NSLog(@"Socket Detail mqtt didReceiveMessage =%@",[message payload]);
     NSString * strTopic = [self checkforValidString:[message topic]];
     NSArray * arrTopics = [strTopic componentsSeparatedByString:@"/"];
     NSString * strAddress = @"NA";
@@ -956,9 +1365,23 @@
 -(void)mqtt:(CocoaMQTT *)mqtt didSubscribeTopic:(NSArray<NSString *> *)topics
 {
     NSLog(@"Topic Subscried successfully =%@",topics);
-    NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
-    NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
-    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+    
+//    [deviceDetail setValue:@"1" forKey:@"wifi_configured"];
+    
+    isTopicSubscribed = YES;
+    
+    if (classPeripheral)
+    {
+        if (classPeripheral.state != CBPeripheralStateConnected)
+        {
+            NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+            NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
+            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+            arrMQTTalarmState = [[NSMutableArray alloc] init];
+            NSArray * arrAlarm = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:21],[NSNumber numberWithInt:0], nil];
+            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrAlarm];
+        }
+    }
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didUnsubscribeTopic:(NSString *)topic
 {
@@ -966,32 +1389,38 @@
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didStateChangeTo:(enum CocoaMQTTConnState)state
 {
-    NSLog(@"State Changed===>%hhu",state);
+//    NSLog(@"State Changed===>%hhu",state);
     if (state == 3)
     {
-        
+        isTopicSubscribed = NO;
     }
 }
 -(void)mqttDidDisconnect:(CocoaMQTT *)mqtt withError:(NSError *)err
 {
+    isTopicSubscribed = NO;
+
     NSDictionary * dictError = [err userInfo];
     if ([[dictError allKeys] containsObject:@"NSLocalizedDescription"])
     {
         isMQTTConfigured = NO;
         if ([[[err userInfo] valueForKey:@"NSLocalizedDescription"] isEqualToString:@"nodename nor servname provided, or not known"])
         {
-            imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
+            if ([APP_DELEGATE isNetworkreachable])
+            {
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+            }
+            else
+            {
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+            }
         }
     }
     else
     {
-        NSString * strClientId = [self checkforValidString:deviceTokenStr];
-        if ([strClientId isEqualToString:@"NA"])
-        {
-            strClientId = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
-        }
-        
-//        classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
+//        NSUUID *uuid = [NSUUID UUID];
+//        NSString *strClientId = [uuid UUIDString];
+
+        //        classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
 //        classMqttObj.delegate = self;
 //        [classMqttObj selfSignedSSLSetting];
 //        BOOL isConnected =  [classMqttObj connect];
@@ -999,9 +1428,8 @@
 //        {
 //            NSLog(@"MQTT is CONNECTING....");
 //        }
-
     }
-    NSLog(@"Disconnect Errore===>%@",err.description);
+//    NSLog(@"Disconnect Errore===>%@",err.description);
 }
 -(void)mqttDidPing:(CocoaMQTT *)mqtt
 {
@@ -1011,7 +1439,6 @@
 {
     
 }
-
 #pragma mark - BLE Delegate Callback Methods
 -(void)DeviceDidConnectNotification:(NSNotification*)notification //Connect periperal
 {
@@ -1036,7 +1463,7 @@
 }
 -(void)AuthenticationCompleted:(CBPeripheral *)peripheral
 {
-    globalSocketPeripheral = peripheral;
+    classPeripheral = peripheral;
     //Here you have to ask for device name... Save click call SAVE DEVICE API and save it to database.
     //After that Ask user to whether they want wifi configration.
 }
@@ -1104,7 +1531,7 @@
 -(void)dateChanged
 {
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"dd/MM/yyyy hh:mm a"];
+    [dateFormatter setDateFormat:@"dd/MM/yyyy hh:mm aa"];
     NSString *currentTime = [dateFormatter stringFromDate:datePicker.date];
     NSLog(@"Selected Date From user==>>%@", currentTime);
     
@@ -1119,93 +1546,120 @@
 #pragma mark :- MQTT Acknowledgement from Server
 -(void)ReceivedMQTTResponsefromserver:(NSMutableDictionary *)dictData
 {
-    [APP_DELEGATE endHudProcess];
+//    [APP_DELEGATE endHudProcess];
     NSString * strReceivedAddress = [[self checkforValidString:[dictData valueForKey:@"ble_address"]] uppercaseString];
     if([strReceivedAddress isEqualToString:[strMacAddress uppercaseString]])
     {
         NSArray * arrData = [dictData valueForKey:@"data"];
-        NSLog(@"==========ReceivedMQTTResponsefromserver=========%@",arrData);
         if([arrData count] >= 1)
         {
             NSString * strOpcode = [self checkforValidString:[NSString stringWithFormat:@"%@",[arrData objectAtIndex:0]]];
+            if (![strOpcode isEqualToString:@"21"])
+            {
+                NSLog(@"==========ReceivedMQTTResponsefromserver=========%@",arrData);
+            }
             if([strOpcode isEqualToString:@"5"])
             {
                 if([arrData count] >= 8)
                 {
+                    
                     if (globalDashBoardVC)
                     {
                         [globalDashBoardVC UpdateSocketSwithchStatus:arrData withMacAddress:strReceivedAddress];
                     }
                     [self UpdateSwitchStatusfromMQTT:arrData];
                 }
+                [APP_DELEGATE endHudProcess];
+                [mqttRequestTimeOut invalidate];
+                mqttRequestTimeOut = nil;
+            }
+            else if([strOpcode isEqualToString:@"7"])
+            {
+                NSString * strCurrentTopic = [NSString stringWithFormat:@"/vps/app/%@",strReceivedAddress];
+                UInt16 subTop = [classMqttObj unsubscribe:strCurrentTopic];
             }
             else if([strOpcode isEqualToString:@"9"])
             {
-                NSString * strStatus = [arrData componentsJoinedByString:@""];
+                [APP_DELEGATE endHudProcess];
+                [mqttRequestTimeOut invalidate];
+                mqttRequestTimeOut = nil;
 
-                if ([strStatus isEqualToString:@"911"])
+                for (int i =2; i < 8; i++)
                 {
-                    [APP_DELEGATE endHudProcess];
-                    [mqttRequestTimeOut invalidate];
-                    mqttRequestTimeOut = nil;
+                    if (i < [arrData count])
+                    {
+                        int swchstatus = [[arrData objectAtIndex:i] intValue];
+                        [dictFromHomeSwState setValue:[NSString stringWithFormat:@"%0d",swchstatus] forKey:[NSString stringWithFormat:@"Switch%d",i -1 ]];
+                    }
                 }
+                if (globalDashBoardVC)
+                {
+                    [globalDashBoardVC UpdateSocketSwithchStatus:arrData withMacAddress:strReceivedAddress];
+                }
+
+                [tblView reloadData];
             }
             else if([strOpcode isEqualToString:@"10"])
             {
-                NSString * strStatus = [arrData componentsJoinedByString:@""];
-
-                if ([strStatus isEqualToString:@"1011"])
+                [APP_DELEGATE endHudProcess];
+                [mqttRequestTimeOut invalidate];
+                mqttRequestTimeOut = nil;
+                for (int i =2; i < 8; i++)
                 {
-                    [APP_DELEGATE endHudProcess];
-                    [mqttRequestTimeOut invalidate];
-                    mqttRequestTimeOut = nil;
-                    
-                    NSArray * arrTemp = [mqttSwithPreviousStatus componentsSeparatedByString:@":"];
-                    if ([arrTemp count] >=2)
+                    if (i < [arrData count])
                     {
-                        NSString * strIndex = [arrTemp objectAtIndex:0];
-                        NSString * strStatus = [arrTemp objectAtIndex:1];
-                                                
-                        if ([strIndex isEqualToString:@"10"])
-                        {
-                            for (int i =0; i < 6; i++)
-                            {
-                                [dictFromHomeSwState setValue:[NSString stringWithFormat:@"%@",strStatus] forKey:[NSString stringWithFormat:@"Switch%d",i+1 ]];
-                            }
-                        }
+                        int swchstatus = [[arrData objectAtIndex:i] intValue];
+                        [dictFromHomeSwState setValue:[NSString stringWithFormat:@"%0d",swchstatus] forKey:[NSString stringWithFormat:@"Switch%d",i -1 ]];
                     }
-                    [tblView reloadData];
-
                 }
+                if (globalDashBoardVC)
+                {
+                    [globalDashBoardVC UpdateSocketSwithchStatus:arrData withMacAddress:strReceivedAddress];
+                }
+                [tblView reloadData];
             }
             else if([strOpcode isEqualToString:@"16"])
             {
                 NSString * strStatus = [arrData componentsJoinedByString:@""];
-                if ([strStatus isEqualToString:@"16212"])
+                if ([strStatus length] >= 5)
                 {
-                    isMQTTConfigured = YES;
-                    [APP_DELEGATE endHudProcess];
-                    [mqttRequestTimeOut invalidate];
-                    mqttRequestTimeOut = nil;
-                    imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
-                }
-                else
-                {
-                    imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
-                }
-                if (classPeripheral.state == CBPeripheralStateDisconnected)
-                {
-                    NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
-                    NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
-                    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+                    if ([[strStatus substringWithRange:NSMakeRange(0, 5)] isEqualToString:@"16212"])
+                    {
+                        isMQTTConfigured = YES;
+    //                    [APP_DELEGATE endHudProcess];
+                        [mqttRequestTimeOut invalidate];
+                        mqttRequestTimeOut = nil;
+                        imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+                        
+                        if (classPeripheral.state == CBPeripheralStateDisconnected)
+                        {
+                            if (isTopicSubscribed == NO)
+                            {
+                                NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+                                NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
+                                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if ([APP_DELEGATE isNetworkreachable])
+                        {
+                            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+                        }
+                        else
+                        {
+                            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+                        }
+                    }
                 }
             }
             else if([strOpcode isEqualToString:@"11"])
             {
                 BOOL isAlarmSuccess = NO;
-                if ([arrData count] >= 4)
+                if ([arrData count] >= 16)
                 {
-                    NSString * strStatus = [NSString stringWithFormat:@"%@",[arrData objectAtIndex:3]];
+                    NSString * strStatus = [NSString stringWithFormat:@"%@",[arrData objectAtIndex:15]];
                     if ([strStatus isEqualToString:@"1"])
                     {
                         isAlarmSuccess = YES;
@@ -1213,16 +1667,176 @@
                 }
                 if (globalSocketAlarmVC)
                 {
-                    [globalSocketAlarmVC MqttAlarmStatusfromServer:isAlarmSuccess];
+                    [globalSocketAlarmVC MqttAlarmStatusfromServer:isAlarmSuccess withServerResponse:arrData withMacAddress:strReceivedAddress];
+                }
+                else
+                {
+                    [self UpdateDatabaseforAlarm:arrData withBleAddress:strReceivedAddress];
+                }
+            }
+            else if([strOpcode isEqualToString:@"12"])
+            {
+                if ([arrData count] >= 6)
+                {
+                    NSString * strStatus = [NSString stringWithFormat:@"%@",[arrData objectAtIndex:5]];
+                    if ([strStatus isEqualToString:@"1"])
+                    {
+                        if (globalSocketAlarmVC)
+                        {
+                            [globalSocketAlarmVC MqttDeleteAlarmStatusfromServer:YES withServerResponse:arrData withMacaddress:strReceivedAddress];
+                        }
+                        else
+                        {
+                            NSInteger alarmId = -1;
+                            if ([arrData count] >= 6)
+                            {
+                                alarmId = [[arrData objectAtIndex:2] integerValue];
+                            }
+                            if (alarmId != -1)
+                            {
+                                NSString * deleteQuery =[NSString stringWithFormat:@"delete from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%ld'",strReceivedAddress,(long)alarmId];
+                                [[DataBaseManager dataBaseManager] execute:deleteQuery];
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        if (globalSocketAlarmVC)
+                        {
+                            [globalSocketAlarmVC MqttDeleteAlarmStatusfromServer:NO withServerResponse:arrData withMacaddress:strReceivedAddress];
+                        }
+                    }
+                }
+            }
+            else if([strOpcode isEqualToString:@"21"])// stored alram from device
+            {
+                if ([arrData count] >= 8)
+                {
+                    [arrMQTTalarmState addObject:arrData];
+                    
+                    if ([arrMQTTalarmState count] >= 12)
+                    {
+                        for (int i = 0; i < [arrMQTTalarmState count]; i++)
+                        {
+                            NSArray * arrAlarm = [arrMQTTalarmState objectAtIndex:i];
+                            
+                            if ([arrAlarm count] >= 14)
+                            {
+                                NSString * strCheckStatus = [arrAlarm componentsJoinedByString:@""];
+                                if ([strCheckStatus isEqualToString:@"21,12,0,0,0,0,0,0,0,0,0,0,0,0"])
+                                {
+                                   return;
+                                }
+                                else
+                                {
+//                                    150c01007f265c2659d2dcd2280100000000
+                                    NSString * strDecimalOnTime = [ self GetDecimalValueofAlarm:arrAlarm withType:0];
+                                    NSString * strDecimalOffTime = [ self GetDecimalValueofAlarm:arrAlarm withType:1];
+
+                                    NSString * strCheckOnTime = [self checkforValidString:strDecimalOnTime];
+                                    NSString * strCheckOffTime = [self checkforValidString:strDecimalOffTime];
+                                    
+                                    if ([strCheckOnTime isEqualToString:@"ffffffff"] && [strCheckOffTime isEqualToString:@"ffffffff"])
+                                    {
+                                        strCheckOnTime = @"NA";
+                                        strCheckOffTime = @"NA";
+                                    }
+                                    else if([strCheckOnTime isEqualToString:@"ffffffff"] || [strCheckOffTime isEqualToString:@"ffffffff"])
+                                    {
+                                        if ([strCheckOnTime isEqualToString:@"ffffffff"])
+                                        {
+                                            strCheckOnTime = @"NA";
+                                        }
+                                        if([strCheckOffTime isEqualToString:@"ffffffff"])
+                                        {
+                                            strCheckOffTime = @"NA";
+                                        }
+                                    }
+                                    
+                                    NSString * strOnOriginal = @"NA";
+                                    NSString * strOffOriginal= @"NA";
+                                    NSString * strOnTime, * strOffTime;
+                                    
+                                    NSString * strTotalDaysCount = [self checkforValidString:[NSString stringWithFormat:@"%@",[arrAlarm objectAtIndex:4]]];
+                                    if (![strCheckOnTime isEqualToString:@"NA"])
+                                    {
+                                        strOnTime = [self stringFroHex:[NSString stringWithFormat:@"%@",strCheckOnTime]];
+                                        strOnOriginal = [self getHoursfromString:strOnTime withDaysCount:strTotalDaysCount];
+                                    }
+                                    if (![strCheckOffTime isEqualToString:@"NA"])
+                                    {
+                                        strOffTime = [self stringFroHex:[self checkforValidString:[NSString stringWithFormat:@"%@",strCheckOffTime]]];
+                                        strOffOriginal = [self getHoursfromString:strOffTime withDaysCount:strTotalDaysCount];
+                                    }
+                                    
+                                    NSString * strAlarmId = [self checkforValidString:[NSString stringWithFormat:@"%@",[arrAlarm objectAtIndex:2]]];
+                                    NSString * strsocketID = [self checkforValidString:[NSString stringWithFormat:@"%@",[arrAlarm objectAtIndex:3]]];
+                                    NSString * strdayValue = [self getSelectedDaysforDayByteValue:[self checkforValidString:[NSString stringWithFormat:@"%@",[arrAlarm objectAtIndex:4]]]];
+                                    NSString * stralarmState = [self checkforValidString:[NSString stringWithFormat:@"0%@",[arrAlarm objectAtIndex:13]]];
+
+                                    NSMutableArray * arrdata = [[NSMutableArray alloc] init];
+                                    NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table  where ble_address = '%@' and alarm_id = '%@'",strMacAddress,strAlarmId];
+                                    [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
+
+                                    if ([arrdata count] == 0)
+                                    {
+                                        if (![strAlarmId isEqual:@"0"])
+                                        {
+                                            NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_selected','OnTimestamp','OffTimestamp','alarm_state','ble_address','On_original','Off_original') values('%@','%@','%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strMacAddress,strOnOriginal,strOffOriginal];
+                                            [[DataBaseManager dataBaseManager] execute:strInsert];
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (![strAlarmId isEqual:@"0"])
+                                        {
+                                            NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_selected='%@', onTimestamp ='%@', offTimestamp = '%@', alarm_state = '%@', On_original = '%@', Off_original = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strsocketID,strdayValue,strOnTime,strOffTime,stralarmState,strOnOriginal,strOffOriginal,strMacAddress,strAlarmId];
+                                            [[DataBaseManager dataBaseManager] execute:update];
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+-(NSString *)GetDecimalValueofAlarm:(NSArray *)arrData withType:(int)OnOff
+{
+    NSString * strDecimal = @"";
+    if ([arrData count]>= 14)
+    {
+        int initialValue = 5;
+        if (OnOff == 1)
+        {
+            initialValue = 9;
+        }
+        //150c01007f 265c2659d2dcd2280100000000
+        for (int i = initialValue; i < initialValue + 4; i++)
+        {
+            if ([arrData count] > i)
+            {
+                NSInteger intPacket = [[NSString stringWithFormat:@"%@",[arrData objectAtIndex:i]] integerValue];
+                NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+                NSString * strPacket = [NSString stringWithFormat:@"%@",dataPacket.debugDescription];
+                strPacket = [strPacket stringByReplacingOccurrencesOfString:@" " withString:@""];
+                strPacket = [strPacket stringByReplacingOccurrencesOfString:@">" withString:@""];
+                strPacket = [strPacket stringByReplacingOccurrencesOfString:@"<" withString:@""];
+                strDecimal = [strDecimal stringByAppendingString:strPacket];
+            }
+        }
+
+    }
+    return strDecimal;
+}
 -(void)UpdateSwitchStatusfromMQTT:(NSArray *)arrData
 {
     NSMutableDictionary * dictSwitcState = [[NSMutableDictionary alloc] init];
-    for(int i =2; i < [arrData count]; i++)
+    for(int i =2; i < 8; i++)
     {
         int switchStatus = [[arrData objectAtIndex:i] intValue];
         [dictSwitcState setValue:[NSString stringWithFormat:@"%0d",switchStatus] forKey:[NSString stringWithFormat:@"Switch%d",i - 1]];
@@ -1252,12 +1866,53 @@
     if (peripheral.identifier == classPeripheral.identifier)
     {
         classPeripheral = peripheral;
-        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+        
+        if (mangerSate.state == CBCentralManagerStatePoweredOn)
+        {
+            if (peripheral)
+            {
+                if (peripheral.identifier == classPeripheral.identifier)
+                {
+                    classPeripheral = peripheral;
+                    imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
+                }
+                else if ([strRecievedIdentifier isEqualToString:strClassIdentifier])
+                {
+                    classPeripheral = peripheral;
+                    imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
+                }
+            }
+            else
+            {
+                imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+            }
+        
+        }
+        else if(mangerSate.state == CBCentralManagerStatePoweredOff)
+        {
+            imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
+        }
+        else
+        {
+            imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+        }
     }
     else if ([strRecievedIdentifier isEqualToString:strClassIdentifier])
     {
         classPeripheral = peripheral;
-        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+        
+        
+        if (mangerSate.state == CBCentralManagerStatePoweredOn)
+        {
+        }
+        else if(mangerSate.state == CBCentralManagerStatePoweredOff)
+        {
+            imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
+        }
+        else
+        {
+            imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+        }
     }
 }
 -(void)didDeviceConnectedCallback:(CBPeripheral *)peripheral
@@ -1265,6 +1920,9 @@
     NSString * strRecievedIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
     NSString * strClassIdentifier = [NSString stringWithFormat:@"%@",[self checkforValidString:[deviceDetail valueForKey:@"identifier"]]];
 
+            [[BLEService sharedInstance] sendNotificationsSKT:peripheral withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
+            [[BLEService sharedInstance] EnableNotificationsForCommandSKT:peripheral withSocketReset:NO];
+            [[BLEService sharedInstance] EnableNotificationsForDATASKT:peripheral withSocketReset:NO];
     if (peripheral.identifier == classPeripheral.identifier)
     {
         classPeripheral = peripheral;
@@ -1276,12 +1934,12 @@
         imgNotConnected.image = [UIImage imageNamed:@"Connected_icon.png"];
     }
 }
--(void) bluetoothPowerState:(NSString*)state;
+-(void)bluetoothPowerState:(NSString*)state;
 {
     NSLog(@"====bluetoothPowerState===%@",state);
     if ([state isEqualToString:@"Bluetooth is currently powered off."])
     {
-        imgNotConnected.image = [UIImage imageNamed:@"notconnect_icon.png"];
+        imgNotConnected.image = [UIImage imageNamed:@"blegray.png"];
     }
 }
 -(void)deleteSocketDevice
@@ -1372,6 +2030,26 @@
     {
         [self.navigationController popViewControllerAnimated:true];
     }
+   else if (alertView.tag == 123)
+     {
+
+         NSInteger intOpcode = [@"33" integerValue];
+         NSData * dataOpcode = [[NSData alloc] initWithBytes:&intOpcode length:1];
+
+         NSInteger intLegth = [@"33" integerValue];
+         NSData * dataPacketLegth = [[NSData alloc] initWithBytes:&intLegth length:1];
+
+         NSInteger intPacket = [strOTAstring intValue];
+         NSData * dataPacketData = [[NSData alloc] initWithBytes:&intPacket length:strOTAstring.length];
+
+         
+         NSMutableData * compleateData = [dataOpcode mutableCopy];
+         [compleateData appendData:dataPacketLegth];
+         [compleateData appendData:dataPacketData];
+
+         [[BLEService sharedInstance] SendDatatoPeripheral:compleateData withPeripheral:classPeripheral];
+
+     }
 }
 - (void)FCAlertViewDismissed:(FCAlertView *)alertView
 {
@@ -1380,6 +2058,311 @@
 - (void)FCAlertViewWillAppear:(FCAlertView *)alertView
 {
 }
+
+#pragma mark-Collection view setup
+-(void)SetupForSetSocketNameImages:(NSInteger)selectedSocket
+{
+    int yy = 20;
+    int viewWidth = DEVICE_WIDTH;
+    
+    if (DEVICE_HEIGHT >= 812)
+    {
+        yy = 40;
+    }
+
+    NSString * strSocketName = [NSString stringWithFormat:@"Socket %ld",(long)selectedSocket + 1];
+    NSString * strSocketImgType = @"1";
+    currentSocketSelectedImage = 0;
+    
+    if ([[arrSocketNames valueForKey:@"socket_id"] containsObject:[NSString stringWithFormat:@"%ld",(long)selectedSocket]])
+    {
+        NSInteger foundIndex = [[arrSocketNames valueForKey:@"socket_id"] indexOfObject:[NSString stringWithFormat:@"%ld",(long)selectedSocket]];
+        if (foundIndex != NSNotFound)
+        {
+            if ([arrSocketNames count] > foundIndex)
+            {
+                strSocketName = [[arrSocketNames objectAtIndex:foundIndex] valueForKey:@"socket_name"];
+                strSocketImgType = [[arrSocketNames objectAtIndex:foundIndex] valueForKey:@"image_type"];
+                currentSocketSelectedImage = [strSocketImgType integerValue];
+            }
+        }
+    }
+    [viewForCollectionBG removeFromSuperview];
+    viewForCollectionBG = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT)];
+    viewForCollectionBG .backgroundColor = UIColor.blackColor;
+    viewForCollectionBG.alpha = 0.7;
+    [self.view addSubview:viewForCollectionBG];
+
+    viewForCollectionImgView = [[UIView alloc] initWithFrame:CGRectMake(0, DEVICE_HEIGHT, DEVICE_WIDTH-0, DEVICE_HEIGHT)];
+    viewForCollectionImgView .backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.7];
+    viewForCollectionImgView.layer.cornerRadius = 6;
+    viewForCollectionImgView.clipsToBounds = true;
+    [self.view addSubview:viewForCollectionImgView];
+    
+    UILabel * lblMenu = [[UILabel alloc] initWithFrame:CGRectMake(0, yy, DEVICE_WIDTH, 60)];
+    lblMenu.text= @"Customize Socket";
+    lblMenu.textColor = UIColor.whiteColor;
+    lblMenu.backgroundColor = global_brown_color;
+    lblMenu.textAlignment = NSTextAlignmentCenter;
+    lblMenu.font = [UIFont fontWithName:CGRegular size:textSizes+2];
+    [viewForCollectionImgView addSubview:lblMenu];
+
+    UIButton*  btnCancelImgs = [[UIButton alloc]init];
+    btnCancelImgs.frame = CGRectMake(0, yy, 55, 60);
+    [btnCancelImgs addTarget:self action:@selector(btnCancelImgs) forControlEvents:UIControlEventTouchUpInside];
+    [btnCancelImgs setImage:[UIImage imageNamed:@"Cancel.png"] forState:UIControlStateNormal];
+    [btnCancelImgs setTitleColor:UIColor.whiteColor forState:normal];
+    btnCancelImgs.backgroundColor = [UIColor clearColor]; //[UIColor colorWithRed:192.0/255.0f green:57.0/255.0f blue:43.0/255.0f alpha:1.0];
+    btnCancelImgs.layer.cornerRadius = 6;
+    btnCancelImgs.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+5];
+    [viewForCollectionImgView addSubview:btnCancelImgs];
+    
+    UIButton*  btnSaveNameImgs = [[UIButton alloc]init];
+    btnSaveNameImgs.frame = CGRectMake(DEVICE_WIDTH - 55, yy, 55, 60);
+    [btnSaveNameImgs addTarget:self action:@selector(btnSaveNameImgClick:) forControlEvents:UIControlEventTouchUpInside];
+    [btnSaveNameImgs setImage:[UIImage imageNamed:@"Save.png"] forState:UIControlStateNormal];
+    [btnSaveNameImgs setTitleColor:UIColor.whiteColor forState:normal];
+    btnSaveNameImgs.backgroundColor = [UIColor clearColor];//UIColor.redColor;
+    btnSaveNameImgs.layer.cornerRadius = 6;
+    btnSaveNameImgs.titleLabel.font = [UIFont fontWithName:CGRegular size:textSizes+5];
+    [viewForCollectionImgView addSubview:btnSaveNameImgs];    
+    
+    yy = yy + 70;
+
+    txtName = [[UITextField alloc] initWithFrame:CGRectMake(10, yy, viewWidth-20, 50)];
+    txtName.backgroundColor = UIColor.whiteColor;
+    txtName.placeholder = @"  Enter Socket Name";
+    txtName.delegate = self;
+    txtName.text = strSocketName;
+    txtName.returnKeyType = UIReturnKeyDone;
+    [viewForCollectionImgView addSubview:txtName];
+
+    yy = yy +50;
+    
+    UILabel * lblMenuImg = [[UILabel alloc] initWithFrame:CGRectMake(10, yy, viewForCollectionImgView.frame.size.width, 50)];
+    lblMenuImg.text= @"Choose  Picture";
+    lblMenuImg.textColor = UIColor.whiteColor;
+    lblMenuImg.backgroundColor = UIColor.clearColor;
+    lblMenuImg.font = [UIFont fontWithName:CGRegular size:textSizes+2];
+    [viewForCollectionImgView addSubview:lblMenuImg];
+    
+    yy = yy + 45;
+    
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
+       collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(10, yy, viewForCollectionImgView.frame.size.width-20, viewForCollectionImgView.frame.size.height-yy) collectionViewLayout:layout];
+    [collectionView setDataSource:self];
+    [collectionView setDelegate:self];
+
+    [collectionView registerClass:[CollectionCustomCell class] forCellWithReuseIdentifier:@"cellIdentifier"];
+    [collectionView setBackgroundColor:[UIColor clearColor]];
+     collectionView.hidden = false;
+    [viewForCollectionImgView addSubview:collectionView];
+    
+    
+    
+    [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^
+       {
+       self-> viewForCollectionImgView.frame = CGRectMake(0, (DEVICE_HEIGHT-(DEVICE_HEIGHT))/2, DEVICE_WIDTH-0, DEVICE_HEIGHT);
+       }
+       completion:(^(BOOL finished)
+       {
+      })];
+}
+#pragma mark - Collection Methods
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
+{
+    return ArrImgForCollectionView.count;
+}
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    CGFloat vWidth = (viewForCollectionImgView.frame.size.width/5);
+    return CGSizeMake(vWidth, vWidth );
+}
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+        CollectionCustomCell *cell=[collectionView  dequeueReusableCellWithReuseIdentifier:@"cellIdentifier" forIndexPath:indexPath];
+        cell.backgroundColor = [UIColor clearColor];
+        cell.backgroundColor = [UIColor clearColor];
+        cell.layer.borderColor = UIColor.whiteColor.CGColor;
+        cell.layer.borderWidth = 0.6;
+
+        CGFloat vWidth = (viewForCollectionImgView.frame.size.width/5);
+        CGFloat vHeight = vWidth ;
+    
+
+        cell.imgViewpProfile.frame = CGRectMake(10, 10,vWidth-20, vHeight-20);
+        cell.imgViewpProfile.contentMode = UIViewContentModeScaleAspectFill;
+        [cell.imgViewpProfile setImage:[UIImage imageNamed:[ArrImgForCollectionView objectAtIndex:indexPath.row]]];
+    
+      //check if the the checkmark image is hidden then change it to visible
+        cell.imgViewpProfile.layer.borderColor = [UIColor whiteColor].CGColor;
+        cell.imgViewpProfile.layer.cornerRadius = 0.5;
+        cell.imgViewpProfile.layer.masksToBounds = YES;
+    
+    
+      cell.checkMarkImage.frame = CGRectMake(vWidth - 22, vHeight - 22, 17, 17);
+      if (currentSocketSelectedImage == indexPath.row)
+      {
+        cell.checkMarkImage.hidden = NO;
+        cell.checkMarkImage.image = [UIImage imageNamed:@"Save.png"];
+      }
+      else
+      {
+        cell.checkMarkImage.hidden = YES;
+      }
+
+    
+    return cell;
+}
+-(void)collectionView:(UICollectionView *)collectionView didUnhighlightItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    UICollectionViewCell *cell = [collectionView cellForItemAtIndexPath:indexPath];
+    cell.alpha = 1.0;
+}
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    CollectionCustomCell * cell  = (CollectionCustomCell *)[collectionView cellForItemAtIndexPath:selectedIndexPath];
+    cell.checkMarkImage.hidden = false;
+    currentSocketSelectedImage = indexPath.row;
+    
+    cell  = (CollectionCustomCell *)[collectionView cellForItemAtIndexPath:indexPath];
+    {
+        if (indexPath.row == currentSocketSelectedImage)
+        {
+            cell.checkMarkImage.hidden = NO;
+            cell.checkMarkImage.image = [UIImage imageNamed:@"tick.png"];
+        }
+        else
+        {
+            cell.checkMarkImage.hidden = YES;
+        }
+    }
+    
+    selectedIndexPath = indexPath;
+    [collectionView reloadData];
+
+    [self.view endEditing:true];
+    
+//    [cell setSelected:YES];
+    
+    NSLog(@"selected index=%ld %ld", (long)indexPath.item, (long)indexPath.row);
+}
+#pragma mark- long Press
+-(void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer
+{
+    CGPoint p = [gestureRecognizer locationInView:self->tblView];
+    
+    NSIndexPath * indexPath = [self->tblView indexPathForRowAtPoint:p];
+    
+//    NSLog(@"lindex path----->%ld", (long)indexPath.row);
+
+    if (gestureRecognizer.state == UIGestureRecognizerStateEnded)
+    {
+        if (indexPath.row == 6)
+        {
+        }
+        else
+        {
+            [self SetupForSetSocketNameImages:indexPath.row];
+        }
+    }
+}
+#pragma mark-CollectionView buttons
+-(void)btnCancelImgs
+{
+    [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^
+    {
+    self-> viewForCollectionImgView.frame = CGRectMake(0, DEVICE_HEIGHT, DEVICE_WIDTH-0, DEVICE_HEIGHT-50);
+    }
+        completion:(^(BOOL finished)
+      {
+        [self-> viewForCollectionBG removeFromSuperview];
+    })];
+}
+-(void)btnSaveNameImgClick:(id)sender
+{
+    if ([txtName.text isEqual:@""])
+    {
+        [self AlertViewFCTypeCautionCheck:@"Please enter socket name"];
+    }
+    else if(currentSocketSelectedImage == -1)
+    {
+        [self AlertViewFCTypeCautionCheck:@"Select any image"];
+    }
+    else
+    {
+        if ([IS_USER_SKIPPED isEqualToString:@"NO"])
+        {
+            if ([APP_DELEGATE isNetworkreachable])
+            {
+                [self SaveSocketDetailstoServer];
+            }
+            else
+            {
+                [self AlertViewFCTypeCautionCheck:@"There is no internet connection. Please connect to internet first then try again later."];
+            }
+        }
+        else
+        {
+            NSInteger  intIMGtype = currentSocketSelectedImage + 1 ;
+
+            if ([arrSocketNames count] > selectedSocketIndex)
+            {
+                [[arrSocketNames objectAtIndex:selectedSocketIndex] setValue:txtName.text forKey:@"socket_name"];
+                [[arrSocketNames objectAtIndex:selectedSocketIndex] setValue:[NSString stringWithFormat:@"%ld",intIMGtype] forKey:@"image_type"];
+                [tblView reloadData];
+            }
+            NSMutableArray * arrdata = [[NSMutableArray alloc] init];
+            NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_NameImg_Table  where ble_address = '%@' and socket_id = '%ld' ",strMacAddress,(long)selectedSocketIndex];
+            [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
+                
+            if (arrdata.count > 0)
+            {
+                NSString * update = [NSString stringWithFormat:@"update Socket_NameImg_Table set socket_name = '%@' , socket_id = '%ld', image_type = '%ld',ble_address = '%@'",txtName.text,selectedSocketIndex,intIMGtype,strMacAddress];
+                [[DataBaseManager dataBaseManager] execute:update];
+            }
+            else
+            {
+                NSString * strInsert  = [NSString stringWithFormat:@"insert into 'Socket_NameImg_Table'('socket_name','socket_id','image_type','ble_address','device_id') values('%@','%ld','%ld','%@','%@')",txtName.text,selectedSocketIndex,intIMGtype,strMacAddress, [self checkforValidString:[deviceDetail valueForKey:@"device_id"]]];
+                [[DataBaseManager dataBaseManager] execute:strInsert];
+            }
+        }
+
+            
+        [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^
+         {
+            self-> viewForCollectionImgView.frame = CGRectMake(0, DEVICE_HEIGHT, DEVICE_WIDTH-0, DEVICE_HEIGHT);
+        }
+                        completion:(^(BOOL finished)
+                                    {
+            [self-> viewForCollectionBG removeFromSuperview];
+        })];
+        
+        [tblView reloadData];
+        [self.view endEditing:true];
+    }
+}
+#pragma mark- Get device name and image from server
+-(void)GetSocketNameandImgefromServer:(NSMutableDictionary *)dict
+{
+    if ([APP_DELEGATE isNetworkreachable])
+    {
+        NSMutableDictionary * dictVal = [[NSMutableDictionary alloc] init];
+        [dictVal setValue:[dict valueForKey:@"server_device_id"] forKey:@"device_id"];
+        
+        URLManager *manager = [[URLManager alloc] init];
+        manager.commandName = @"getSocketDetail";
+        manager.delegate = self;
+        NSString *strServerUrl = @"http://vithamastech.com/smartlight/api/device_socket_details"; //
+        [manager urlCall:strServerUrl withParameters:dictVal]; // for post method use this urlCall
+    }
+    else
+    {
+        [self AlertViewFCTypeCautionCheck:@"Please check internet connectivity."];
+    }
+}
+
+
 -(void)SaveDeviceDetailstoServer:(NSMutableDictionary *)inforDict
 {
     if ([APP_DELEGATE isNetworkreachable])
@@ -1400,7 +2383,9 @@
                     [args setObject:[inforDict valueForKey:@"is_favourite"] forKey:@"is_favourite"];
                     [args setObject:@"1" forKey:@"is_update"];
                     [args setValue:@"0" forKey:@"remember_last_color"];
-                    
+                    [args setValue:[inforDict valueForKey:@"identifier"] forKey:@"identifier"];
+                    [args setValue:[inforDict valueForKey:@"wifi_configured"] forKey:@"wifi_configured"];
+
                     if ([[self checkforValidString:[inforDict valueForKey:@"server_device_id"]] isEqualToString:@"NA"])
                     {
                         [args setObject:@"0" forKey:@"is_update"];
@@ -1478,7 +2463,6 @@
                        withCustomImage:[UIImage imageNamed:@"logo.png"]
                    withDoneButtonTitle:nil
                             andButtons:nil];
-
             }
         }
        else
@@ -1508,6 +2492,17 @@
             }
         }
     }
+   else if ([[result valueForKey:@"commandName"] isEqualToString:@"getSocketDetail"])
+   {
+       if ([[[result valueForKey:@"result"] valueForKey:@"response"] isEqualToString:@"true"])
+       {
+           dictSocketDetail = [[result valueForKey:@"result"] valueForKey:@"data"];
+       }
+       else
+       {
+           NSLog(@"From Server socket data====%@",dictSocketDetail);
+       }
+   }
 }
 - (void)onError:(NSError *)error
 {
@@ -1553,7 +2548,7 @@
         if ([[mqttObject valueForKey:@"wifi_configured"] isEqualToString:@"1"])
         {
             isMQTTConfigured = YES;
-            imgNotWifiConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
             
                     if (classMqttObj == nil)
                     {
@@ -1566,16 +2561,22 @@
                             isMQTTConfigured = NO;
                             classMqttObj.delegate = self;
                             
-            //                [APP_DELEGATE endHudProcess];
-            //                [APP_DELEGATE startHudProcess:@"Checking Status..."];
-                            
-                            NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
-                            NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
-                            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
-                            
-                            [mqttRequestTimeOut invalidate];
-                            mqttRequestTimeOut = nil;
-                            mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+                            if (classPeripheral)
+                            {
+                                if (classPeripheral.state != CBPeripheralStateConnected)
+                                {
+                                    NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+                                    NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
+                                    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+                                    arrMQTTalarmState = [[NSMutableArray alloc] init];
+                                    NSArray * arrAlarm = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:21],[NSNumber numberWithInt:0], nil];
+                                    [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrAlarm];
+                                    
+                                    [mqttRequestTimeOut invalidate];
+                                    mqttRequestTimeOut = nil;
+                                    mqttRequestTimeOut = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+                                }
+                            }
                         }
                         else if ([classMqttObj connState] == 3)
                         {
@@ -1586,7 +2587,15 @@
         else
         {
             isMQTTConfigured = NO;
-            imgNotWifiConnected.image = [UIImage imageNamed:@"wifired.png"];
+            
+            if ([APP_DELEGATE isNetworkreachable])
+            {
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+            }
+            else
+            {
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifgray.png"];
+            }
         }
     }
 }
@@ -1604,4 +2613,205 @@
         NSLog(@"MQTT MSG Sent==%hu",subTop);
     }
 }
+-(void)DeleteAlarm:(NSMutableData *)alarmDict;
+{
+    if (classMqttObj)
+    {
+        NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+        CocoaMQTTMessage * msg = [[CocoaMQTTMessage alloc] initWithTopic:strTopic alarmpayload:alarmDict qos:2 retained:NO dup:NO];
+        UInt16 subTop = [classMqttObj publish:msg];
+        NSLog(@"MQTT MSG Sent==%hu",subTop);
+    }
+
+}
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    [textField resignFirstResponder];
+    return YES;
+}- (void)textFieldDidEndEditing:(UITextField *)textField
+{
+    
+}
+-(void)OTAFordileep
+{
+    NSString * msgPlaceHolder = [NSString stringWithFormat:@"Enter Device Name"];
+    
+    [APP_DELEGATE endHudProcess];
+    
+    FCAlertView * alert;
+    [alert removeFromSuperview];
+    alert = [[FCAlertView alloc] init];
+    alert.delegate = self;
+    alert.tag = 123;
+    alert.colorScheme = global_brown_color;
+    
+    UITextField *customField = [[UITextField alloc] init];
+    customField.placeholder = msgPlaceHolder;
+    customField.keyboardAppearance = UIKeyboardAppearanceAlert;
+    customField.textColor = [UIColor blackColor];
+    [APP_DELEGATE getPlaceholderText:customField andColor:[UIColor lightGrayColor]];
+
+    [alert addTextFieldWithCustomTextField:customField andPlaceholder:nil andTextReturnBlock:^(NSString *text)
+     {
+        strOTAstring = customField.text ;
+    }];
+    [alert showAlertInView:self
+                 withTitle:@"Smart socket"
+              withSubtitle:@"Enter UTA string"
+           withCustomImage:nil
+       withDoneButtonTitle:nil
+                andButtons:nil];
+
+}
+-(void)UpdateDatabaseforAlarm:(NSArray *)arrResponse withBleAddress:(NSString *)strBleAdress
+{
+    if ([arrResponse count] >= 16)
+    {
+        NSString * strAlarmId = [NSString stringWithFormat:@"%@",[arrResponse objectAtIndex:2]];
+        NSString * strSocketId = [NSString stringWithFormat:@"%@",[arrResponse objectAtIndex:3]];
+        NSString * strOnTime = [self stringFroHex:[ self GetDecimalValueofAlarm:arrResponse withType:0]];;
+        NSString * strOffTime = [self stringFroHex:[ self GetDecimalValueofAlarm:arrResponse withType:1]];;
+        NSString * strTotalDaysCount = [NSString stringWithFormat:@"%@",[arrResponse objectAtIndex:4]];
+        NSString * strOnOriginal = [self getHoursfromString:strOnTime withDaysCount:strTotalDaysCount];
+        NSString * strOffOriginal = [self getHoursfromString:strOffTime withDaysCount:strTotalDaysCount];
+        NSString * strdayValue = [self getSelectedDaysforDayByteValue:[NSString stringWithFormat:@"%@",[arrResponse objectAtIndex:4]]];
+        NSString * strAlarmStatus = [NSString stringWithFormat:@"0%@",[arrResponse objectAtIndex:13]];
+
+        NSMutableArray * tmpArry = [[NSMutableArray alloc]init];
+        NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_Alarm_Table where ble_address = '%@' and alarm_id = '%@'",strBleAdress,strAlarmId];
+        [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:tmpArry];
+        
+        if ([tmpArry count] == 0)
+        {
+            NSString * strInsert  =[NSString stringWithFormat:@"insert into 'Socket_Alarm_Table'('alarm_id','socket_id','day_selected','OnTimestamp','OffTimestamp','alarm_state','ble_address','On_original','Off_original') values('%@','%@','%@','%@','%@','%@','%@','%@','%@')",strAlarmId,strSocketId,strdayValue,strOnTime,strOffTime,strAlarmStatus,strBleAdress,strOnOriginal,strOffOriginal];
+            [[DataBaseManager dataBaseManager] execute:strInsert];
+        }
+        else
+        {
+            NSString * update = [NSString stringWithFormat:@"update Socket_Alarm_Table set alarm_id = '%@', socket_id ='%@',day_selected='%@', onTimestamp ='%@', offTimestamp = '%@', alarm_state = '%@', On_original = '%@', Off_original = '%@' where ble_address = '%@' and alarm_id = '%@'",strAlarmId,strSocketId,strdayValue,strOnTime,strOffTime,strAlarmStatus,strOnOriginal,strOffOriginal,strBleAdress,strAlarmId];
+            [[DataBaseManager dataBaseManager] execute:update];
+        }
+    }
+}
+-(NSString *)getHexaofofDecimalTimefromIndex:(int)indexx withArr:(NSArray *)arrResponse
+{
+    NSString * strHexStart;
+
+    for (int i = indexx; i < indexx + 4; i ++)
+    {
+        NSInteger int1 = [[arrResponse objectAtIndex:i] integerValue];
+        NSData *d = [[NSData alloc] initWithBytes:&int1 length:1];
+        NSString * strHex1 = [NSString stringWithFormat:@"%@",d.debugDescription];
+        strHex1 = [strHex1 stringByReplacingOccurrencesOfString:@" " withString:@""];
+        strHex1 = [strHex1 stringByReplacingOccurrencesOfString:@"<" withString:@""];
+        strHex1 = [strHex1 stringByReplacingOccurrencesOfString:@">" withString:@""];
+
+        if (strHexStart.length == 0)
+        {
+            strHexStart = strHex1;
+        }
+        else
+        {
+            strHexStart = [strHexStart stringByAppendingString:strHex1];
+        }
+    }
+    return strHexStart;
+}
+#pragma mark- Socket detain Imge name save to server
+-(void)SaveSocketDetailstoServer
+{
+    if ([APP_DELEGATE isNetworkreachable])
+    {
+        if ([IS_USER_SKIPPED isEqualToString:@"NO"])
+        {
+            NSMutableDictionary *args = [[NSMutableDictionary alloc] init];
+            [args setObject:[self checkforValidString:[NSString stringWithFormat:@"%@",txtName.text]] forKey:@"socket_name"];
+            
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+            dispatch_async(queue, ^{
+                {
+                    
+                    [args setObject:[self checkforValidString:[deviceDetail valueForKey:@"server_device_id"]] forKey:@"device_id"];
+                    [args setObject:[self checkforValidString:[NSString stringWithFormat:@"%ld",(long)selectedSocketIndex]] forKey:@"socket_id"];
+               
+                    [args setObject:[self checkforValidString:[NSString stringWithFormat:@"%ld",(long)currentSocketSelectedImage + 1]] forKey:@"image_type"];
+
+                    AFHTTPRequestOperationManager *manager1 = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:[NSURL URLWithString:@"http://server.url"]];
+                    [manager1.requestSerializer setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+                        
+                        AFHTTPRequestOperation *op = [manager1 POST:@"http://vithamastech.com/smartlight/api/save_socket_details" parameters:args success:^(AFHTTPRequestOperation *operation, id responseObject)
+                    {
+                            NSMutableDictionary * dictID = [[NSMutableDictionary alloc] init];
+                            dictID = [responseObject mutableCopy];
+                            
+                            NSMutableArray * arrdata = [[NSMutableArray alloc] init];
+                            NSString * strQuery = [NSString stringWithFormat:@"select * from Socket_NameImg_Table  where ble_address = '%@' and socket_id = '%ld' ",strMacAddress,(long)selectedSocketIndex];
+                            [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:arrdata];
+                           
+                            NSInteger  intIMGtype = currentSocketSelectedImage + 1 ;
+
+                            if (arrdata.count > 0)
+                            {
+                                NSString * update = [NSString stringWithFormat:@"update Socket_NameImg_Table set socket_name = '%@' , socket_id = '%ld', image_type = '%ld',ble_address = '%@'",txtName.text,selectedSocketIndex,intIMGtype,strMacAddress];
+                                [[DataBaseManager dataBaseManager] execute:update];
+                            }
+                            else
+                            {
+                                NSString * strInsert  = [NSString stringWithFormat:@"insert into 'Socket_NameImg_Table'('socket_name','socket_id','image_type','ble_address','device_id') values('%@','%ld','%ld','%@','%@')",txtName.text,selectedSocketIndex,intIMGtype,strMacAddress, [self checkforValidString:[deviceDetail valueForKey:@"device_id"]]];
+                                [[DataBaseManager dataBaseManager] execute:strInsert];
+                            }
+
+                            if ([arrSocketNames count] > selectedSocketIndex)
+                            {
+                                [[arrSocketNames objectAtIndex:selectedSocketIndex] setValue:txtName.text forKey:@"socket_name"];
+                                [[arrSocketNames objectAtIndex:selectedSocketIndex] setValue:[NSString stringWithFormat:@"%ld",intIMGtype] forKey:@"image_type"];
+                            }
+                            [tblView reloadData];
+                        }
+                                                      
+                    failure:^(AFHTTPRequestOperation *operation, NSError *error)
+                        {
+                            if (error)
+                            {
+                                //NSLog(@"Servicer error = %@", error);
+                            }
+                        }];
+                        [op start];
+                    }
+                    // Perform async operation
+                    // Call your method/function here
+                    // Example:
+                    dispatch_sync(dispatch_get_main_queue(), ^{
+                        //Method call finish here
+                    });
+                });
+            }
+        }
+}
+-(void)TostNotification:(NSString *)StrToast
+{
+        MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.navigationController.view animated:YES];
+
+        // Configure for text only and offset down
+        hud.mode = MBProgressHUDModeText;
+        hud.labelText = StrToast;
+        hud.margin = 10.f;
+        hud.yOffset = -180.f;
+        hud.removeFromSuperViewOnHide = YES;
+        [hud hide:YES afterDelay:0.9];
+}
+
 @end
+/*
+ 
+ //2021-03-23 18:07:13.972 SmartLightApp[6168:830814] ====ALARM STATE======010042ffffffff6059e1280100000000
+
+ {
+ alaramID = 1;
+ alarmState = 01;
+ dayValue = 66;
+ offTime = 6059e128;
+ onTime = ffffffff;
+ socketID = 00;
+ )
+ */

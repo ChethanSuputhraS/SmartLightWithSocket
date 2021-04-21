@@ -388,7 +388,60 @@ static DataBaseManager * dataBaseManager = nil;
     }
     return ret;
 }
-
+-(BOOL)Create_Socket_NameAndImg_Table
+{
+    int rc;
+    
+    // SQL to create new database
+    NSArray* queries = [NSArray arrayWithObjects:@"CREATE TABLE 'Socket_NameImg_Table' ('id' INTEGER PRIMARY KEY  NOT NULL, 'socket_name' VARCHAR, 'image_type' VARCHAR, 'socket_id' VARCHAR, 'ble_address' VARCHAR, 'device_id' VARCHAR)",nil];
+    
+    if(queries != nil)
+    {
+        for (NSString* sql in queries)
+        {
+            
+            sqlite3_stmt *stmt;
+            rc = sqlite3_prepare_v2(_database, [sql UTF8String], -1, &stmt, NULL);
+            ret = (rc == SQLITE_OK);
+            if (ret)
+            {
+                // statement built, execute
+                rc = sqlite3_step(stmt);
+                ret = (rc == SQLITE_DONE);
+                sqlite3_finalize(stmt); // free statement
+                //sqlite3_reset(stmt);
+            }
+        }
+    }
+    return ret;
+}
+-(BOOL)Create_YoutubeLink_Table
+{
+    int rc;
+    
+    // SQL to create new database
+    NSArray* queries = [NSArray arrayWithObjects:@"CREATE TABLE 'youtubeLink_Table' ('id' INTEGER PRIMARY KEY  NOT NULL, 'title' VARCHAR, 'video_id' VARCHAR,'created_date' VARCHAR,'updated_date' VARCHAR)",nil];
+    
+    if(queries != nil)
+    {
+        for (NSString* sql in queries)
+        {
+            
+            sqlite3_stmt *stmt;
+            rc = sqlite3_prepare_v2(_database, [sql UTF8String], -1, &stmt, NULL);
+            ret = (rc == SQLITE_OK);
+            if (ret)
+            {
+                // statement built, execute
+                rc = sqlite3_step(stmt);
+                ret = (rc == SQLITE_DONE);
+                sqlite3_finalize(stmt); // free statement
+                //sqlite3_reset(stmt);
+            }
+        }
+    }
+    return ret;
+}
 #pragma mark - Insert Query
 /*
  * Method to execute the simple queries

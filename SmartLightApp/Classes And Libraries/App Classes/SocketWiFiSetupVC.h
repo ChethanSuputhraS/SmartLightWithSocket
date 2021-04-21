@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 }
 @property (nonatomic,strong)NSString *   isWIFIconfig; 
-@property(nonatomic,strong)CBPeripheral * peripheralPss;
+@property(nonatomic,strong)CBPeripheral * classPeripheral;
 @property(nonatomic,strong)NSString * strBleAddress;
 @property(nonatomic,strong)NSMutableDictionary * dictData;
 @property (nonatomic,weak) id<SocketWifiSettingDelegate>delegate;

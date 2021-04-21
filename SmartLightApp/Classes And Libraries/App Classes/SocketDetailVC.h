@@ -26,15 +26,22 @@ NS_ASSUME_NONNULL_BEGIN
     NSString * selectedDate;
     UIView *  viewForTxtBg,*viewTxtfld;
     UITextField *txtDeviceName,*txtRouterName,*txtRouterPassword;
-    UIImageView *imgNotConnected, *imgNotWifiConnected;
+    UIImageView *imgNotConnected, *imgWifiNotConnected;
     NSString * strSSID;
     CBCentralManager * _centralManager;
     NSString * strAllSwSatate;
     NSMutableDictionary *dictFromHomeSwState;
     NSMutableArray * arryDevices, * arrAlarmIdsofDevices;
     BOOL isMQTTConfigured;
-    NSTimer * mqttRequestTimeOut;
+    NSTimer * mqttRequestTimeOut, * statusCheckTimer;
     NSString * mqttSwithPreviousStatus;
+    NSMutableArray * dictSocketDetail;
+    NSInteger currentSocketSelectedImage;
+    NSMutableArray * arrSocketNames;
+    BOOL isTopicSubscribed;
+    MBProgressHUD * intialConnectHud;
+    
+
 }
 @property(nonatomic,strong) NSMutableDictionary *  deviceDetail;
 @property(nonatomic,strong) NSString *  isMQTTselect;
@@ -46,11 +53,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
--(void)ReceiveAllSoketONOFFState:(NSString *)strState;
+-(void)ReceiveAllSoketONOFFState:(NSString *)strState withStatus:(BOOL)isSuccess;
 -(void)ReceivedSwitchStatusfromDevice:(NSMutableDictionary *)dictSwitch;
 -(void)ReceivedMQTTStatus:(NSDictionary *)dictSwitch;
 -(void)AlarmListStoredinDevice:(NSMutableDictionary *)dictAlList;
 -(void)ReceivedMQTTResponsefromserver:(NSMutableDictionary *)dictData;
+-(void)ReceivedFirmwareVersionFromDevice:(NSString *)strVersion;
 
 @end
 

@@ -18,8 +18,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,strong)UILabel * lblBack,*lblLine,*lblSettings,*lblLineLower;
 @property(nonatomic, strong)UISwitch *swSocket;
 @property(nonatomic, strong)UIImageView *imgSwitch;
-@property(nonatomic,strong)UIButton * btnAlaram;
+@property(nonatomic,strong)UIButton * btnAlaram,*btnMore;
 @property(nonatomic,strong)UIImageView * imgArrow;
+@property(nonatomic,strong)UITextField * txtOTA;
+@property(nonatomic,strong)UIButton * btnSocket;
 
 
 @end

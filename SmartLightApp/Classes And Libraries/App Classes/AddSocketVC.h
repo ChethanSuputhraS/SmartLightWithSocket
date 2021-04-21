@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AddSocketVC : UIViewController
 {
-        NSTimer * connectionTimer, * advertiseTimer, * disconnectionTimer;
+        NSTimer * connectionTimer, * advertiseTimer, * disconnectionTimer, * wifiWaitConnectConfirmTimer;
         CBCentralManager * centralManager;
         CBPeripheral * classPeripheral;
         NSMutableDictionary * dictSwState;

@@ -246,6 +246,41 @@
     {
         if ([IS_USER_SKIPPED isEqualToString:@"YES"])
         {
+            [[NSUserDefaults standardUserDefaults] setObject:@"NO" forKey:@"IS_USER_LOGGED"];
+            [[NSUserDefaults standardUserDefaults] setObject:@"NO" forKey:@"IS_USER_SKIPPED"];
+            [[NSUserDefaults standardUserDefaults] setObject:@"YES" forKey:@"IS_USER_LOGGEDOUT"];
+
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"PairedDevices"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+
+            [self clearUserDefaults];
+            
+            globalDashBoardVC = [[DashboardVC alloc] init];
+            globalSocketAlarmVC = [[SocketAlarmVC alloc] init];
+            globalSocketDetailVC = [[SocketDetailVC alloc] init];
+            [arrSocketDevices removeAllObjects];
+
+            NSString *strDelete = [NSString stringWithFormat:@"Delete from UserAccount_Table"];
+            [[DataBaseManager dataBaseManager] execute:strDelete];
+
+            NSString * strDeviceDelete = [NSString stringWithFormat:@"Delete from Device_Table"];
+            [[DataBaseManager dataBaseManager] execute:strDeviceDelete];
+
+            NSString * strSocketDetailDelete = [NSString stringWithFormat:@"Delete from Socket_NameImg_Table"];
+            [[DataBaseManager dataBaseManager] execute:strSocketDetailDelete];
+
+            [[BLEManager sharedManager] RemoveDevicefromAutoConnection:@"AllDevices"];
+            
+            NSArray * arrSmartLights = [[BLEManager sharedManager] getLastSocketConnected];
+            for (int i =0; i < [arrSmartLights count]; i++)
+            {
+                CBPeripheral * p = [arrSmartLights objectAtIndex:i];
+                if (p.state == CBPeripheralStateConnected)
+                {
+                    [[BLEManager sharedManager] disconnectDevice:p];
+                }
+            }
+
             [APP_DELEGATE movetoLogin];
         }
         else
@@ -283,13 +318,39 @@
             [alert addButton:@"Yes" withActionBlock:^{
                 [[NSUserDefaults standardUserDefaults] setObject:@"NO" forKey:@"IS_USER_LOGGED"];
                 [[NSUserDefaults standardUserDefaults] setObject:@"NO" forKey:@"IS_USER_SKIPPED"];
+                [[NSUserDefaults standardUserDefaults] setObject:@"YES" forKey:@"IS_USER_LOGGEDOUT"];
+                [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"PairedDevices"];
                 [[NSUserDefaults standardUserDefaults] synchronize];
+
                 [self clearUserDefaults];
-                [APP_DELEGATE movetoLogin];
+
+                globalDashBoardVC = [[DashboardVC alloc] init];
+                globalSocketAlarmVC = [[SocketAlarmVC alloc] init];
+                globalSocketDetailVC = [[SocketDetailVC alloc] init];
+                [arrSocketDevices removeAllObjects];
                 
-                NSString *strDelete;
-                strDelete = [NSString stringWithFormat:@"Delete from UserAccount_Table"];
+                NSString *strDelete = [NSString stringWithFormat:@"Delete from UserAccount_Table"];
                 [[DataBaseManager dataBaseManager] execute:strDelete];
+
+                NSString * strDeviceDelete = [NSString stringWithFormat:@"Delete from Device_Table"];
+                [[DataBaseManager dataBaseManager] execute:strDeviceDelete];
+
+                NSString * strSocketDetailDelete = [NSString stringWithFormat:@"Delete from Socket_NameImg_Table"];
+                [[DataBaseManager dataBaseManager] execute:strSocketDetailDelete];
+
+                [[BLEManager sharedManager] RemoveDevicefromAutoConnection:@"AllDevices"];
+                
+                NSArray * arrSmartLights = [[BLEManager sharedManager] getLastSocketConnected];
+                for (int i =0; i < [arrSmartLights count]; i++)
+                {
+                    CBPeripheral * p = [arrSmartLights objectAtIndex:i];
+                    if (p.state == CBPeripheralStateConnected)
+                    {
+                        [[BLEManager sharedManager] disconnectDevice:p];
+                    }
+                }
+                
+                [APP_DELEGATE movetoLogin];
 
             }];
             alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];

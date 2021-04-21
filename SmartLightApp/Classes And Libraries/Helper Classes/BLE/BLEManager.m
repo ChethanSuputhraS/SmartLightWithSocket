@@ -25,11 +25,13 @@ static BLEManager    *sharedManager    = nil;
     NSTimer * checkDeviceTimer;
     BOOL isAutoConnected;
     NSMutableDictionary * dictCheckAutoConnection;
+    CBPeripheral * currentConnectedPeripheral;
+    NSTimer  * checkServiceDiscovered;
 }
 @end
 
 @implementation BLEManager
-@synthesize delegate,foundDevices,connectedServices,centralManager,nonConnectArr, autoConnectArr, arrBLESocketDevices;
+@synthesize delegate,foundDevices,connectedServices,centralManager,nonConnectArr, autoConnectArr, arrBLESocketDevices, arrSocketFactoryResetDevices;
 
 #pragma mark- Self Class Methods
 -(id)init
@@ -54,6 +56,8 @@ static BLEManager    *sharedManager    = nil;
     if(!arrBLESocketDevices)arrBLESocketDevices = [[NSMutableArray alloc] init];
     if(!connectedServices)connectedServices = [[NSMutableArray alloc] init];
     if(!disconnectedPeripherals)disconnectedPeripherals = [NSMutableArray new];
+    if(!arrSocketFactoryResetDevices)arrSocketFactoryResetDevices = [[NSMutableArray alloc] init];
+
     dictCheckAutoConnection = [[NSMutableDictionary alloc] init];
     [checkDeviceTimer invalidate];
     checkDeviceTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(checkDeviceWithmas) userInfo:nil repeats:YES];
@@ -88,12 +92,17 @@ static BLEManager    *sharedManager    = nil;
 }
 -(NSArray *)getLastSocketConnected
 {
+    NSLog(@"====================> Last Socket Connected ===============>%@",[centralManager retrieveConnectedPeripheralsWithServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]]);
     return [centralManager retrieveConnectedPeripheralsWithServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]];
 }
 -(NSArray *)getLastDiscoveredSocketDevices:(NSString *)strIdentifier
 {
     NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:strIdentifier];
-    return [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
+    if (uuid)
+    {
+        return [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
+    }
+    return [NSArray new];
 }
 
 
@@ -466,7 +475,10 @@ static BLEManager    *sharedManager    = nil;
     }
     else if (isScanningSocket == YES || [checkNameStr rangeOfString:@"V"].location != NSNotFound || [advertiseName rangeOfString:@"V"].location != NSNotFound )
     {
-        [self ScannedSocketDevices:peripheral withManufacturerData:advertisementData];
+        if ([checkNameStr isEqualToString:@"V"] || [advertiseName isEqualToString:@"V"])
+        {
+            [self ScannedSocketDevices:peripheral withManufacturerData:advertisementData];
+        }
     }
     
 }
@@ -581,7 +593,7 @@ static BLEManager    *sharedManager    = nil;
             
             if ([kpstr length] >=42)
             {
-                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
+//                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
                 return;
             }
             if ([strDestID isEqualToString:@"0000"])
@@ -742,7 +754,7 @@ static BLEManager    *sharedManager    = nil;
             
             if ([kpstr length] >=42)
             {
-                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
+//                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
                 return;
             }
             if ([strDestID isEqualToString:@"0000"])
@@ -923,7 +935,7 @@ static BLEManager    *sharedManager    = nil;
 #pragma mark - Connect Delegate method
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
-    NSLog(@"3------------> didConnectPeripheral Device");
+    NSLog(@"3------------> didConnectPeripheral Device=%@",peripheral);
     NSMutableArray * tmpArr = [[BLEManager sharedManager] foundDevices];
     if ([[tmpArr valueForKey:@"peripheral"] containsObject:peripheral])
     {
@@ -955,8 +967,7 @@ static BLEManager    *sharedManager    = nil;
     peripheral.delegate = self;
     
     bleConnectStatusImg.image = [UIImage imageNamed:@"Connected_icon.png"];
-    
-        
+            
     NSString * checkNameStr = [NSString stringWithFormat:@"%@",peripheral.name];
     if ([checkNameStr rangeOfString:@"Vithamas"].location != NSNotFound)
     {
@@ -972,57 +983,79 @@ static BLEManager    *sharedManager    = nil;
     }
     else if ([checkNameStr rangeOfString:@"V"].location != NSNotFound)
     {
-        [delegate didDeviceConnectedCallback:peripheral];
-        
-//        NSInteger intPacket = [@"0" integerValue];
-//        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-//        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:peripheral];
-
-        NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
-        if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+        if (isSearchingfromSocketFactory == NO && ![currentScreen isEqualToString:@"SocketReset"])
         {
-            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
-            [dict setValue:strCurrentIdentifier forKey:@"identifier"];
-            [dict setValue:peripheral forKey:@"peripheral"];
-            [arrSocketDevices addObject:dict];
-        }
-        else
-        {
-            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+            [delegate didDeviceConnectedCallback:peripheral];
+            
+            NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+            if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
             {
-                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
-                if (foudIndex != NSNotFound)
+                NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                [dict setValue:strCurrentIdentifier forKey:@"identifier"];
+                [dict setValue:peripheral forKey:@"peripheral"];
+//                [arrSocketDevices addObject:dict];
+            }
+            else
+            {
+                if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
                 {
-                    if ([arrSocketDevices count] > foudIndex)
+                    NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                    if (foudIndex != NSNotFound)
                     {
-                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
-                        [dataDict setValue:peripheral forKey:@"peripheral"];
-                        [dataDict setValue:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
-                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                        if ([arrSocketDevices count] > foudIndex)
+                        {
+                            NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                            [dataDict setValue:peripheral forKey:@"peripheral"];
+                            [dataDict setValue:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
+                            [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                        }
                     }
                 }
             }
         }
-
+        currentConnectedPeripheral = peripheral;
+        currentConnectedPeripheral.delegate = self;
         if (peripheral.services)
         {
-            NSLog(@"Peripheral disciver all services------>");
-            [self peripheral:peripheral didDiscoverServices:nil];
+            NSLog(@"Peripheral discover all services------>");
+            [self peripheral:globalRetrievedSocketPeripheral didDiscoverServices:nil];
         }
         else
         {
-            NSLog(@"Peripheral disciver one services------>");
+            [checkServiceDiscovered invalidate];
+            checkServiceDiscovered = nil;
+            checkServiceDiscovered = [NSTimer scheduledTimerWithTimeInterval:3 target:self selector:@selector(serviceDiscoveredSuccess:) userInfo:peripheral repeats:NO];
+            NSLog(@"Peripheral discover one services------>%@",peripheral.services);
+//            [dictCheckAutoConnection setValue:@"ManualDisconnect" forKey:[NSString stringWithFormat:@"%@",peripheral.identifier]];
+//            [self disconnectDevice:peripheral];
+//            0x00, 0xb0, 0x4f, 0xb3, 0xf9, 0xab, 0x08, 0x22, 0x33, 0x44, 0x87, 0x26, 0x00, 0xab, 0x00, 0x00
             [peripheral discoverServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]];
         }
     }
 }
+-(void)serviceDiscoveredSuccess:(NSTimer *)timer
+{
+    
+    if ([timer userInfo])
+    {
+        NSLog(@"<==========SERVICE NOT DISCOVERED YET==========>%@",[timer userInfo]);
+
+        CBPeripheral * p = [timer userInfo];
+        [centralManager cancelPeripheralConnection:p];
+    }
+}
 -(void) peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
-    NSLog(@"4------------> didDiscoverServices Device");
+    [checkServiceDiscovered invalidate];
+    checkServiceDiscovered = nil;
+
+    NSLog(@"4------------> didDiscoverServices Device==%@",[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]);
 
     BOOL gotService = NO;
     for(CBService* svc in peripheral.services)
     {
+        NSLog(@"4------------> didDiscoverServices Device=%@",svc);
+
         gotService = YES;
 //        NSLog(@"service=%@",svc);
         if(svc.characteristics)
@@ -1035,7 +1068,9 @@ static BLEManager    *sharedManager    = nil;
     {
         [APP_DELEGATE endHudProcess];
         [[NSNotificationCenter defaultCenter] postNotificationName:@"hideHud" object:nil];
-        [self disconnectDevice:peripheral];
+//        [self disconnectDevice:peripheral];
+        [centralManager cancelPeripheralConnection:peripheral];
+
     }
 }
 
@@ -1070,15 +1105,38 @@ static BLEManager    *sharedManager    = nil;
     }
     else if ([checkNameStr rangeOfString:@"V"].location != NSNotFound)
     {
-        globalSocketPeripheral = peripheral;
-        [[BLEService sharedInstance] sendNotificationsSKT:peripheral withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
-        [[BLEService sharedInstance] EnableNotificationsForCommandSKT:peripheral withType:YES];
-        [[BLEService sharedInstance] EnableNotificationsForDATASKT:peripheral withType:YES];
-        NSLog(@"Enabled socket Notication successfully----->");
-        
-//        arrPeripheralsCheck
-        [[BLEService sharedInstance] GetAuthcodeforSocket:peripheral withValue:@"1"];//Ask for Authentication Value
-        
+        if (isSearchingfromSocketFactory == YES && [currentScreen isEqualToString:@"SocketReset"])
+        {
+            [[BLEService sharedInstance] sendNotificationsSKT:peripheral withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
+            [[BLEService sharedInstance] EnableNotificationsForCommandSKT:peripheral withSocketReset:YES];
+            [[BLEService sharedInstance] EnableNotificationsForDATASKT:peripheral withSocketReset:YES];
+            [[BLEService sharedInstance] GetAuthcodeforSocket:peripheral withValue:@"1" isforSocketReset:YES];//Ask for Authentication Value
+        }
+        else
+        {
+//            globalSocketPeripheral = peripheral;
+            [[BLEService sharedInstance] sendNotificationsSKT:peripheral withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
+            [[BLEService sharedInstance] EnableNotificationsForCommandSKT:peripheral withSocketReset:NO];
+            [[BLEService sharedInstance] EnableNotificationsForDATASKT:peripheral withSocketReset:NO];
+            NSLog(@"Enabled socket Notication successfully----->");
+            [dictCheckDeviceNotified setValue:@"1" forKey:[NSString stringWithFormat:@"%@",peripheral.identifier]];
+            [[BLEService sharedInstance] GetAuthcodeforSocket:peripheral withValue:@"1" isforSocketReset:NO];//Ask for Authentication Value
+            
+            NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+            {
+                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                if (foudIndex != NSNotFound)
+                {
+                    if ([arrSocketDevices count] > foudIndex)
+                    {
+                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                        [dataDict setValue:@"1" forKey:@"IsNotified"];
+                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                    }
+                }
+            }
+        }
         [[NSNotificationCenter defaultCenter] postNotificationName:@"DeviceDidConnectNotificationSocket" object:peripheral];
     }
     
@@ -1117,37 +1175,38 @@ static BLEManager    *sharedManager    = nil;
     }
     else if ([checkNameStr rangeOfString:@"V"].location != NSNotFound)
     {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"deviceDidDisConnectNotificationSocket" object:nil];
         [delegate didDeviceDisconnectedCallback:peripheral];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"deviceDidDisConnectNotificationSocket" object:peripheral];
 
         NSString * strIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
-        if ([[dictCheckAutoConnection valueForKey:strIdentifier] isEqualToString:@"ManualDisconnect"])
+        if ([dictCheckAutoConnection count] > 0)
         {
-            NSLog(@"Manual Disconnected==>%@",dictCheckAutoConnection);
-            [dictCheckAutoConnection setValue:@"NA" forKey:strIdentifier];
-        }
-        else
-        {
-            NSLog(@"Auto Disconnected==>%@",dictCheckAutoConnection);
-            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
+            if ([[dictCheckAutoConnection valueForKey:strIdentifier] isEqualToString:@"ManualDisconnect"])
             {
-                NSInteger indexID = [[arrSocketDevices valueForKey:@"identifier"]indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
-                if (indexID != NSNotFound)
+                NSLog(@"Manual Disconnected==>%@",dictCheckAutoConnection);
+                [dictCheckAutoConnection setValue:@"NA" forKey:strIdentifier];
+            }
+            else
+            {
+                NSLog(@"Auto Disconnected==>%@",dictCheckAutoConnection);
+                if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
                 {
-                    if (arrSocketDevices.count > indexID)
+                    NSInteger indexID = [[arrSocketDevices valueForKey:@"identifier"]indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
+                    if (indexID != NSNotFound)
                     {
-                        NSLog(@"Retrying");
-                        if (peripheral.state != CBPeripheralStateConnected)
+                        if (arrSocketDevices.count > indexID)
                         {
-                            [self.centralManager connectPeripheral:peripheral options:nil];
+                            NSLog(@"Retrying");
+                            if (peripheral.state != CBPeripheralStateConnected)
+                            {
+                                [self.centralManager connectPeripheral:peripheral options:nil];
+                            }
                         }
                     }
                 }
             }
         }
     }
-    
-    
 }
 -(void)setTimetoDevice
 {
@@ -1284,6 +1343,21 @@ static BLEManager    *sharedManager    = nil;
     
     return strValid;
 }
+-(void)RemoveDevicefromAutoConnection:(NSString *)strIdentifier
+{
+    if ([[dictCheckAutoConnection allKeys] containsObject:strIdentifier])
+    {
+        [dictCheckAutoConnection setValue:@"ManualDisconnect" forKey:strIdentifier];
+    }
+    if ([strIdentifier isEqualToString:@"AllDevices"])
+    {
+        dictCheckAutoConnection = [[NSMutableDictionary alloc] init];
+    }
+}
+-(void)SetDeviceforAutoConnection:(NSString *)strIdentifier;
+{
+    [dictCheckAutoConnection setValue:@"AutoConnect" forKey:strIdentifier];
+}
 #pragma mark - All SOCKET METHODS
 -(void)ScannedSocketDevices:(CBPeripheral *)peripheral withManufacturerData:(NSDictionary *)advertisementData
 {
@@ -1294,23 +1368,25 @@ static BLEManager    *sharedManager    = nil;
         NSRange rangeFirst = NSMakeRange(1, 4);
         NSString * strOpCodeCheck = [nameString substringWithRange:rangeFirst];
         
+//        NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",nameString);
+
+       
         if ([strOpCodeCheck isEqualToString:@"3200"])
         {
-//            NSLog(@"=====================================================================Degub=%@  & =====descroption=%@",nameString, nameData.description);
-
             rangeFirst = NSMakeRange(0, [nameString length]);
-            NSString * kpstr = [nameString substringWithRange:rangeFirst];
-            kpstr = [kpstr stringByReplacingOccurrencesOfString:@" " withString:@""];
-            kpstr = [kpstr stringByReplacingOccurrencesOfString:@">" withString:@""];
-            kpstr = [kpstr stringByReplacingOccurrencesOfString:@"<" withString:@""];
-            
+            NSString * strDecrypted = [nameString substringWithRange:rangeFirst];
+            strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@" " withString:@""];
+            strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@">" withString:@""];
+            strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@"<" withString:@""];
             NSString * strMacAddress = @"NA";
-            NSString * strDestID = [kpstr substringWithRange:NSMakeRange(6,4)];
+          
+            //Encryption Code Start Here.......
+          NSString * strDestID = [strDecrypted substringWithRange:NSMakeRange(6,4)];
             NSString * strKeys;
-            
-            if ([kpstr length] >=42)
+
+            if ([strDecrypted length] >=56)
             {
-                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
+//                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",strDecrypted);
                 return;
             }
 
@@ -1322,96 +1398,147 @@ static BLEManager    *sharedManager    = nil;
             {
                 strKeys = [APP_DELEGATE getStringConvertedinUnsigned:[[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"]];
             }
-            
-            NSString * strFinalData = [APP_DELEGATE getStringConvertedinUnsigned:kpstr];
-            NSData * updatedMFData = [APP_DELEGATE GetSocketManufactureDataDecrypted:strFinalData withKey:strKeys withLength:[kpstr length]/2];
-            NSString * strDecrypted = [NSString stringWithFormat:@"%@",updatedMFData.debugDescription];
+
+            NSString * strFinalData = [APP_DELEGATE getStringConvertedinUnsigned:strDecrypted];
+            NSData * updatedMFData = [APP_DELEGATE GetSocketManufactureDataDecrypted:strFinalData withKey:strKeys withLength:[strDecrypted length]/2];
+            strDecrypted = [NSString stringWithFormat:@"%@",updatedMFData.debugDescription];
             strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@" " withString:@""];
             strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@">" withString:@""];
             strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@"<" withString:@""];
+//            Encryption Code End Here.......
             
-            nameString = [NSString stringWithFormat:@"%@",updatedMFData.debugDescription];
 //            NSLog(@"================Manucature Decrypted======%@",strDecrypted);
-            if ([strDecrypted length]>=34)
+            
+            if (isSearchingfromSocketFactory == YES && [currentScreen isEqualToString:@"SocketReset"] && [strDestID isEqualToString:@"0002"])
             {
-                NSRange rangeCheck = NSMakeRange(18, 4);
-                NSString * strOpCodeCheck = [strDecrypted substringWithRange:rangeCheck];
-                if ([strOpCodeCheck isEqualToString:@"1700"] || [strOpCodeCheck isEqualToString:@"3000"])
+                
+                strKeys = [APP_DELEGATE getStringConvertedinUnsigned:[[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"]];
+
+                if ([strDecrypted length]>=34)
                 {
                     NSRange range71 = NSMakeRange(22, 12);
                     strMacAddress = [[strDecrypted substringWithRange:range71] uppercaseString];
-                    
-                    NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey:@"PairedDevices"];
-                    NSArray *array = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-                    NSMutableArray * arrPairdDevice = [[NSMutableArray alloc] initWithArray:array];
-                    if (![[arrPairdDevice valueForKey:@"ble_address"] containsObject:strMacAddress])
-                    {
-                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
-//                        [dict setObject:peripheral forKey:@"peripheral"];
-                        [dict setObject:strMacAddress forKey:@"ble_address"];
-                        [dict setObject:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
-                        if ([arrPairdDevice count] == 0)
-                        {
-                            arrPairdDevice = [[NSMutableArray alloc] init];
-                        }
-                        [arrPairdDevice addObject:dict];
-                        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:arrPairdDevice];
-                        [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"PairedDevices"];
-                        [[NSUserDefaults standardUserDefaults] synchronize];
-                    }
+                    NSLog(@"RESET HERE IT IS====>>>>>>>>>>>>>>>%@ and %@",strMacAddress, strDestID);
 
-                    if ([[arrBLESocketDevices valueForKey:@"ble_address"] containsObject:strMacAddress])
+                    if ([[arrSocketFactoryResetDevices valueForKey:@"ble_address"] containsObject:strMacAddress])
                     {
-                        NSInteger foundIndex = [[arrBLESocketDevices valueForKey:@"ble_address"] indexOfObject:strMacAddress];
+                        NSInteger foundIndex = [[arrSocketFactoryResetDevices valueForKey:@"ble_address"] indexOfObject:strMacAddress];
                         if (foundIndex != NSNotFound)
                         {
-                            if ([arrBLESocketDevices count] > foundIndex)
+                            if ([arrSocketFactoryResetDevices count] > foundIndex)
                             {
-                                if ([[[arrBLESocketDevices objectAtIndex:foundIndex] valueForKey:@"Manufac"] length]>20)
+                                if ([[[arrSocketFactoryResetDevices objectAtIndex:foundIndex] valueForKey:@"Manufac"] length]>20)
                                 {
                                     NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
                                     [dict setObject:peripheral forKey:@"peripheral"];
-                                    [dict setObject:nameString forKey:@"Manufac"];
+                                    [dict setObject:strDecrypted forKey:@"Manufac"];
                                     [dict setObject:strMacAddress forKey:@"ble_address"];
-                                    
-                                    if (![strOpCodeCheck isEqualToString:@"1700"])
-                                    {
-                                        [dict setObject:@"1" forKey:@"isAdded"];
-                                    }
-                                    else
-                                    {
-                                        [dict setObject:@"2" forKey:@"isAdded"];
-                                    }
-                                    [arrBLESocketDevices replaceObjectAtIndex:foundIndex withObject:dict];
+                                    [arrSocketFactoryResetDevices replaceObjectAtIndex:foundIndex withObject:dict];
                                 }
                             }
-                            
                         }
                     }
                     else
                     {
                         NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
                         [dict setObject:peripheral forKey:@"peripheral"];
-                        [dict setObject:nameString forKey:@"Manufac"];
+                        [dict setObject:strDecrypted forKey:@"Manufac"];
                         [dict setObject:strMacAddress forKey:@"ble_address"];
-                        if (![strOpCodeCheck isEqualToString:@"1700"])
+                        [arrSocketFactoryResetDevices addObject:dict];
+                    }
+                }
+                if ([nameData length]>0)
+                {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"DiscoverDevicesforSocketReset" object:peripheral userInfo:advertisementData];
+                }
+            }
+            else
+            {
+                if ([strDecrypted length]>=34)
+                {
+                    NSRange rangeCheck = NSMakeRange(18, 4);
+                    NSString * strOpCodeCheck = [strDecrypted substringWithRange:rangeCheck];
+                    if ([strOpCodeCheck isEqualToString:@"1700"] || [strOpCodeCheck isEqualToString:@"3000"])
+                    {
+                        NSRange range71 = NSMakeRange(22, 12);
+                        strMacAddress = [[strDecrypted substringWithRange:range71] uppercaseString];
+                        if ([strMacAddress isEqualToString:@"246F28288802"])
                         {
-                            [dict setObject:@"1" forKey:@"isAdded"];
+//                            NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@ and %@",strMacAddress, strDecrypted);
+                        }
+
+                        NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey:@"PairedDevices"];
+                        NSArray *array = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+                        NSMutableArray * arrPairdDevice = [[NSMutableArray alloc] initWithArray:array];
+                        if (![[arrPairdDevice valueForKey:@"ble_address"] containsObject:strMacAddress])
+                        {
+                            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+    //                        [dict setObject:peripheral forKey:@"peripheral"];
+                            [dict setObject:strMacAddress forKey:@"ble_address"];
+                            [dict setObject:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
+                            if ([arrPairdDevice count] == 0)
+                            {
+                                arrPairdDevice = [[NSMutableArray alloc] init];
+                            }
+                            [arrPairdDevice addObject:dict];
+                            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:arrPairdDevice];
+                            [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"PairedDevices"];
+                            [[NSUserDefaults standardUserDefaults] synchronize];
+                        }
+
+                        if ([[arrBLESocketDevices valueForKey:@"ble_address"] containsObject:strMacAddress])
+                        {
+                            NSInteger foundIndex = [[arrBLESocketDevices valueForKey:@"ble_address"] indexOfObject:strMacAddress];
+                            if (foundIndex != NSNotFound)
+                            {
+                                if ([arrBLESocketDevices count] > foundIndex)
+                                {
+                                    if ([[[arrBLESocketDevices objectAtIndex:foundIndex] valueForKey:@"Manufac"] length]>20)
+                                    {
+                                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                                        [dict setObject:peripheral forKey:@"peripheral"];
+                                        [dict setObject:strDecrypted forKey:@"Manufac"];
+                                        [dict setObject:strMacAddress forKey:@"ble_address"];
+                                        
+                                        if (![strOpCodeCheck isEqualToString:@"1700"])
+                                        {
+                                            [dict setObject:@"1" forKey:@"isAdded"];
+                                        }
+                                        else
+                                        {
+                                            [dict setObject:@"2" forKey:@"isAdded"];
+                                        }
+                                        [arrBLESocketDevices replaceObjectAtIndex:foundIndex withObject:dict];
+                                    }
+                                }
+                            }
                         }
                         else
                         {
-                            [dict setObject:@"2" forKey:@"isAdded"];
+                            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                            [dict setObject:peripheral forKey:@"peripheral"];
+                            [dict setObject:strDecrypted forKey:@"Manufac"];
+                            [dict setObject:strMacAddress forKey:@"ble_address"];
+                            if (![strOpCodeCheck isEqualToString:@"1700"])
+                            {
+                                [dict setObject:@"1" forKey:@"isAdded"];
+                            }
+                            else
+                            {
+                                [dict setObject:@"2" forKey:@"isAdded"];
+                            }
+                            [arrBLESocketDevices addObject:dict];
+//                            NSLog(@"9000000900090900000=%@",arrBLESocketDevices);
                         }
-                        [arrBLESocketDevices addObject:dict];
-                        NSLog(@"9000000900090900000=%@",arrBLESocketDevices);
                     }
                 }
+                if ([nameData length]>0)
+                {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"NotifiyDiscoveredDevicesforSockets" object:peripheral userInfo:advertisementData];
+                }
             }
+
         }
-    }
-    if ([nameData length]>0)
-    {
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"NotifiyDiscoveredDevicesforSockets" object:peripheral userInfo:advertisementData];
     }
 }
 
@@ -1422,9 +1549,62 @@ static BLEManager    *sharedManager    = nil;
 - (void)batterySignalValueUpdated:(CBPeripheral *)device withBattLevel:(NSString *)batLevel {
     
 }
+-(void)discoverServicesforSocketsConnected:(CBPeripheral *)peripheral;
+{
+    NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+    if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+    {
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:strCurrentIdentifier forKey:@"identifier"];
+        [dict setValue:peripheral forKey:@"peripheral"];
+//        [arrSocketDevices addObject:dict];
+    }
+    else
+    {
+        if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+        {
+            NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+            if (foudIndex != NSNotFound)
+            {
+                if ([arrSocketDevices count] > foudIndex)
+                {
+                    NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                    [dataDict setValue:peripheral forKey:@"peripheral"];
+                    [dataDict setValue:[NSString stringWithFormat:@"%@",peripheral.identifier] forKey:@"identifier"];
+                    [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                }
+            }
+        }
+    }
 
+    if (peripheral.services)
+    {
+        NSLog(@"Peripheral discover all services------>");
+        [self peripheral:peripheral didDiscoverServices:nil];
+    }
+    else
+    {
+        NSLog(@"Peripheral discover one services for Connected------>");
+        [peripheral discoverServices:@[[CBUUID UUIDWithString:@"0000AB01-2687-4433-2208-ABF9B34FB000"]]];
+    }
+
+}
 @end
 //    kCBAdvDataManufacturerData = <0a00640b 00009059 22590161 00007f0c 09fb0069 00>;
 //0a00 0002 32ac 6057 26
 //  329a00cc090000ea761800010001787878
 
+//32 0000 0000 0000 02cd3000246f282888020400d9
+//2021-04-12 16:37:58.548858+0530 SmartLightApp[579:116367] ====SOCKET_FULL_DECRYPTED_PACKET========0b0e01000060742a1060742a4c1c5c010000
+//2021-04-12 16:40:16.909960+0530 SmartLightApp[579:116367] ====SOCKET_FULL_DECRYPTED_PACKET========0b0e02000060742a8860742b3c9c5d010000
+
+/**
+ 
+ alaramID = 1;
+ alarmState = 01;
+ dayValue = 88;
+ offTime = 60797268;
+ onTime = 60798e10;
+ socketID = 00;
+},
+ */

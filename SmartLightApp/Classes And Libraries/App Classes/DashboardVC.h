@@ -61,4 +61,5 @@
 -(void)NewSocketAddedWithWIFIConfigured:(NSString *)strBleAddress withPeripheral:(CBPeripheral *)peripheral;
 -(void)DisconnectMQTTSocketServer;
 -(void)UpdateSocketSwithchStatus:(NSArray *)arrData withMacAddress:(NSString *)strAddress;
+-(void)UpdateSocketSwithwithBLE:(BOOL)isOn withMacAddress:(NSString *)strAddress;
 @end

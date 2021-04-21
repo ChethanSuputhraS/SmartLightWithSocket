@@ -18,12 +18,12 @@
     int globalStatusHeight;
     UILabel * lblScanning,*lblNoDevice;
     MNMPullToRefreshManager * topPullToRefreshManager;
-    FCAlertView * alert;
-    NSTimer * disconnectionTimer,*connectionTimer,*advertiseTimer;
+    FCAlertView *alert, * timeOutAlert;
+    NSTimer * disconnectionTimer,*connectionTimer,*advertiseTimer,*deviceRestedCheckTimer,*timertoStopIndicator;
     CBPeripheral * classPeripheral;
     CBCentralManager * centralManager;
-
-
+    NSString * strSelectedAddress;
+    NSInteger resetDeviceCount;
 }
 @end
 
@@ -63,18 +63,32 @@
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+    isSearchingfromSocketFactory = YES;
+
     [self InitialBLE];
     [self refreshBtnClick];
     [self.navigationController setNavigationBarHidden:YES animated:NO];
+    currentScreen = @"SocketReset";
+
+    [[[BLEManager sharedManager] nonConnectArr] removeAllObjects];
+    [[BLEManager sharedManager] startScan];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:currentScreen object:nil];
+
 }
 -(void)viewWillDisappear:(BOOL)animated
 {
+    isSearchingfromSocketFactory = NO;
+
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"updateUTCtime" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"UpdateCurrentGPSlocation" object:nil];
     
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"NotifiyDiscoveredDevicesforSockets" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DiscoverDevicesforSocketReset" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidConnectNotificationSocket" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidDisConnectNotificationSocket" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"ResetSocketAuthenticationCompleted" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"ShowSocketTurnOnOffPopup" object:nil];
+
     [super viewWillDisappear:YES];
 }
 #pragma mark - Set Frames
@@ -164,6 +178,8 @@
     [lblNoDevice setTextColor:[UIColor whiteColor]];
     lblNoDevice.text = @"No Devices Found.";
     [self.view addSubview:lblNoDevice];
+    
+    
 }
 #pragma mark- UITableView Methods
 #pragma mark- UITableView Methods
@@ -196,7 +212,7 @@
 }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return [[[BLEManager sharedManager] arrBLESocketDevices] count];//
+    return [[[BLEManager sharedManager] arrSocketFactoryResetDevices] count];//
 }
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -215,7 +231,7 @@
         cell.lblConnect.text= @"Tap here to reset";
         
         NSMutableArray * arrayDevices = [[NSMutableArray alloc] init];
-        arrayDevices =[[BLEManager sharedManager] arrBLESocketDevices];
+        arrayDevices =[[BLEManager sharedManager] arrSocketFactoryResetDevices];
 
         cell.lblDeviceName.frame = CGRectMake(18, 0, DEVICE_WIDTH-36, 35);
         cell.lblAddress.frame = CGRectMake(18, 30,  DEVICE_WIDTH-36, 25);
@@ -223,6 +239,8 @@
         CBPeripheral * p = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"peripheral"];
         if (p.state == CBPeripheralStateConnected)
         {
+            cell.lblConnect.text= @"Tap here to reset";
+
         }
         cell.lblDeviceName.text = @"Vithamas Socket";
         cell.lblAddress.text = [[[arrayDevices  objectAtIndex:indexPath.row]valueForKey:@"ble_address"] uppercaseString];
@@ -242,53 +260,26 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSMutableArray * arrayDevices = [[NSMutableArray alloc] init];
-    arrayDevices =[[BLEManager sharedManager] arrBLESocketDevices];
+    arrayDevices =[[BLEManager sharedManager] arrSocketFactoryResetDevices];
     if ([arrayDevices count]>0)
     {
         CBPeripheral * p = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"peripheral"];
-        
+        classPeripheral = p;
+        strSelectedAddress = [[[arrayDevices  objectAtIndex:indexPath.row]valueForKey:@"ble_address"] uppercaseString];
         if (p.state == CBPeripheralStateConnected)
         {
-            [self AskForResetdevice];
+            [[BLEService sharedInstance] sendNotificationsSKT:classPeripheral withType:NO withUUID:@"0000AB00-2687-4433-2208-ABF9B34FB000"];
+            [[BLEService sharedInstance] EnableNotificationsForCommandSKT:classPeripheral withSocketReset:YES];
+            [[BLEService sharedInstance] EnableNotificationsForDATASKT:classPeripheral withSocketReset:YES];
+            [[BLEService sharedInstance] GetAuthcodeforSocket:classPeripheral withValue:@"1" isforSocketReset:YES];//Ask for
         }
         else
         {
             NSLog(@"Add_Socket_Device_Peripheral = %@",p);
 
-            NSString * strManufacture = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"Manufac"];
-            strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@" " withString:@""];
-            strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@">" withString:@""];
-            strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@"<" withString:@""];
-            
-            if ([strManufacture length] >= 22)
-            {
-                NSRange rangeCheck = NSMakeRange(18, 4);
-                NSString * strOpCodeCheck = [strManufacture substringWithRange:rangeCheck];
-                
-                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:p.identifier])
-                {
-                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:p.identifier];
-                    if (foundIndex != NSNotFound)
-                    {
-                        if ([arrPeripheralsCheck count] > foundIndex)
-                        {
-                            NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
-                            [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
-                        }
-                    }
-                }
-                else
-                {
-                    NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
-                    [arrPeripheralsCheck addObject:dict];
-                }
-            }
-
             [connectionTimer invalidate];
             connectionTimer = nil;
             connectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(ConnectionTimeOutMethod) userInfo:nil repeats:NO];
-            classPeripheral = p;
-//                globalSocketPeripheral = p;
             
             [APP_DELEGATE endHudProcess];
             [APP_DELEGATE startHudProcess:@"Connecting..."];
@@ -304,7 +295,7 @@
     NSMutableArray * arrPreviouslyFound = [[NSMutableArray alloc] initWithArray:array];
     NSArray * tmparr = [[BLEManager sharedManager] getLastSocketConnected];
     
-    [[[BLEManager sharedManager] arrBLESocketDevices] removeAllObjects];
+    [[[BLEManager sharedManager] arrSocketFactoryResetDevices] removeAllObjects];
     [[BLEManager sharedManager] rescan];
     [tblDeviceList reloadData];
 
@@ -322,17 +313,17 @@
             {
                 if ([arrPreviouslyFound count] > foudIndex)
                 {
-                    if (![[[[BLEManager sharedManager] arrBLESocketDevices] valueForKey:@"peripheral"] containsObject:p])
+                    if (![[[[BLEManager sharedManager] arrSocketFactoryResetDevices] valueForKey:@"peripheral"] containsObject:p])
                     {
                         NSMutableDictionary * dict = [arrPreviouslyFound objectAtIndex:foudIndex];
                         [dict setValue:p forKey:@"peripheral"];
-                        [[[BLEManager sharedManager] arrBLESocketDevices] addObject:dict];
+                        [[[BLEManager sharedManager] arrSocketFactoryResetDevices] addObject:dict];
                     }
                 }
             }
         }
     }
-    if ( [[[BLEManager sharedManager] arrBLESocketDevices] count] >0)
+    if ( [[[BLEManager sharedManager] arrSocketFactoryResetDevices] count] >0)
     {
         tblDeviceList.hidden = false;
         lblNoDevice.hidden = true;
@@ -346,63 +337,37 @@
 }
 -(void)btnBackClick
 {
+    currentScreen = @"NA";
+
+    NSArray * arrResetDevices = [[BLEManager sharedManager] arrSocketFactoryResetDevices];
+    for (int i =0; i < [arrResetDevices count]; i++)
+    {
+        CBPeripheral * p = [[arrResetDevices objectAtIndex:i] objectForKey:@"peripheral"];
+        if (p.state == CBPeripheralStateConnected)
+        {
+            [[BLEManager sharedManager] disconnectDevice:p];
+        }
+    }
+    isSearchingfromSocketFactory = NO;
+    [deviceRestedCheckTimer invalidate];
     [self.navigationController popViewControllerAnimated:true];
 }
-#pragma mark - MEScrollToTopDelegate Methods
-- (void)scrollViewDidScroll:(UIScrollView *)scrollView
-{
-    [topPullToRefreshManager tableViewScrolled];
-}
--(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
-{
-}
-- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
-{
-    if (scrollView.contentOffset.y >=360.0f)
-    {
-    }
-    else
-        [topPullToRefreshManager tableViewReleased];
-}
-- (void)pullToRefreshTriggered:(MNMPullToRefreshManager *)manager
-{
-    [self performSelector:@selector(stoprefresh) withObject:nil afterDelay:1.5];
-}
--(void)stoprefresh
-{
-    [self refreshBtnClick];
-    [topPullToRefreshManager tableViewReloadFinishedAnimated:YES];
-}
--(void)AskForResetdevice
-{
-    [alert removeFromSuperview];
-    alert = [[FCAlertView alloc] init];
-    alert.colorScheme = [UIColor blackColor];
-    [alert makeAlertTypeCaution];
-    alert.delegate = self;
-    [alert addButton:@"Yes" withActionBlock:
-     ^{
-//        [APP_DELEGATE startHudProcess:@"Resetting..."];
-//        NSInteger intPacket = [@"0" integerValue];
-//        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-//        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"" withLength:@"00" withPeripheral:self->classPeripheral];
-    }];
-    [alert showAlertInView:self
-                 withTitle:@"Smart socket"
-              withSubtitle:@"Are you sure want to reset device."
-           withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
-       withDoneButtonTitle:@"No" andButtons:nil];
-}
+
 #pragma mark - BLE Methods
 -(void)InitialBLE
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"NotifiyDiscoveredDevicesforSockets" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DiscoverDevicesforSocketReset" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidConnectNotificationSocket" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"DeviceDidDisConnectNotificationSocket" object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(NotifiyDiscoveredDevices:) name:@"NotifiyDiscoveredDevicesforSockets" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"ResetSocketAuthenticationCompleted" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"ShowSocketTurnOnOffPopup" object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(NotifiyDiscoveredDevices:) name:@"DiscoverDevicesforSocketReset" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(DeviceDidConnectNotification:) name:@"DeviceDidConnectNotificationSocket" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(DeviceDidDisConnectNotification:) name:@"DeviceDidDisConnectNotificationSocket" object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(AuthenticationCompleted:) name:@"ResetSocketAuthenticationCompleted" object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(ShowSocketTurnOnOffPopup:) name:@"ShowSocketTurnOnOffPopup" object:nil];
+
 }
 -(void)GlobalBLuetoothCheck
 {
@@ -429,7 +394,7 @@
 {
 dispatch_async(dispatch_get_main_queue(), ^(void)
     {
-     if ( [[[BLEManager sharedManager] arrBLESocketDevices] count] >0)
+     if ( [[[BLEManager sharedManager] arrSocketFactoryResetDevices] count] >0)
      {
         self->tblDeviceList.hidden = false;
         self->lblNoDevice.hidden = true;
@@ -444,63 +409,148 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 }
 -(void)DeviceDidConnectNotification:(NSNotification*)notification //Connect periperal
 {
-    dispatch_async(dispatch_get_main_queue(), ^(void){
-//        [APP_DELEGATE endHudProcess];
-        [connectionTimer invalidate];
-        connectionTimer = nil;
-        
-        NSInteger intPacket = [@"0" integerValue];
-        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-//        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"17" withLength:@"00" withPeripheral:classPeripheral];
-        
-        [self->tblDeviceList reloadData];
-    });
+    [connectionTimer invalidate];
+
+    CBPeripheral * peripheral = [notification object];
+    if (peripheral != nil)
+    {
+//        [self SendResetFactoryToDevice];
+    }
+    
+    [APP_DELEGATE endHudProcess];
+    [tblDeviceList reloadData];
 }
 -(void)DeviceDidDisConnectNotification:(NSNotification*)notification //Disconnect periperal
 {
-    dispatch_async(dispatch_get_main_queue(), ^(void){
-        [[[BLEManager sharedManager] arrBLESocketDevices] removeAllObjects];
+        dispatch_async(dispatch_get_main_queue(), ^(void){
+        [[[BLEManager sharedManager] arrSocketFactoryResetDevices] removeAllObjects];
         [[BLEManager sharedManager] rescan];
         [self->tblDeviceList reloadData];
         [APP_DELEGATE endHudProcess];});
 }
 #pragma mark:- Add Device BLE Commands
--(void)AuthenticationCompleted:(CBPeripheral *)peripheral
+-(void)AuthenticationCompleted:(NSNotification *)notify
 {
-//    globalSocketPeripheral = peripheral;
-    NSString * strKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"];
-    NSData * encryptKeyData= [[NSData alloc] init];
-    encryptKeyData = [self getUserKeyconverted:strKey];
+    [self ShowResetNotification];
+//    NSString * strKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"];
+//    NSData * encryptKeyData= [[NSData alloc] init];
+//    encryptKeyData = [self getUserKeyconverted:strKey];
 //
 //        [[BLEService sharedInstance] WriteSocketData:encryptKeyData withOpcode:@"06" withLength:@"16" withPeripheral:peripheral];
 }
--(NSData *)getUserKeyconverted:(NSString *)strAddress
+-(void)SendResetFactoryToDevice
 {
-    NSMutableData * keyData = [[NSMutableData alloc] init];
-    
-    for (int i=0; i<16; i++)
+    NSInteger intPacket = [@"0" integerValue];
+    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+    [[BLEService sharedInstance] WriteSocketDataToResetSocket:dataPacket withOpcode:@"36" withLength:@"01" withPeripheral:classPeripheral];
+}
+-(void)ShowResetNotification
+{
+    [alert removeFromSuperview];
+    alert = [[FCAlertView alloc] init];
+    alert.colorScheme = [UIColor blackColor];
+    [alert makeAlertTypeWarning];
+    alert.tag = 333;
+//    alert.selectedPeripheral = peripheral;
+    alert.delegate = self;
+    [alert addButton:@"Yes" withActionBlock:^{
+        [self SendResetFactoryToDevice];
+
+    }];
+    alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
+    [alert showAlertInView:self
+                 withTitle:@"Vithamas"
+              withSubtitle:@"Do you want to Reset this device?"
+           withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
+       withDoneButtonTitle:@"No" andButtons:nil];
+}
+-(void)ShowSocketTurnOnOffPopup:(NSNotification *)notify
+{
+    resetDeviceCount = 0;
+    [deviceRestedCheckTimer invalidate];
+    deviceRestedCheckTimer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(CheckDeviceResettedOrNot) userInfo:nil repeats:YES];
+    [timeOutAlert removeFromSuperview];
+    timeOutAlert = [[FCAlertView alloc] init];
+    timeOutAlert.colorScheme = [UIColor blackColor];
+    [timeOutAlert makeAlertTypeSuccess];
+    timeOutAlert.tag = 1111;
+    [timeOutAlert showAlertInView:self
+                 withTitle:@"Smart Light"
+              withSubtitle:@"Please turn off and turn on Power Socket within 15 secs to factory reset while the light is blinking red."
+           withCustomImage:[UIImage imageNamed:@"logo.png"]
+       withDoneButtonTitle:nil
+                andButtons:nil];
+    timeOutAlert.hideAllButtons = YES;
+}
+-(void)CheckDeviceResettedOrNot
+{
+    resetDeviceCount = resetDeviceCount + 1;
+
+    NSMutableArray * arrayDevices = [[NSMutableArray alloc] init];
+    arrayDevices =[[BLEManager sharedManager] arrBLESocketDevices];
+    if ([[arrayDevices valueForKey:@"ble_address"] containsObject:strSelectedAddress])
     {
-        NSRange rangeFirst = NSMakeRange(i*2, 2);
-        NSString * strVithCheck = [strAddress substringWithRange:rangeFirst];
-        
-        unsigned long long startlong;
-        NSScanner * scanner1 = [NSScanner scannerWithString:strVithCheck];
-        [scanner1 scanHexLongLong:&startlong];
-        double unixStart = startlong;
-        NSNumber * startNumber = [[NSNumber alloc] initWithDouble:unixStart];
-        NSInteger int72 = [startNumber integerValue];
-        NSData * data72 = [[NSData alloc] initWithBytes:&int72 length:1];
-        if (i==0)
+        NSInteger foundIndex = [[arrayDevices valueForKey:@"ble_address"] indexOfObject:strSelectedAddress];
+        if (foundIndex != NSNotFound)
         {
-            keyData= [data72 mutableCopy];
-        }
-        else
-        {
-            [keyData appendData:data72];
+            if ([arrayDevices count] > foundIndex)
+            {
+                if ([[[arrayDevices objectAtIndex:foundIndex] allKeys] containsObject:@"Manufac"])
+                {
+                    NSString * strManufacture = [[arrayDevices objectAtIndex:foundIndex] valueForKey:@"Manufac"];
+                    strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@" " withString:@""];
+                    strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@">" withString:@""];
+                    strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@"<" withString:@""];
+
+                    if ([strManufacture length] >= 22)
+                    {
+                        NSRange rangeCheck = NSMakeRange(4, 4);
+                        NSString * strOpCodeCheck = [strManufacture substringWithRange:rangeCheck];
+                        if ([strOpCodeCheck isEqualToString:@"0000"])
+                        {
+                            [deviceRestedCheckTimer invalidate];
+                            deviceRestedCheckTimer = nil;
+                            [timeOutAlert removeFromSuperview];
+                            [self ShowSuccessPopup];
+                            resetDeviceCount = 0;
+                        }
+                    }
+                }
+            }
         }
     }
+    if (resetDeviceCount != 0 && resetDeviceCount > 15)
+    {
+        [timeOutAlert removeFromSuperview];
 
-    return keyData;
+        [deviceRestedCheckTimer invalidate];
+        deviceRestedCheckTimer = nil;
+        resetDeviceCount = 0;
+
+        FCAlertView * alert = [[FCAlertView alloc] init];
+        alert.colorScheme = [UIColor blackColor];
+        [alert makeAlertTypeCaution];
+        [alert showAlertInView:self
+                     withTitle:@"Smart Light"
+                  withSubtitle:@"Device not resetted. Please try again!!!"
+               withCustomImage:[UIImage imageNamed:@"logo.png"]
+           withDoneButtonTitle:nil
+                    andButtons:nil];
+
+    }
+}
+-(void)ShowSuccessPopup
+{
+    FCAlertView * alert = [[FCAlertView alloc] init];
+    alert.colorScheme = [UIColor blackColor];
+    [alert makeAlertTypeSuccess];
+    [alert showAlertInView:self
+                 withTitle:@"Smart Light"
+              withSubtitle:@"Device had been reset Successfully."
+           withCustomImage:[UIImage imageNamed:@"logo.png"]
+       withDoneButtonTitle:nil
+                andButtons:nil];
+
 }
 #pragma mark - Timer Methods
 -(void)ConnectionTimeOutMethod
@@ -534,7 +584,7 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 -(void)AdvertiseTimerMethod
 {
     [APP_DELEGATE endHudProcess];
-    if ( [[[BLEManager sharedManager] arrBLESocketDevices] count] >0){
+    if ( [[[BLEManager sharedManager] arrSocketFactoryResetDevices] count] >0){
         self->tblDeviceList.hidden = false;
         self->lblNoDevice.hidden = true;
         [self->tblDeviceList reloadData];
@@ -546,5 +596,115 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
     }
         [self->tblDeviceList reloadData];
 }
+-(void)toStopIndicator
+{
+    [APP_DELEGATE endHudProcess];
+}
+-(void)timeOutConnection
+{
+    [timertoStopIndicator invalidate];
+
+    if (globalPeripheral.state == CBPeripheralStateConnected)
+    {
+    }
+    else
+    {
+        [APP_DELEGATE endHudProcess];
+    }
+    [APP_DELEGATE endHudProcess];
+}
+
+-(void)timeoutMethodClick
+{
+    [timeOutAlert dismissAlertView];
+    [timeOutAlert removeFromSuperview];
+    [APP_DELEGATE hudEndProcessMethod];
+    [deviceRestedCheckTimer invalidate];
+    [APP_DELEGATE endHudProcess];
+    [[BLEManager sharedManager] rescan];
+
+}
+#pragma mark - FCAlertView Methods
+
+- (void)FCAlertDoneButtonClicked:(FCAlertView *)alertView
+{
+    if (alertView.tag == 222)
+    {
+        isSearchingfromSocketFactory = NO;
+        [self.navigationController popViewControllerAnimated:YES];
+    }
+    else if (alertView.tag == 333)
+    {
+        [timertoStopIndicator invalidate];
+        timertoStopIndicator = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(toStopIndicator) userInfo:nil repeats:NO];
+        [self SendResetFactoryToDevice];
+    }
+}
+
+#pragma mark - MEScrollToTopDelegate Methods
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    [topPullToRefreshManager tableViewScrolled];
+}
+-(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+}
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+{
+    if (scrollView.contentOffset.y >=360.0f)
+    {
+    }
+    else
+        [topPullToRefreshManager tableViewReleased];
+}
+- (void)pullToRefreshTriggered:(MNMPullToRefreshManager *)manager
+{
+    [self performSelector:@selector(stoprefresh) withObject:nil afterDelay:1.5];
+}
+-(void)stoprefresh
+{
+    [self refreshBtnClick];
+    [topPullToRefreshManager tableViewReloadFinishedAnimated:YES];
+}
 
 @end
+/*
+ RESPONSE from MQTT
+ 
+ 2021-04-02 16:45:46.467090+0530 SmartLightApp[2065:554913] Socket Detail mqtt didReceiveMessage =(
+     11,
+     14,
+     1,
+     0,
+     127,
+     96,
+     102,
+     252,
+     180,
+     96,
+     102,
+     252,
+     240,
+     0,
+     0,
+     0
+ )
+ 2021-04-02 16:45:46.468068+0530 SmartLightApp[2065:554913] ==========ReceivedMQTTResponsefromserver=========(
+     11,
+     14,
+     1,
+     0,
+     127,
+     96,
+     102,
+     252,
+     180,
+     96,
+     102,
+     252,
+     240,
+     0,
+     0,
+     0
+ )
+ */

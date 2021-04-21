@@ -14,6 +14,10 @@
 #import "HelpLeftMenuVC.h"
 #import "ManageAccLeftMenuVC.h"
 #import "AboutUsVC.h"
+#import "ResetMenuVC.h"
+#import "YouTubeVC.h"
+
+
 @interface LeftMenuVC ()
 
 @end
@@ -26,7 +30,7 @@
     self.view.backgroundColor = UIColor.clearColor;
     
     arrOptions = [[NSMutableArray alloc] init];
-    for (int i = 0; i<6; i++)
+    for (int i = 0; i<8; i++)
     {
     
         NSMutableDictionary * tempDict = [[NSMutableDictionary alloc] init];
@@ -38,15 +42,21 @@
             [tempDict setValue:@"Account" forKey:@"name"];
             [tempDict setValue:@"ic_switch_accountBlack.png" forKey:@"image"];
         }else if (i==2) {
+            [tempDict setValue:@"Factory reset device" forKey:@"name"];
+            [tempDict setValue:@"resetblack.png" forKey:@"image"];
+        }else if (i==3) {
             [tempDict setValue:@"Help" forKey:@"name"];
             [tempDict setValue:@"helpBlack.png" forKey:@"image"];
-        }else if (i==3) {
+        }else if (i==4) {
             [tempDict setValue:@"Buy now" forKey:@"name"];
             [tempDict setValue:@"buynow" forKey:@"image"];
-        }else if (i==4) {
+        }else if (i==5) {
+            [tempDict setValue:@"Demo videos" forKey:@"name"];
+            [tempDict setValue:@"youtubebl.png" forKey:@"image"];
+        }else if (i==6) {
             [tempDict setValue:@"About Us" forKey:@"name"];
             [tempDict setValue:@"about_icon" forKey:@"image"];
-        }else if (i==5) {
+        }else if (i==7) {
             [tempDict setValue:@"Contact Us" forKey:@"name"];
             [tempDict setValue:@"phoneBlack.png" forKey:@"image"];
         }
@@ -168,7 +178,6 @@
 
 }
 
-
 #pragma mark - Button Click
 -(void)btnMenuClicked:(id)sender
 {
@@ -187,7 +196,6 @@
 {
     return [arrOptions count];
 }
-
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (IS_IPHONE_4)
@@ -257,18 +265,35 @@
     }
     else if (indexPath.row == 2)
     {
+        ResetMenuVC *rstVC = [[ResetMenuVC alloc] init];
+        UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
+        NSArray *controllers = [NSArray arrayWithObject:rstVC];
+        navigationController.viewControllers = controllers;
+        [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
+    }
+    else if (indexPath.row == 3)
+    {
         HelpLeftMenuVC *demoController = [[HelpLeftMenuVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
         NSArray *controllers = [NSArray arrayWithObject:demoController];
         navigationController.viewControllers = controllers;
         [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
     }
-    else if (indexPath.row == 3)
+    else if (indexPath.row == 4)
     {
         [[UIApplication sharedApplication]
          openURL:[NSURL URLWithString:@"https://www.amazon.in/dp/B07QGVQ1HH/"]];
     }
-    else if (indexPath.row == 4)
+    else if (indexPath.row == 5)
+    {
+        YouTubeVC * youtVC = [[YouTubeVC alloc] init];
+        UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
+        NSArray *controllers = [NSArray arrayWithObject:youtVC];
+        navigationController.viewControllers = controllers;
+        [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
+
+    }
+    else if (indexPath.row == 6)
     {
         AboutUsVC *demoController = [[AboutUsVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
@@ -276,7 +301,7 @@
         navigationController.viewControllers = controllers;
         [self.menuContainerViewController setMenuState:MFSideMenuStateClosed];
     }
-    else if (indexPath.row == 5)
+    else if (indexPath.row == 7)
     {
         ContactUsVC *demoController = [[ContactUsVC alloc] init];
         UINavigationController *navigationController = self.menuContainerViewController.centerViewController;
@@ -305,20 +330,22 @@
     }
     return strValid;
 }
-
-- (void)didReceiveMemoryWarning {
+- (void)didReceiveMemoryWarning
+{
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
-
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
+#pragma mark-  error popup
+-(void)AlertViewFCTypeCautionCheck:(NSString *)strMsg
+{
+    [APP_DELEGATE endHudProcess];
+        FCAlertView *alert = [[FCAlertView alloc] init];
+        alert.colorScheme = [UIColor blackColor];
+        [alert makeAlertTypeCaution];
+        [alert showAlertInView:self
+                     withTitle:@"Vithamas"
+                  withSubtitle:strMsg
+               withCustomImage:[UIImage imageNamed:@"logo.png"]
+           withDoneButtonTitle:nil
+                    andButtons:nil];
 }
-*/
-
 @end

@@ -32,8 +32,10 @@ BOOL  isNonConnectScanning, isDashScanning, isfromBridge, isfromAddDevice, isCha
 BOOL isSearchingfromFactory,isScanCheckforDashboard, isCheckforDashScann, isViewWillAppeared, isUserDetailedCheck;
 NSInteger fullRed,fullGreen, fullBlue, alphaGlob, approaxSize, globalCount,updatedRSSI;
 
+BOOL isSearchingfromSocketFactory;
+
 CLLocationManager * locationManager;
-CBPeripheral * globalPeripheral, * globalSocketPeripheral;
+CBPeripheral * globalPeripheral, * globalSocketPeripheral, * globalRetrievedSocketPeripheral;
 UITabBarController * mainTabBarController;
 UIImageView *  bleConnectStatusImg;
 NSMutableArray *arrConnectedDevices, * arrGlobalDevices, * arrSocketDevices;
@@ -44,7 +46,7 @@ DashboardVC * globalDashBoardVC;
 
 NSMutableArray * arrPeripheralsCheck; 
 
-
+NSMutableDictionary * dictCheckDeviceNotified;
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate,CLLocationManagerDelegate,UITabBarControllerDelegate,URLManagerDelegate,CBPeripheralManagerDelegate,CBPeripheralDelegate>
 {
@@ -60,8 +62,7 @@ NSMutableArray * arrPeripheralsCheck;
 }
 
 @property (strong, nonatomic) UIWindow *window;
-
-
+ 
 #pragma mark - Helper Methods
 -(void)goToDashboard;
 -(void)logoutAndGoToLogin;
@@ -111,7 +112,6 @@ NSMutableArray * arrPeripheralsCheck;
 - (NSDictionary *)getCountryCodeDictionary;
 -(NSString*)stringFroHex:(NSString *)hexStr;
 -(void)getPlaceholderText:(UITextField *)txtField  andColor:(UIColor*)color;
-
 
 
 //SOCKET METHOD

@@ -7,336 +7,80 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "2246BF3A-FFEF-4372-AF4A-2E5A22E0B1BE"
+            uuid = "9F0ACCA9-63A1-488E-AB7B-6F6968AD1D89"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/AddSocketVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "931"
-            endingLineNumber = "931"
-            landmarkName = "-btnSaveClick:"
+            startingLineNumber = "256"
+            endingLineNumber = "256"
+            landmarkName = "-btnSaveWIFIClick"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "C91C5D4B-9A8F-4438-AF59-5A7F1E0D018C"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1214"
-            endingLineNumber = "1214"
-            landmarkName = "-getStatusOfSavedAlarm:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "309F1B73-216F-425C-85D8-2C866C908661"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "889"
-            endingLineNumber = "889"
-            landmarkName = "-btnDeleteClick:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "476E00D2-84CF-4B31-A767-137A4E99F8EB"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "113"
-            endingLineNumber = "113"
-            landmarkName = "-viewDidLoad"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "0E915A61-2670-41BC-BB42-B645C420DD9C"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "111"
-            endingLineNumber = "111"
-            landmarkName = "-viewDidLoad"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "4580275C-F1C1-417A-AF94-5BFA7DB131BC"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketDetailVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "768"
-            endingLineNumber = "768"
-            landmarkName = "-btnAlarmClick:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "68043F7A-FF26-4851-AA22-42B49B496386"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1019"
-            endingLineNumber = "1019"
-            landmarkName = "-InsertAndUpdateTheAlaramTable:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "739D0C09-C19A-4D62-9F20-78F6FB56B278"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1193"
-            endingLineNumber = "1193"
-            landmarkName = "-DeleteAlarmConfirmFromDevice:"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "739D0C09-C19A-4D62-9F20-78F6FB56B278 - 60f61538372c5e3"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "-[SocketAlarmVC ALaramSuccessResponseFromDevie]"
-                  moduleName = "SmartLightApp"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/Kalpesh/Projects/Smart%20Power%20Socket/March%2021/10-3-2021/SmartLightApp%20/SmartLightApp/Classes%20And%20Libraries/App%20Classes/SocketAlarmVC.m"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "1194"
-                  endingLineNumber = "1194"
-                  offsetFromSymbolStart = "480">
-               </Location>
-               <Location
-                  uuid = "739D0C09-C19A-4D62-9F20-78F6FB56B278 - 4d9c1d493fbe795"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "__47-[SocketAlarmVC ALaramSuccessResponseFromDevie]_block_invoke_2"
-                  moduleName = "SmartLightApp"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/Kalpesh/Projects/Smart%20Power%20Socket/March%2021/10-3-2021/SmartLightApp%20/SmartLightApp/Classes%20And%20Libraries/App%20Classes/SocketAlarmVC.m"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "1194"
-                  endingLineNumber = "1194"
-                  offsetFromSymbolStart = "32">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "CDCA8B51-3BD9-4010-B1F8-11E8C4257E22"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketDetailVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1122"
-            endingLineNumber = "1122"
-            landmarkName = "-ReceivedMQTTResponsefromserver:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "BA20CDF3-92B9-4B52-8C77-AB98889FD29C"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "4031"
-            endingLineNumber = "4031"
-            landmarkName = "-UpdateSocketSwithchStatus:withMacAddress:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "D114A36E-4ED4-4F6B-99C0-0FFA72F96626"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1473"
-            endingLineNumber = "1473"
-            landmarkName = "-CellforSocket:WithIndexPath:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "57CA47C4-9B9C-4456-890D-4E9D6FCA15B6"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "4058"
-            endingLineNumber = "4058"
-            landmarkName = "-UpdateSocketSwithchStatus:withMacAddress:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "01F522BD-630D-495F-8A48-46BF99D196D6"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketDetailVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "844"
-            endingLineNumber = "844"
-            landmarkName = "-ReceivedSwitchStatusfromDevice:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "21E6A566-CB6A-4584-9D09-9B04C32074E8"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "890"
-            endingLineNumber = "890"
-            landmarkName = "-btnDeleteClick:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "885DDCB2-69CA-49AD-9C61-B1C38392A260"
+            uuid = "4B8F58AC-44D5-4352-B927-710E41D1F77A"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketDetailVC.m"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketAlarmVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "727"
-            endingLineNumber = "727"
-            landmarkName = "-TimeOutForSwithStatus"
+            startingLineNumber = "341"
+            endingLineNumber = "341"
+            landmarkName = "-btnTimerSelect:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "30C27815-EE8A-497F-BB76-DF98B83CEC69"
+            uuid = "B893E42D-03EF-4852-A717-625FAC151344"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketDetailVC.m"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/ResetSocketVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1549"
-            endingLineNumber = "1549"
-            landmarkName = "-UpdateWifiSetupfromWifiSetting:"
+            startingLineNumber = "453"
+            endingLineNumber = "453"
+            landmarkName = "-ShowResetNotification"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "E137676F-9185-45A7-B81F-AE2CD5344422"
+            uuid = "04804BD1-CA78-4121-8A0C-8AAB8485018A"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketWiFiSetupVC.m"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/AddSocketVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "896"
-            endingLineNumber = "896"
-            landmarkName = "-RecievedRemoveWifiConfiguration"
+            startingLineNumber = "875"
+            endingLineNumber = "875"
+            landmarkName = "-FCAlertDoneButtonClicked:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "C36C6645-89B7-45BD-88A6-C478585B3277"
+            uuid = "8D213ED6-44A8-4D46-9BB4-B7A89DD00D55"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketWiFiSetupVC.m"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/YouTubeVC.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "906"
-            endingLineNumber = "906"
-            landmarkName = "-RecievedRemoveWifiConfiguration"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "166064AD-B3DB-4DF3-B330-D195C5563637"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "SmartLightApp/Classes And Libraries/App Classes/SocketWiFiSetupVC.m"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "918"
-            endingLineNumber = "918"
-            landmarkName = "-RecievedRemoveWifiConfiguration"
+            startingLineNumber = "259"
+            endingLineNumber = "259"
+            landmarkName = "-InsertToDatabase:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

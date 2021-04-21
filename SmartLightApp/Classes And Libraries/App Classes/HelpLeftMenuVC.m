@@ -105,7 +105,7 @@
 #pragma mark - TableView Delegate Methods
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 3;
+    return 1;
 }
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -118,11 +118,12 @@
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     cell.backgroundColor = [UIColor clearColor];
     cell.lblAppVersion.hidden = true;
-    NSArray * imgArr = [[NSArray alloc]initWithObjects:@"ic_user_manual.png",@"youtube.png",@"feedback_icon.png", nil];
+    NSArray * imgArr = [[NSArray alloc]initWithObjects:@"ic_user_manual.png", nil];
     cell.imgLogo.image =  [UIImage imageNamed:[NSString stringWithFormat:@"%@",[imgArr objectAtIndex:indexPath.row]]];
     
-    NSArray * nameArr = [[NSArray alloc]initWithObjects:@"User Manual",@"Youtube",@"Feedback", nil];
+    NSArray * nameArr = [[NSArray alloc]initWithObjects:@"User Manual", nil];
     cell.lblName.text = [NSString stringWithFormat:@"%@",[nameArr objectAtIndex:indexPath.row]];
+    
     
     if (indexPath.row == 0 || indexPath.row == 1)
     {
@@ -153,13 +154,12 @@
 //    }
     else if (indexPath.row == 1)
     {
-        YouTubeVC * youtVC = [[YouTubeVC alloc] init];
-        [self.navigationController pushViewController:youtVC animated:true];
+//        YouTubeVC * youtVC = [[YouTubeVC alloc] init];
+//        [self.navigationController pushViewController:youtVC animated:true];
     }
     else if (indexPath.row == 2)
     {
-        
-        [self feedBackBtnClick];
+//        [self feedBackBtnClick];
     }
 }
 #pragma mark - All button click events
@@ -167,7 +167,6 @@
 {
     [self.menuContainerViewController setMenuSlideAnimationFactor:0.5f];
     [self.menuContainerViewController toggleLeftSideMenuCompletion:^{
-        
     }];
 }
 #pragma mark - feedBackBtn Click
@@ -185,11 +184,11 @@
             feedback=nil;
             feedback = Nil;
             [feedback showFeedbackDialogInViewController:self completion:^(NSError *error, BOOL isCancelled) {
-                if (error) {
+                if (error)
+                {
 //                    NSLog(@"%@", error.localizedDescription);
                 }
             }];
-            
         }
         else
         {
@@ -199,7 +198,8 @@
             feedback.showEmail = YES;
             feedback.email = @"";
             [feedback showFeedbackDialogInViewController:self completion:^(NSError *error, BOOL isCancelled) {
-                if (error) {
+                if (error)
+                {
 //                    NSLog(@"%@", error.localizedDescription);
                 }
             }];
@@ -217,7 +217,6 @@
 //                NSLog(@"%@", error.localizedDescription);
             }
         }];
-        
         isFeedbackOpen = YES;
     }
 }

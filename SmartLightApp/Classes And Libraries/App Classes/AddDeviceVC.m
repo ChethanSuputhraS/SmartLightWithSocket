@@ -518,6 +518,7 @@
                 [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
                 [[NSUserDefaults standardUserDefaults] synchronize];
                 
+        
                 strAddress =  [strAddress uppercaseString];
                 strDeviceNames  = deviceName;
                 

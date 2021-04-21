@@ -62,6 +62,7 @@
 }
 -(void)viewWillAppear:(BOOL)animated
 {
+    currentScreen = @"Login";
     self.handle = [[FIRAuth auth]
                    addAuthStateDidChangeListener:^(FIRAuth *_Nonnull auth, FIRUser *_Nullable user) {
                        // ...

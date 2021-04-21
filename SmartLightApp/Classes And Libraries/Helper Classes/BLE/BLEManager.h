@@ -153,6 +153,7 @@
 @property (strong, nonatomic)  NSMutableArray * autoConnectArr;
 
 @property (strong, nonatomic)  NSMutableArray * arrBLESocketDevices;
+@property (strong, nonatomic)  NSMutableArray * arrSocketFactoryResetDevices;
 
 /*!
  * @discussion autoConnect will offers the devices to connected automatically when device disconnected aotomatically.
@@ -170,6 +171,10 @@
 -(NSArray *)getLastSocketConnected;
 -(void)ConnectDevicePeripheralforSocket:(CBPeripheral *)peripheral;
 -(NSArray *)getLastDiscoveredSocketDevices:(NSString *)strIdentifier;
+
+-(void)discoverServicesforSocketsConnected:(CBPeripheral *)peripheral;
+-(void)RemoveDevicefromAutoConnection:(NSString *)strIdentifier;
+-(void)SetDeviceforAutoConnection:(NSString *)strIdentifier;
 
 @property (nonatomic)   float batteryLevel;
 @end

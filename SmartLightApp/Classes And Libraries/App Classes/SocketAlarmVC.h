@@ -20,7 +20,38 @@ NS_ASSUME_NONNULL_BEGIN
 @interface SocketAlarmVC : UIViewController
 {
     int globalStatusHeight;
-    UIView *viewForBG,*viewForDay; 
+    UIView *viewForBG,*viewForDay;
+    UIView *timeBackView;
+    UIDatePicker * datePicker;
+    
+    NSMutableArray * dayArr, * tmpArray;
+    NSInteger totalDayCount, hours, minutes, sentCount,selday;
+    int tblY;
+    BOOL isOnPower, isRepeate;
+    NSString * strTimeSelected,*strSelected1,*strSelected2,*strSelected3;
+    int totalSyncedCount;
+    UILabel * lblTime;
+    UIButton * btn0, * btn1,* btn2, *btn3, *btn4, *btn5, *btn6,*btnON,*btnOFF;
+    int headerhHeight,viewWidth;
+
+    CBPeripheral * classPeripheral;
+    
+    UITableView * tblAlarms;
+    NSInteger  intIndexPath;
+    NSMutableDictionary * dictSw;
+    NSTimer * timerForDelete;
+    
+    NSMutableArray * arryAlrams,*arrDayselect;
+    NSMutableArray * arrTitle,*arrAlarmDetail;
+    
+    NSString * strAlramID1,*strAlramID2;
+    NSInteger selectedAlarmIndex;
+    BOOL isAlarmSavedSucessfully, isViewDisapeared, isDeletedManually;
+    NSTimer * timerForSaveAlarm;
+    NSMutableData * mqttAlarmData, * bleAlarmData;
+    UIScrollView *scrllView;
+    BOOL isAlarmRequested;
+    NSInteger saveRandomNumber, deleteRandomNumber;
 }
 
 @property(nonatomic,assign) NSInteger intSelectedSwitch;
@@ -34,8 +65,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void)ALaramSuccessResponseFromDevie;
 -(void)DeleteAlarmConfirmFromDevice:(NSMutableDictionary *)dictAlaramID;
--(void)MqttAlarmStatusfromServer:(BOOL)isSuccess;
--(void)MqttDeleteAlarmStatusfromServer:(BOOL)isSuccess;
+-(void)MqttAlarmStatusfromServer:(BOOL)isSuccess withServerResponse:(NSArray *)arrResponse withMacAddress:(NSString *)strBleAddress;
+-(void)MqttDeleteAlarmStatusfromServer:(BOOL)isSuccess withServerResponse:(NSArray *)arrResponse withMacaddress:(NSString *)strBleaddress;
 
 @end
 

@@ -384,6 +384,7 @@
     tblSettings.backgroundColor = UIColor.clearColor;
     tblSettings.delegate = self;
     tblSettings.dataSource = self;
+    tblSettings.separatorStyle = UITableViewCellSeparatorStyleNone;
     [settingView addSubview:tblSettings];
     
 }
@@ -2016,7 +2017,7 @@
     }
     else if (tableView == tblSettings)
     {
-        return 4;
+        return 3;
     }
     return 4;
 }
@@ -2057,17 +2058,17 @@
             cell.lblSettings.text = @"Device Connection";
             cell.imgSwitch.image = [UIImage imageNamed:@"bridge2_icon.png"];
         }
+//       else if (indexPath.row == 1)
+//        {
+//            cell.lblSettings.text = @"Reset device";
+//            cell.imgSwitch.image = [UIImage imageNamed:@"reset.png"];
+//        }
        else if (indexPath.row == 1)
-        {
-            cell.lblSettings.text = @"Reset device";
-            cell.imgSwitch.image = [UIImage imageNamed:@"reset.png"];
-        }
-       else if (indexPath.row == 2)
         {
             cell.lblSettings.text = @"Delete All Devices";
             cell.imgSwitch.image = [UIImage imageNamed:@"ic_delete_device.png"];
         }
-       else if (indexPath.row == 3)
+       else if (indexPath.row == 2)
         {
             cell.lblSettings.text = @"Main Power On Setting";
             cell.imgSwitch.image = [UIImage imageNamed:@"ic_light_state.png"];
@@ -2087,7 +2088,8 @@
         float heightV = 150*approaxSize;
          NSMutableArray * arrPatternNames = [[NSMutableArray alloc]initWithObjects:@"Dance Party",@"Love Romance",@"Soothing",@"Strobe",@"Disco Strobe", nil];
         
-        [cell.parallaxImage setImage:[UIImage imageNamed:[NSString stringWithFormat:@"%ld.png",indexPath.row+1]]];
+        [cell.parallaxImage setImage:[UIImage imageNamed:[NSString stringWithFormat:@"scenes%ld.png",indexPath.row+1]]];
+
         cell.lblName.font = [UIFont fontWithName:CGBold size:textSizes+15];
         cell.lblName.text = [arrPatternNames objectAtIndex:indexPath.row];
         cell.lblLine.frame = CGRectMake(0, heightV-40, DEVICE_WIDTH, 40);
@@ -2141,12 +2143,12 @@
             BridgeVC * userDetails = [[BridgeVC alloc] init];
             [self.navigationController pushViewController:userDetails animated:YES];
         }
+//        else if (indexPath.row == 1)
+//        {
+//            FactoryResetVC * userDetails = [[FactoryResetVC alloc] init];
+//            [self.navigationController pushViewController:userDetails animated:YES];
+//        }
         else if (indexPath.row == 1)
-        {
-            FactoryResetVC * userDetails = [[FactoryResetVC alloc] init];
-            [self.navigationController pushViewController:userDetails animated:YES];
-        }
-        else if (indexPath.row == 2)
         {
             if (globalPeripheral.state == CBPeripheralStateConnected)
             {
@@ -2168,7 +2170,7 @@
 //                [self ShowalertCustion:@"There is no devices to delete."];
             }
         }
-        else if (indexPath.row == 3)
+        else if (indexPath.row == 2)
         {
 //            [self btnPowerOnSettingsClicked];
         }

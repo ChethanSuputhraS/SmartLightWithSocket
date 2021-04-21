@@ -38,7 +38,6 @@
 -(void)WifiSSIDIndexAcknowlegement:(NSString *)strStatus;
 -(void)WifiPasswordAcknowledgement:(NSString *)strStatus;
 -(void)RecievedWifiConfiguredStatus:(NSString *)strStatus;
--(void)FoundNumberofWIFITOsetting:(NSMutableArray *)arrWifi;
 -(void)RecievedRemoveWifiConfiguration;
 @end
 
@@ -163,7 +162,7 @@
 #pragma mark - ALL SOCKET METHODS
 -(void)EnableNotificationsForCommand:(CBPeripheral*)kp withType:(BOOL)isMulti;
 -(void)EnableNotificationsForDATA:(CBPeripheral*)kp withType:(BOOL)isMulti;
--(void)GetAuthcodeforSocket:(CBPeripheral *)kp withValue:(NSString *)strValue;
+-(void)GetAuthcodeforSocket:(CBPeripheral *)kp withValue:(NSString *)strValue isforSocketReset:(BOOL)isResetSocket;
 -(void)ReceivedDataFromSwitch:(NSString *)opcode withLength:(NSString *)strLength withSelectedSwitch:(NSString *)strSwitchSelect withSwitchState:(NSString *)strSwitchState withPeripheral:(CBPeripheral *)peripheral;
 
 -(void)SendRequestForSwitchState:(NSString *)strop  withLength:(NSString *)strLength withPeripheral:(CBPeripheral *)peripheral;
@@ -175,12 +174,13 @@
 
 -(void)SendDatatoPeripheral:(NSData *)completeData withPeripheral:(CBPeripheral *)Peripheral;
 -(void)sendNotificationsSKT:(CBPeripheral*)kp withType:(BOOL)isMulti withUUID:(NSString *)strUUID;
--(void)EnableNotificationsForCommandSKT:(CBPeripheral*)kp withType:(BOOL)isMulti;
--(void)EnableNotificationsForDATASKT:(CBPeripheral*)kp withType:(BOOL)isMulti;
+-(void)EnableNotificationsForCommandSKT:(CBPeripheral*)kp withSocketReset:(BOOL)isResetSocket;
+-(void)EnableNotificationsForDATASKT:(CBPeripheral*)kp withSocketReset:(BOOL)isResetSocket;
 
 
 -(void)WriteSocketData:(NSData *)socketData withOpcode:(NSString *)strOpcode withLength:(NSString *)strLength withPeripheral:(CBPeripheral *)peripheral;
--(void)WriteWifiPassword:(NSString *)strPassword;
+-(void)WriteWifiPassword:(NSString *)strPassword withPeripheral:(CBPeripheral *)peripheral;
+-(void)WriteSocketDataToResetSocket:(NSData *)socketData withOpcode:(NSString *)strOpcode withLength:(NSString *)strLength withPeripheral:(CBPeripheral *)peripheral;
 
 
 @end

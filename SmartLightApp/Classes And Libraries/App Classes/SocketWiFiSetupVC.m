@@ -9,7 +9,7 @@
 #import "SocketWiFiSetupVC.h"
 #import "SwitchesCell.h"
 #import "HomeCell.h"
-@interface SocketWiFiSetupVC ()<UITableViewDelegate,UITableViewDataSource,UITextFieldDelegate,FCAlertViewDelegate,URLManagerDelegate,BLEServiceDelegate>
+@interface SocketWiFiSetupVC ()<UITableViewDelegate,UITableViewDataSource,UITextFieldDelegate,FCAlertViewDelegate,BLEServiceDelegate>
 
 @end
 
@@ -19,7 +19,7 @@
     UITextField *txtRouterPassword;
     int globalStatusHeight;
     UIView * viewForTxtBg,*viewTxtfld,*viewSSIDback,*viewSSIDList;
-    NSTimer * connectionTimer,* WifiScanTimer,*timerWifiConfig;
+    NSTimer * wifiWaitConnectConfirmTimer,* WifiScanTimer,*timerWifiConfig;
     NSMutableArray *arrayWifiavl;
     FCAlertView *alert;
     BOOL isWifiListFound, isWifiWritePasswordResponded,isCurrentDeviceWIFIConfigured,isAfterWifiConfigured,isShowPasswordEye;
@@ -31,10 +31,10 @@
     UIImageView * imgWifiState;
     int wifiConnectionStatusRetryCount;
     BOOL isRequestSentWifi;
-
+    MBProgressHUD * scanWifiHUD, * connectWifiHUD;
 
 }
-@synthesize isWIFIconfig,peripheralPss,strBleAddress, dictData, delegate;
+@synthesize isWIFIconfig,classPeripheral,strBleAddress, dictData, delegate;
 - (void)viewDidLoad
 {
     globalStatusHeight = 20;
@@ -92,7 +92,7 @@
     
     UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(50, globalStatusHeight, DEVICE_WIDTH-100, yy)];
     [lblTitle setBackgroundColor:[UIColor clearColor]];
-    [lblTitle setText:@"Wi-Fi setting"];
+    [lblTitle setText:@"Wi-Fi settings"];
     [lblTitle setTextAlignment:NSTextAlignmentCenter];
     [lblTitle setFont:[UIFont fontWithName:CGRegular size:textSizes+2]];
     [lblTitle setTextColor:[UIColor whiteColor]];
@@ -282,7 +282,10 @@
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
     
-        [APP_DELEGATE endHudProcess];
+        [scanWifiHUD hide:YES];
+        [scanWifiHUD removeFromSuperview];
+        scanWifiHUD = nil;
+        
         [self-> viewTxtfld removeFromSuperview];
 
         self->viewForTxtBg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT)];
@@ -349,7 +352,7 @@
         self->btnShowPass = [UIButton buttonWithType:UIButtonTypeCustom];
         self->btnShowPass.frame = CGRectMake(txtRouterPassword.frame.size.width-50, yy, 50, 50);
         self->btnShowPass.backgroundColor = [UIColor clearColor];
-        [self->btnShowPass addTarget:self action:@selector(showPassclick) forControlEvents:UIControlEventTouchUpInside];
+        [self->btnShowPass addTarget:self action:@selector(btnshowPassclick) forControlEvents:UIControlEventTouchUpInside];
         [self->btnShowPass setImage:[UIImage imageNamed:@"passShow.png"] forState:UIControlStateNormal];
         [self->viewTxtfld addSubview:btnShowPass];
     
@@ -428,33 +431,35 @@
     }
     else
     {
-        [APP_DELEGATE startHudProcess:@"Connecting..."];
+        [connectWifiHUD removeFromSuperview];
+        connectWifiHUD = [[MBProgressHUD alloc] initWithView:self.view];
+        [self.view addSubview:connectWifiHUD];
+        connectWifiHUD.labelText = @"Connecting...";
+        [connectWifiHUD show:YES];
+
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
 //        if ([APP_DELEGATE isNetworkreachable])
 //        {
             isRequestSentWifi = YES;
             isWifiWritePasswordResponded = NO;
         
-            [connectionTimer invalidate];
-            connectionTimer = nil;
-            connectionTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil  repeats:NO];
-            
+            [wifiWaitConnectConfirmTimer invalidate];
+            wifiWaitConnectConfirmTimer = nil;
+            wifiWaitConnectConfirmTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil  repeats:NO];
             NSString * strIndex = [[arrayWifiavl objectAtIndex:selectedWifiIndex] valueForKey:@"Index"];
             NSInteger intPacket = [strIndex integerValue];
             NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"13" withLength:@"01" withPeripheral:globalSocketPeripheral];
 
 
             [UIView transitionWithView:self.view duration:0.3 options:UIViewAnimationOptionCurveEaseOut animations:^{
                 self-> viewForTxtBg.frame = CGRectMake(20, DEVICE_HEIGHT, DEVICE_WIDTH-40, 250);
-            }completion:(^(BOOL finished){
+            }completion:(^(BOOL finished)
+            {
                 [self-> viewTxtfld removeFromSuperview];
             })];
-//        }
-//        else
-//        {
-//            [self AlertViewFCTypeCautionCheck:@"Please connect to the internet."];
-//        }
+        
+        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"13" withLength:@"01" withPeripheral:classPeripheral];
+        
     }
 }
 -(void)btnCancelClick
@@ -470,20 +475,11 @@
 }
 -(void)btnWifiClick
 {
-    if (peripheralPss.state == CBPeripheralStateConnected)
+    if (classPeripheral.state == CBPeripheralStateConnected)
     {
         if ([isWIFIconfig isEqualToString:@"1"])
         {
-            [APP_DELEGATE startHudProcess:@"Checking for availble Wi-Fi..."];
-            NSInteger intPacket = [@"0" integerValue];
-            NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-            [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->peripheralPss];
-            isWifiListFound = NO;
-            [WifiScanTimer invalidate];
-            WifiScanTimer = nil;
-            wifiConnectionStatusRetryCount = 0;
-            
-            WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
+            [self ScanforNearbyWifiMethod];
         }
         else
         {
@@ -497,7 +493,7 @@
 }
 -(void)btnRemoveWifiClick
 {
-    if (peripheralPss.state == CBPeripheralStateConnected)
+    if (classPeripheral.state == CBPeripheralStateConnected)
     {
            FCAlertView * alert = [[FCAlertView alloc] init];
 
@@ -509,7 +505,7 @@
         //        [APP_DELEGATE startHudProcess:@"Removeing..."];
                 NSInteger intPacket = [@"0" integerValue];
                 NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-                [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"26" withLength:@"00" withPeripheral:self->peripheralPss];
+                [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"26" withLength:@"00" withPeripheral:self->classPeripheral];
         //        timerWifiConfig = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiConfigMethod) userInfo:nil repeats:NO];
             }];
             [alert showAlertInView:self
@@ -517,19 +513,13 @@
                       withSubtitle:@"Do you want to Remove  Wi-Fi ?"
                    withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
                withDoneButtonTitle:@"Cancel" andButtons:nil];
-
     }
     else
     {
         [self AlertViewFCTypeCautionCheck:@"Make sure \n1.Socket is ON\n2.Socket is Nearby\n3. Phone Bluetooth is ON.\nBecause to Configure WIFI, App needs to connect with Socket via Bluetooth."];
     }
 }
--(void)wifiConfigMethod
-{
-    [APP_DELEGATE endHudProcess];
-    [self AlertViewFCTypeCautionCheck:@"Something went wrong."];
-}
--(void)showPassclick
+-(void)btnshowPassclick
 {
     if (isShowPasswordEye)
     {
@@ -549,7 +539,10 @@
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
 
-        [APP_DELEGATE endHudProcess];
+        [scanWifiHUD hide:YES];
+        [scanWifiHUD removeFromSuperview];
+        scanWifiHUD=nil;
+
         [self->viewSSIDback removeFromSuperview];
         self->viewSSIDback = [[UIView alloc] init];
         self->viewSSIDback.frame = CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT);
@@ -597,15 +590,19 @@
 }
 -(void)ConnectWifiTimeout
 {
-    dispatch_async(dispatch_get_main_queue(), ^(void){
-        [APP_DELEGATE endHudProcess];
+//    dispatch_async(dispatch_get_main_queue(), ^(void){
+    
+    [connectWifiHUD hide:YES];
+    [connectWifiHUD removeFromSuperview];
+    connectWifiHUD=nil;
+
         
         if (isWifiWritePasswordResponded == NO)
         {
             [self AlertViewFCTypeCautionCheck:@"Something went wrong. Please try again!"];
         }
         isWifiWritePasswordResponded = NO;
-    });
+//    });
 }
 -(void)AskforWifiConfiguration
 {
@@ -615,19 +612,11 @@
     [alert makeAlertTypeCaution];
     alert.tag = 666;
     alert.delegate = self;
+    __strong typeof(self) strongSelf = self;
+
     [alert addButton:@"Yes" withActionBlock:
      ^{
-        
-        [APP_DELEGATE startHudProcess:@"Checking for availble Wi-Fi..."];
-        
-        NSInteger intPacket = [@"0" integerValue];
-        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->peripheralPss];
-        isWifiListFound = NO;
-        wifiConnectionStatusRetryCount = 0;
-        [WifiScanTimer invalidate];
-        WifiScanTimer = nil;
-        WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
+        [strongSelf ScanforNearbyWifiMethod];
     }];
     [alert showAlertInView:self
                  withTitle:@"Smart socket"
@@ -635,10 +624,30 @@
            withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
        withDoneButtonTitle:@"No" andButtons:nil];
 }
+-(void)ScanforNearbyWifiMethod
+{
+    [scanWifiHUD removeFromSuperview];
+    scanWifiHUD = [[MBProgressHUD alloc] initWithView:self.view];
+    [self.view addSubview:scanWifiHUD];
+    scanWifiHUD.labelText = @"Checking for availble Wi-Fi...";
+    [scanWifiHUD show:YES];
+    
+    NSInteger intPacket = [@"0" integerValue];
+    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->classPeripheral];
+    isWifiListFound = NO;
+    wifiConnectionStatusRetryCount = 0;
+    [WifiScanTimer invalidate];
+    WifiScanTimer = nil;
+    WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:30 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
+
+}
 -(void)wifiScanTimeoutMethod
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
-        [APP_DELEGATE endHudProcess];
+        [scanWifiHUD hide:YES];
+        [scanWifiHUD removeFromSuperview];
+        scanWifiHUD = nil;
         if (isWifiListFound == NO)
         {
             [self AlertViewFCTypeCautionCheck:@"No Wi-Fi available nearby !"];
@@ -646,46 +655,32 @@
         isWifiListFound = NO;
     });
 }
--(void)FoundNumberofWIFITOsetting:(NSMutableArray *)arrayWifiList
-{
-    isWifiListFound = YES;
-    [WifiScanTimer invalidate];
-    WifiScanTimer = nil;
 
-    arrayWifiavl = [[NSMutableArray alloc] init];
-    dispatch_async(dispatch_get_main_queue(), ^(void)
-    {
-    if (arrayWifiList.count > 0)
-    {
-        self->arrayWifiavl = arrayWifiList;
-        [APP_DELEGATE endHudProcess];
-        [self SetupForShowWifiSSIList];
-        [self->tblSSIDList reloadData];
-        NSLog(@"Connected WI fi ===>>%@",arrayWifiList);
-    }
-    else
-    {
-        [APP_DELEGATE endHudProcess];
-    }
-    });
-}
 -(void)WifiPasswordAcknowledgement:(NSString *)strStatus
 {
     if ([strStatus isEqualToString:@"01"])
     {
-        [connectionTimer invalidate];
-        connectionTimer = nil;
-        connectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
-        [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(CheckforWifiStatus) userInfo:nil repeats:NO];
+        isAfterWifiConfigured = YES;
+        [wifiWaitConnectConfirmTimer invalidate];
+        wifiWaitConnectConfirmTimer = nil;
+        wifiWaitConnectConfirmTimer = [NSTimer scheduledTimerWithTimeInterval:30 target:self selector:@selector(WaitWIFIConnectedStateNotify) userInfo:nil repeats:NO];
     }
 }
--(void)CheckforWifiStatus
+-(void)WaitWIFIConnectedStateNotify
 {
-    NSLog(@"Sent Opcode 10 after delay");
-    isAfterWifiConfigured = YES;
-    NSInteger intPacket = [@"0" integerValue];
-    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:peripheralPss];
+    [connectWifiHUD hide:YES];
+    [connectWifiHUD removeFromSuperview];
+    connectWifiHUD = nil;
+    
+    if (isCurrentDeviceWIFIConfigured == YES)
+    {
+        //ignore...
+    }
+    else
+    {
+        //show popup something went wrong...
+        [self AlertViewFCTypeCautionCheck:@"something went wrong. Please try again"];
+    }
 }
 -(void)NoWIIFoundNearby
 {
@@ -696,6 +691,7 @@
         [self AlertViewFCTypeCautionCheck:@"No Wi-Fi available nearby !"];
     });
 }
+
 -(void)FoundNumberofWIFI:(NSMutableArray *)arrayWifiList
 {
     isWifiListFound = YES;
@@ -704,95 +700,23 @@
 
     arrayWifiavl = [[NSMutableArray alloc] init];
     dispatch_async(dispatch_get_main_queue(), ^(void){
+        
+        [scanWifiHUD hide:YES];
+        [scanWifiHUD removeFromSuperview];
+        scanWifiHUD = nil;
+
     if (arrayWifiList.count > 0)
     {
         self->arrayWifiavl = arrayWifiList;
-        [APP_DELEGATE endHudProcess];
         [self SetupForShowWifiSSIList];
         [self->tblSSIDList reloadData];
         NSLog(@"Connected WI fi ===>>%@",arrayWifiList);
     }
     else
     {
-        [APP_DELEGATE endHudProcess];
 //        [self AlertViewFCTypeCautionCheck:@"There is no Wi-Fi nearby!"];
     }
     });
-}
--(void)UpdateWifiConfigurationStatustoServer:(NSMutableDictionary *)inforDict
-{
-    if ([APP_DELEGATE isNetworkreachable])
-    {
-        if ([IS_USER_SKIPPED isEqualToString:@"NO"])
-        {
-            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
-            dispatch_async(queue, ^{
-                {
-                    NSMutableDictionary *args = [[NSMutableDictionary alloc] init];
-                    [args setObject:CURRENT_USER_ID forKey:@"user_id"];
-                    [args setObject:[inforDict valueForKey:@"device_id"] forKey:@"device_id"];
-                    [args setObject:[inforDict valueForKey:@"hex_device_id"] forKey:@"hex_device_id"];
-                    [args setObject:[inforDict valueForKey:@"device_name"] forKey:@"device_name"];
-                    [args setObject:[inforDict valueForKey:@"device_type"] forKey:@"device_type"];
-                    [args setObject:[[inforDict valueForKey:@"ble_address"]uppercaseString] forKey:@"ble_address"];
-                    [args setObject:[inforDict valueForKey:@"status"] forKey:@"status"];
-                    [args setObject:[inforDict valueForKey:@"is_favourite"] forKey:@"is_favourite"];
-                    [args setObject:@"1" forKey:@"is_update"];
-                    [args setValue:@"0" forKey:@"remember_last_color"];
-                    [args setObject:@"1" forKey:@"wifi_configured"];
-
-                    if ([[self checkforValidString:[inforDict valueForKey:@"server_device_id"]] isEqualToString:@"NA"])
-                    {
-                        [args setObject:@"0" forKey:@"is_update"];
-                    }
-                    NSString *deviceToken =deviceTokenStr;
-                    if (deviceToken == nil || deviceToken == NULL)
-                    {
-                        [args setValue:@"123456789" forKey:@"device_token"];
-                    }
-                    else
-                    {
-                        [args setValue:deviceToken forKey:@"device_token"];
-                    }
-                    AFHTTPRequestOperationManager *manager1 = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:[NSURL URLWithString:@"http://server.url"]];
-                    //[manager1.requestSerializer setValue:@"multipart/form-data" forHTTPHeaderField:@"Content-Type"];
-                    NSString *token=[[NSUserDefaults standardUserDefaults]valueForKey:@"globalCode"];
-                    NSString *authorization = [NSString stringWithFormat: @"Basic %@",token];
-                    [manager1.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
-                    [manager1.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-                    //manager1.responseSerializer = [AFHTTPResponseSerializer serializer];
-                    
-                    AFHTTPRequestOperation *op = [manager1 POST:@"http://vithamastech.com/smartlight/api/save_device" parameters:args success:^(AFHTTPRequestOperation *operation, id responseObject)
-                                                  {
-                                                      NSMutableDictionary * dictID = [[NSMutableDictionary alloc] init];
-                                                      dictID = [responseObject mutableCopy];
-                                                      if ([dictID valueForKey:@"data"] == [NSNull null] || [dictID valueForKey:@"data"] == nil)
-                                                      {
-                                                          
-                                                      }
-                                                      else
-                                                      {
-                                                          NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set is_sync ='1' where device_id='%@'",[[dictID valueForKey:@"data"]valueForKey:@"device_id"]];
-                                                          [[DataBaseManager dataBaseManager] execute:strUpdate];
-                                                      }
-                                                  }
-                                                        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-                                                            if (error)
-                                                            {
-                                                                //                                                                NSLog(@"Servicer error = %@", error);
-                                                            }
-                                                        }];
-                    [op start];
-                }
-                // Perform async operation
-                // Call your method/function here
-                // Example:
-                dispatch_sync(dispatch_get_main_queue(), ^{
-                    //Method call finish here
-                });
-            });
-        }
-    }
 }
 #pragma mark :- BLEService Delegate Methods
 -(void)RecievedWifiConfiguredStatus:(NSString *)strStatus
@@ -814,36 +738,18 @@
 
     if (isAfterWifiConfigured == YES)
     {
-        [connectionTimer invalidate];
-        connectionTimer = nil;
-
         if (isCurrentDeviceWIFIConfigured == NO)
         {
-            if (wifiConnectionStatusRetryCount == 0)
-            {
-                wifiConnectionStatusRetryCount = 1;
-                [connectionTimer invalidate];
-                connectionTimer = nil;
-                connectionTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
-                [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(CheckforWifiStatus) userInfo:nil repeats:NO];
-            }
-            else
-            {
-                if(isRequestSentWifi == YES)
-                {
-                    isRequestSentWifi = NO;
-                    [APP_DELEGATE endHudProcess];
-                    [alert removeFromSuperview];
-                    alert = [[FCAlertView alloc] init];
-                    alert.tag = 900;
-                    [alert makeAlertTypeCaution];
-                    alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
-                    [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Something went wrong. Please try again later..." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
-                }
-            }
         }
         else
         {
+            [connectWifiHUD hide:YES];
+            [connectWifiHUD removeFromSuperview];
+            connectWifiHUD = nil;
+            
+            [wifiWaitConnectConfirmTimer invalidate];
+            wifiWaitConnectConfirmTimer = nil;
+            
             NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '1' where ble_address = '%@'",strBleAddress];
             [[DataBaseManager dataBaseManager] execute:strUpdate];
 
@@ -857,7 +763,6 @@
             if(isRequestSentWifi == YES)
             {
                 isRequestSentWifi = NO;
-                [APP_DELEGATE endHudProcess];
                 [alert removeFromSuperview];
                 alert = [[FCAlertView alloc] init];
                 [alert makeAlertTypeSuccess];
@@ -885,13 +790,12 @@
     }
     else
     {
-        
     }
 }
 -(void)WifiSSIDIndexAcknowlegement:(NSString *)strStatus
 {
     NSString * strPassword  = txtRouterPassword.text;
-    [[BLEService sharedInstance] WriteWifiPassword:strPassword];
+    [[BLEService sharedInstance] WriteWifiPassword:strPassword withPeripheral:classPeripheral];
 }
 -(void)RecievedRemoveWifiConfiguration
 {
@@ -921,8 +825,17 @@
         {
             [self UpdateWifiConfigurationStatustoServer:dictData];
         }
-
     });
+}
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
+{
+    if(range.length + range.location > textField.text.length)
+    {
+        return NO;
+    }
+        
+    NSUInteger newLength = [txtRouterPassword.text length] + [string length] - range.length;
+    return newLength <= 28;
 }
 #pragma mark-textField
 -(void)setTextfieldProperties:(UITextField *)txtfld withPlaceHolderText:(NSString *)strText withtextSizes:(int)textSizes
@@ -984,55 +897,85 @@
     return strValid;
 }
 
-- (void)onResult:(NSDictionary *)result
+#pragma mark :- Update WIFI Config Status to Server
+-(void)UpdateWifiConfigurationStatustoServer:(NSMutableDictionary *)inforDict
 {
-    [APP_DELEGATE endHudProcess];
-    
-     if ([[result valueForKey:@"commandName"] isEqualToString:@"UpdateDevice"])
+    if ([APP_DELEGATE isNetworkreachable])
     {
-        if ([[[result valueForKey:@"result"] valueForKey:@"response"] isEqualToString:@"true"])
+        if ([IS_USER_SKIPPED isEqualToString:@"NO"])
         {
-            if([[result valueForKey:@"result"] valueForKey:@"data"]!=[NSNull null] || [[result valueForKey:@"result"] valueForKey:@"data"] != nil)
-            {
-                [alert removeFromSuperview];
-                alert = [[FCAlertView alloc] init];
-                alert.colorScheme = [UIColor blackColor];
-                [alert makeAlertTypeSuccess];
-                alert.delegate = self;
-                alert.tag = 333;
-                [alert showAlertInView:self
-                             withTitle:@"Smart Light"
-                          withSubtitle:@"You can control Socket with Bluetooth and WIFI as well."
-                       withCustomImage:[UIImage imageNamed:@"logo.png"]
-                   withDoneButtonTitle:nil
-                            andButtons:nil];
-            }
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+            dispatch_async(queue, ^{
+                {
+                    NSMutableDictionary *args = [[NSMutableDictionary alloc] init];
+                    [args setObject:CURRENT_USER_ID forKey:@"user_id"];
+                    [args setObject:[inforDict valueForKey:@"device_id"] forKey:@"device_id"];
+                    [args setObject:[inforDict valueForKey:@"hex_device_id"] forKey:@"hex_device_id"];
+                    [args setObject:[inforDict valueForKey:@"device_name"] forKey:@"device_name"];
+                    [args setObject:[inforDict valueForKey:@"device_type"] forKey:@"device_type"];
+                    [args setObject:[[inforDict valueForKey:@"ble_address"]uppercaseString] forKey:@"ble_address"];
+                    [args setObject:[inforDict valueForKey:@"status"] forKey:@"status"];
+                    [args setObject:[inforDict valueForKey:@"is_favourite"] forKey:@"is_favourite"];
+                    [args setObject:@"1" forKey:@"is_update"];
+                    [args setValue:@"0" forKey:@"remember_last_color"];
+                    [args setObject:@"1" forKey:@"wifi_configured"];
+                    [args setValue:[inforDict valueForKey:@"identifier"] forKey:@"identifier"];
+                    [args setValue:[inforDict valueForKey:@"wifi_configured"] forKey:@"wifi_configured"];
+
+                    if ([[self checkforValidString:[inforDict valueForKey:@"server_device_id"]] isEqualToString:@"NA"])
+                    {
+                        [args setObject:@"0" forKey:@"is_update"];
+                    }
+                    NSString *deviceToken =deviceTokenStr;
+                    if (deviceToken == nil || deviceToken == NULL)
+                    {
+                        [args setValue:@"123456789" forKey:@"device_token"];
+                    }
+                    else
+                    {
+                        [args setValue:deviceToken forKey:@"device_token"];
+                    }
+                    AFHTTPRequestOperationManager *manager1 = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:[NSURL URLWithString:@"http://server.url"]];
+                    //[manager1.requestSerializer setValue:@"multipart/form-data" forHTTPHeaderField:@"Content-Type"];
+                    NSString *token=[[NSUserDefaults standardUserDefaults]valueForKey:@"globalCode"];
+                    NSString *authorization = [NSString stringWithFormat: @"Basic %@",token];
+                    [manager1.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+                    [manager1.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+                    //manager1.responseSerializer = [AFHTTPResponseSerializer serializer];
+                    
+                    AFHTTPRequestOperation *op = [manager1 POST:@"http://vithamastech.com/smartlight/api/save_device" parameters:args success:^(AFHTTPRequestOperation *operation, id responseObject)
+                                                  {
+                                                      NSMutableDictionary * dictID = [[NSMutableDictionary alloc] init];
+                                                      dictID = [responseObject mutableCopy];
+                                                      if ([dictID valueForKey:@"data"] == [NSNull null] || [dictID valueForKey:@"data"] == nil)
+                                                      {
+                                                          
+                                                      }
+                                                      else
+                                                      {
+                                                          NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set is_sync ='1' where device_id='%@'",[[dictID valueForKey:@"data"]valueForKey:@"device_id"]];
+                                                          [[DataBaseManager dataBaseManager] execute:strUpdate];
+                                                      }
+                                                  }
+                                                        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                                                            if (error)
+                                                            {
+                                                                //                                                                NSLog(@"Servicer error = %@", error);
+                                                            }
+                                                        }];
+                    [op start];
+                }
+                // Perform async operation
+                // Call your method/function here
+                // Example:
+                dispatch_sync(dispatch_get_main_queue(), ^{
+                    //Method call finish here
+                });
+            });
         }
     }
 }
-- (void)onError:(NSError *)error
-{
 
-    [APP_DELEGATE hideScannerView];
-    [APP_DELEGATE endHudProcess];
-    
-    NSInteger ancode = [error code];
-    NSMutableDictionary * errorDict = [error.userInfo mutableCopy];
-    
-    if (ancode == -1001 || ancode == -1004 || ancode == -1005 || ancode == -1009)
-    {
-//        [APP_DELEGATE ShowErrorPopUpWithErrorCode:ancode andMessage:@""];
-    }
-    else
-    {
-//        [APP_DELEGATE ShowErrorPopUpWithErrorCode:customErrorCodeForMessage andMessage:@"Please try again later"];
-    }
-    
-    NSString * strLoginUrl = [NSString stringWithFormat:@"%@%@",WEB_SERVICE_URL,@"token.json"];
-    if ([[errorDict valueForKey:@"NSErrorFailingURLStringKey"] isEqualToString:strLoginUrl])
-    {
-    }
-}
 - (void)FCAlertDoneButtonClicked:(FCAlertView *)alertView
 {
     if (alertView.tag == 555)

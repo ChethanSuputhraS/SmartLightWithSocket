@@ -58,7 +58,7 @@
         lblAppVersion.hidden = true;
         [self.contentView addSubview:lblAppVersion];
         
-        lblYoutube = [[UILabel alloc]initWithFrame:CGRectMake(45, 0, 180, 44)];
+        lblYoutube = [[UILabel alloc]initWithFrame:CGRectMake(45, 0, DEVICE_WIDTH-60, 44)];
         lblYoutube.backgroundColor = UIColor.clearColor;
         lblYoutube.textColor = UIColor.whiteColor;
         lblYoutube.font = [UIFont fontWithName:CGRegular size:textSizes+2];

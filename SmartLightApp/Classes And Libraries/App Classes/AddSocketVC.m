@@ -33,6 +33,7 @@
     int wifiConnectionStatusRetryCount;
     UIButton *btnShowPass;
     BOOL viewDisapeared;
+    MBProgressHUD * connectDisconnectHud, * scannerHud;
 }
 
 @end
@@ -71,11 +72,16 @@
     advertiseTimer = nil;
     advertiseTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:self selector:@selector(AdvertiseTimerMethod) userInfo:nil repeats:NO];
     
-    [APP_DELEGATE endHudProcess];
-    [APP_DELEGATE startHudProcess:@"Scanning..."];
+    [scannerHud removeFromSuperview];
+    scannerHud = [[MBProgressHUD alloc] initWithView:self.view];
+    [self.view addSubview:scannerHud];
+    scannerHud.labelText = @"Scanning...";
+    [scannerHud show:YES];
+
     dictSwState = [[NSMutableDictionary alloc] init];
   
     
+    deviceListArray = [[NSMutableArray alloc] init];
     NSString * strQuery = [NSString stringWithFormat:@"Select * from Device_Table where user_id ='%@' and status = '1' group by ble_address",CURRENT_USER_ID];
     [[DataBaseManager dataBaseManager] execute:strQuery resultsArray:deviceListArray];
     
@@ -111,7 +117,6 @@
 -(void)viewDidAppear:(BOOL)animated
 {
 }
-
 #pragma mark - Set Frames
 -(void)setNavigationViewFrames
 {
@@ -261,14 +266,19 @@
     }
     else
     {
-        [APP_DELEGATE startHudProcess:@"Connecting..."];
+        
+        [connectDisconnectHud removeFromSuperview];
+        connectDisconnectHud = [[MBProgressHUD alloc] initWithView:self.view];
+        [self.view addSubview:connectDisconnectHud];
+        connectDisconnectHud.labelText = @"Connecting...";
+        [connectDisconnectHud show:YES];
+
         // MQTT request to device here 13 for ssid  14 for password and IP = @"13.57.255.95"
-//        if ([APP_DELEGATE isNetworkreachable])
-//        {
+
             isWifiWritePasswordResponded = NO;
-            [connectionTimer invalidate];
-            connectionTimer = nil;
-            connectionTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
+            [wifiWaitConnectConfirmTimer invalidate];
+            wifiWaitConnectConfirmTimer = nil;
+            wifiWaitConnectConfirmTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
             
             NSString * strIndex = [[arrayWifiavl objectAtIndex:selectedWifiIndex] valueForKey:@"Index"];
             NSInteger intPacket = [strIndex integerValue];
@@ -280,31 +290,18 @@
             }completion:(^(BOOL finished){
                 [self-> viewTxtfld removeFromSuperview];
             })];
-//        }
-//        else
-//        {
-//            [self TostNotification:@"Please connect to the internet."];
-//        }
     }
 }
 -(void)ConnectWifiTimeout
 {
-    dispatch_async(dispatch_get_main_queue(), ^(void){
-        [APP_DELEGATE endHudProcess];
+//    dispatch_async(dispatch_get_main_queue(), ^(void){
+    [self RemoveHudProcess:scannerHud];
         if (isWifiWritePasswordResponded == NO)
         {
             [self AlertViewFCTypeCautionCheck:@"Something went wrong. Please try again!"];
         }
-        
         isWifiWritePasswordResponded = NO;
-    });
-
-}
--(void)fortestwritepassword
-{
-    NSString * strPassword  = txtRouterPassword.text;
-    [[BLEService sharedInstance] WriteWifiPassword:strPassword];
-
+//    });
 }
 -(void)btnNotNowClick
 {
@@ -487,12 +484,16 @@
             
             if (p.state == CBPeripheralStateConnected)
             {
-                [APP_DELEGATE endHudProcess];
-                [APP_DELEGATE startHudProcess:@"Disconnecting..."];
+                [connectDisconnectHud removeFromSuperview];
+                connectDisconnectHud = [[MBProgressHUD alloc] initWithView:self.view];
+                [self.view addSubview:connectDisconnectHud];
+                connectDisconnectHud.labelText = @"Disconnecting...";
+                [connectDisconnectHud show:YES];
+
                 [[BLEManager sharedManager] disconnectDevice:p];
                 [disconnectionTimer invalidate];
                 disconnectionTimer = nil;
-                disconnectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(DisConnectionTimeOutMethod) userInfo:nil repeats:NO];
+                disconnectionTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:self selector:@selector(DisConnectionTimeOutMethod) userInfo:nil repeats:NO];
             }
             else
             {
@@ -510,21 +511,21 @@
                     NSRange rangeCheck = NSMakeRange(18, 4);
                     NSString * strOpCodeCheck = [strManufacture substringWithRange:rangeCheck];
                     
-                    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:p.identifier])
+                    if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",p.identifier]])
                     {
-                        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:p.identifier];
+                        NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",p.identifier]];
                         if (foundIndex != NSNotFound)
                         {
                             if ([arrPeripheralsCheck count] > foundIndex)
                             {
-                                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
+                                NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", [NSString stringWithFormat:@"%@",p.identifier],@"identifier", nil];
                                 [arrPeripheralsCheck replaceObjectAtIndex:foundIndex withObject:dict];
                             }
                         }
                     }
                     else
                     {
-                        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", p.identifier,@"identifier", nil];
+                        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:strOpCodeCheck, @"status", [NSString stringWithFormat:@"%@",p.identifier],@"identifier", nil];
                         [arrPeripheralsCheck addObject:dict];
                     }
                 }
@@ -533,18 +534,21 @@
                 connectionTimer = nil;
                 connectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(ConnectionTimeOutMethod) userInfo:nil repeats:NO];
                 classPeripheral = p;
-//                globalSocketPeripheral = p;
                 
-                [APP_DELEGATE endHudProcess];
-                [APP_DELEGATE startHudProcess:@"Connecting..."];
+                [connectDisconnectHud removeFromSuperview];
+                connectDisconnectHud = [[MBProgressHUD alloc] initWithView:self.view];
+                [self.view addSubview:connectDisconnectHud];
+                connectDisconnectHud.labelText = @"Disconnecting...";
+                [connectDisconnectHud show:YES];
+
                 [[BLEManager sharedManager] connectDevice:p];
                 NSString * strAddress = [[[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"ble_address"] uppercaseString];
                 NSString * strManudata = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"Manufac"];
                 NSString * strIsAdded = [[arrayDevices objectAtIndex:indexPath.row] valueForKey:@"isAdded"];
                 strCurrentSelectedAddress = strAddress;
-                if ([[arrConnectedSockets valueForKey:@"identifier"] containsObject:p.identifier])
+                if ([[arrConnectedSockets valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",p.identifier]])
                 {
-                    NSInteger foundIndex = [[arrConnectedSockets valueForKey:@"identifier"] indexOfObject:p.identifier];
+                    NSInteger foundIndex = [[arrConnectedSockets valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",p.identifier]];
                     if (foundIndex != NSNotFound)
                     {
                         if ([arrConnectedSockets count] > foundIndex)
@@ -556,7 +560,7 @@
                 }
                 else
                 {
-                    NSDictionary * dict  = [[NSDictionary alloc] initWithObjectsAndKeys:p,@"peripheral",strAddress,@"ble_address",strManudata,@"Manufac", strIsAdded,@"isAdded",p.identifier,@"identifier",nil];
+                    NSDictionary * dict  = [[NSDictionary alloc] initWithObjectsAndKeys:p,@"peripheral",strAddress,@"ble_address",strManudata,@"Manufac", strIsAdded,@"isAdded",[NSString stringWithFormat:@"%@",p.identifier],@"identifier",nil];
                     [arrConnectedSockets addObject:dict];
                 }
             }
@@ -588,7 +592,9 @@
             return;
         }
         
-        [APP_DELEGATE endHudProcess];
+        
+        [self RemoveHudProcess:connectDisconnectHud];
+
         [alert removeFromSuperview];
         alert = [[FCAlertView alloc] init];
         [alert makeAlertTypeCaution];
@@ -601,12 +607,13 @@
 {
     [disconnectionTimer invalidate];
     disconnectionTimer = nil;
-    [APP_DELEGATE endHudProcess];
+    [self RemoveHudProcess:connectDisconnectHud];
     [self refreshBtnClick];
 }
 -(void)AdvertiseTimerMethod
 {
-    [APP_DELEGATE endHudProcess];
+    [self RemoveHudProcess:scannerHud];
+    
     if ( [[[BLEManager sharedManager] arrBLESocketDevices] count] >0){
         self->tblDeviceList.hidden = false;
         self->lblNoDevice.hidden = true;
@@ -650,7 +657,8 @@
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
     
-        [APP_DELEGATE endHudProcess];
+        [self RemoveHudProcess:scannerHud];
+
         [self-> viewTxtfld removeFromSuperview];
 
         self->viewForTxtBg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT)];
@@ -775,7 +783,8 @@
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
 
-        [APP_DELEGATE endHudProcess];
+        [self RemoveHudProcess:scannerHud];
+
         [self->viewSSIDback removeFromSuperview];
         self->viewSSIDback = [[UIView alloc] init];
         self->viewSSIDback.frame = CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT);
@@ -821,6 +830,16 @@
             completion:NULL];
 });
 }
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
+{
+    if(range.length + range.location > textField.text.length)
+    {
+        return NO;
+    }
+        
+    NSUInteger newLength = [txtRouterPassword.text length] + [string length] - range.length;
+    return newLength <= 28;
+}
 #pragma mark-textField and Lables And Button Properties
 -(void)setTextfieldProperties:(UITextField *)txtfld withPlaceHolderText:(NSString *)strText withtextSizes:(int)textSizes
 {
@@ -836,21 +855,7 @@
     txtfld.clipsToBounds = true;
     txtfld.delegate = self;
 }
--(void)TostNotification:(NSString *)StrToast
-{
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [APP_DELEGATE endHudProcess];
-            MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.navigationController.view animated:YES];
 
-            // Configure for text only and offset down
-            hud.mode = MBProgressHUDModeText;
-            hud.labelText = StrToast;
-            hud.margin = 10.f;
-            hud.yOffset = 150.f;
-            hud.removeFromSuperViewOnHide = YES;
-            [hud hide:YES afterDelay:0.4];
-        });
-}
 -(void)AlertViewFCTypeCautionCheck:(NSString *)strMsg
     {
         [alert removeFromSuperview];
@@ -877,7 +882,6 @@
            withDoneButtonTitle:nil
                     andButtons:nil];
 }
-
 #pragma mark - FCAlertview Delegate Callback
 - (void)FCAlertDoneButtonClicked:(FCAlertView *)alertView
 {
@@ -899,13 +903,19 @@
 
             if (![IS_USER_SKIPPED isEqualToString:@"YES"])
             {
-                [self UpdateWifiConfigurationStatustoServer];
+                if ([APP_DELEGATE isNetworkreachable])
+                {
+                    [self UpdateWifiConfigurationStatustoServer];
+                }
+                else
+                {
+                    [self.navigationController popViewControllerAnimated:YES];
+                }
             }
             else
             {
                 [self.navigationController popViewControllerAnimated:YES];
             }
-
         }
     }
     else if (alertView.tag == 333 )
@@ -922,13 +932,12 @@
         alert.tag = 333;
         [alert showAlertInView:self
                      withTitle:@"Smart Light"
-                  withSubtitle:@"Device can controleed over Bluetooth. You can configure device over Wi-Fi by going to device setting later."
+                  withSubtitle:@"Device can  be controlled over Bluetooth. You can configure Wi-Fi in the device settings later."
                withCustomImage:[UIImage imageNamed:@"logo.png"]
            withDoneButtonTitle:nil
                     andButtons:nil];
 
     }
-
     else if (alertView.tag == 555)
     {
         [self AddDeviceDatatoSocketArray];
@@ -944,7 +953,7 @@
     {
         NSString * msgPlaceHolder = [NSString stringWithFormat:@"Enter Device Name"];
         
-        [APP_DELEGATE endHudProcess];
+        [self RemoveHudProcess:connectDisconnectHud];
         
         [alert removeFromSuperview];
         alert = [[FCAlertView alloc] init];
@@ -968,9 +977,7 @@
                withCustomImage:nil
            withDoneButtonTitle:nil
                     andButtons:nil];
-
     }
-
 }
 -(void)ValidationforAddedMessage:(NSString *)text
 {
@@ -1017,7 +1024,7 @@
         {
             if ([tmpArr count] > foudIndex)
             {
-                NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
+                NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",[NSString stringWithFormat:@"%@",classPeripheral.identifier]];
                 NSString * strName = [[tmpArr  objectAtIndex:foudIndex]valueForKey:@"name"];
                 NSString * strAddress = [[[tmpArr  objectAtIndex:foudIndex]valueForKey:@"ble_address"] uppercaseString];
                 
@@ -1030,13 +1037,13 @@
                     [arrGlobalDevices addObject:dict];
 
                 }
+            }
         }
-    }
     }
     [self AddDeviceDatatoSocketArray];
     if ([[deviceListArray valueForKey:@"ble_address"] containsObject:strMckAddress])
     {
-        NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set device_name='%@', status ='1', is_sync = '0' where ble_address = '%@'",strdeviceName,strMckAddress];
+        NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set device_name='%@', status ='1', is_sync = '0', identifier = '%@' where ble_address = '%@'",strdeviceName,[NSString stringWithFormat:@"%@",classPeripheral.identifier],strMckAddress];
         [[DataBaseManager dataBaseManager] execute:strUpdate];
         NSInteger foundIndex = [[deviceListArray valueForKey:@"ble_address"] indexOfObject:strMckAddress];
         if (foundIndex != NSNotFound)
@@ -1049,7 +1056,7 @@
     }
     else
     {
-        NSString * requestStr =[NSString stringWithFormat:@"insert into 'Device_Table'('device_id','hex_device_id','real_name','device_name','ble_address','device_type','device_type_name','switch_status','user_id','is_favourite','is_sync',status, 'identifier') values('%@','%@','%@',\"%@\",\"%@\",'%@','%@','Yes','%@','2','0','1', \"%@\")",newDeviceID,strHexDeviceId,@"NA",strDeviceNames,strMckAddress  ,strType,strDeviceType,CURRENT_USER_ID, classPeripheral.identifier];
+        NSString * requestStr =[NSString stringWithFormat:@"insert into 'Device_Table'('device_id','hex_device_id','real_name','device_name','ble_address','device_type','device_type_name','switch_status','user_id','is_favourite','is_sync',status, 'identifier') values('%@','%@','%@',\"%@\",\"%@\",'%@','%@','Yes','%@','2','0','1', \"%@\")",newDeviceID,strHexDeviceId,@"NA",strDeviceNames,strMckAddress  ,strType,strDeviceType,CURRENT_USER_ID, [NSString stringWithFormat:@"%@",classPeripheral.identifier]];
         
         int savedID = [[DataBaseManager dataBaseManager] executeSw:requestStr];
         strSavedTableID = [NSString stringWithFormat:@"%d",savedID];
@@ -1061,8 +1068,9 @@
     }
     else
     {
-        [APP_DELEGATE hideScannerView];
-        [APP_DELEGATE endHudProcess];
+        
+        [self RemoveHudProcess:connectDisconnectHud];
+
 
         [alert removeFromSuperview];
         alert = [[FCAlertView alloc] init];
@@ -1100,6 +1108,7 @@
         [dict setValue:@"0" forKey:@"remember_last_color"];
         [dict setValue:@"0" forKey:@"remember_last_color"];
         [dict setValue:@"0" forKey:@"wifi_configured"];
+        [dict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
 
         
         NSString *deviceToken =deviceTokenStr;
@@ -1122,9 +1131,8 @@
     }
     else
     {
-        [APP_DELEGATE hideScannerView];
-        [APP_DELEGATE endHudProcess];
-        
+        [self RemoveHudProcess:connectDisconnectHud];
+
         [alert removeFromSuperview];
         alert = [[FCAlertView alloc] init];
         alert.colorScheme = [UIColor blackColor];
@@ -1157,8 +1165,8 @@
 {
     [topPullToRefreshManager tableViewReloadFinishedAnimated:NO];
 
-    [APP_DELEGATE endHudProcess];
-    
+    [self RemoveHudProcess:connectDisconnectHud];
+
     if ([[result valueForKey:@"commandName"] isEqualToString:@"SaveDevice"])
     {
         if ([[[result valueForKey:@"result"] valueForKey:@"response"] isEqualToString:@"true"])
@@ -1167,13 +1175,12 @@
             {
                 NSString * strServerId = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"server_device_id"]];
                 NSString * strUserId = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"user_id"]];
-                NSString * strDeviceId = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"device_id"]];
+//                NSString * strDeviceId = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"device_id"]];
                 NSString * strCreatedDate = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"created_date"]];
                 NSString * strUpdatedDate = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"updated_date"]];
                 NSString * strTimeStamp = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"timestamp"]];
                 NSString * strBleAddress = [self checkforValidString:[[[result valueForKey:@"result"] valueForKey:@"data"] valueForKey:@"ble_address"]];
-
-                NSString * strQuery = [NSString stringWithFormat:@"update Device_Table set server_device_id = '%@', created_at = '%@', updated_at = '%@', timestamp = '%@',is_sync='1' where user_id = '%@' and ble_address ='%@'",strServerId,strCreatedDate,strUpdatedDate,strTimeStamp,strUserId, strBleAddress];
+                NSString * strQuery = [NSString stringWithFormat:@"update Device_Table set server_device_id = '%@', created_at = '%@', updated_at = '%@', timestamp = '%@',is_sync='1', identifier = '%@' where user_id = '%@' and ble_address ='%@'",strServerId,strCreatedDate,strUpdatedDate,strTimeStamp,[NSString stringWithFormat:@"%@",classPeripheral.identifier],strUserId, strBleAddress];
                 [[DataBaseManager dataBaseManager] execute:strQuery];
                 
                 [alert removeFromSuperview];
@@ -1234,9 +1241,8 @@
 {
     [topPullToRefreshManager tableViewReloadFinishedAnimated:NO];
 
-    [APP_DELEGATE hideScannerView];
-    [APP_DELEGATE endHudProcess];
-    
+    [self RemoveHudProcess:connectDisconnectHud];
+
     NSInteger ancode = [error code];
     NSMutableDictionary * errorDict = [error.userInfo mutableCopy];
     
@@ -1276,7 +1282,7 @@
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(NotifiyDiscoveredDevices:) name:@"NotifiyDiscoveredDevicesforSockets" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(DeviceDidConnectNotification:) name:@"DeviceDidConnectNotificationSocket" object:nil];
-    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(DeviceDidDisConnectNotification:) name:@"DeviceDidDisConnectNotificationSocket" object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(DeviceDidDisConnectNotificationSocket:) name:@"DeviceDidDisConnectNotificationSocket" object:nil];
 }
 -(void)GlobalBLuetoothCheck
 {
@@ -1291,7 +1297,9 @@
     if (@available(iOS 10.0, *)) {
         if (central.state == CBManagerStatePoweredOff)
         {
-            [APP_DELEGATE endHudProcess];
+            [self RemoveHudProcess:scannerHud];
+            [self RemoveHudProcess:connectDisconnectHud];
+
             [self GlobalBLuetoothCheck];
         }
     } else
@@ -1308,7 +1316,6 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
         self->tblDeviceList.hidden = false;
         self->lblNoDevice.hidden = true;
         [self->tblDeviceList reloadData];
-//        [APP_DELEGATE endHudProcess];
     }
     else
     {
@@ -1319,32 +1326,30 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 -(void)DeviceDidConnectNotification:(NSNotification*)notification //Connect periperal
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
-//        [APP_DELEGATE endHudProcess];
         [connectionTimer invalidate];
         connectionTimer = nil;
-        
-        NSInteger intPacket = [@"0" integerValue];
-        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-//        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"25" withLength:@"00" withPeripheral:classPeripheral];
         
         [self->tblDeviceList reloadData];
     });
 }
--(void)DeviceDidDisConnectNotification:(NSNotification*)notification //Disconnect periperal
+-(void)DeviceDidDisConnectNotificationSocket:(NSNotification*)notification //Disconnect periperal
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
         [[[BLEManager sharedManager] arrBLESocketDevices] removeAllObjects];
         [[BLEManager sharedManager] rescan];
         [self->tblDeviceList reloadData];
-        [APP_DELEGATE endHudProcess];});
+        [self RemoveHudProcess:connectDisconnectHud];
+
+        
+    });
 }
 #pragma mark:- Add Device BLE Commands
 -(void)AuthenticationCompleted:(CBPeripheral *)peripheral
 {
-//    globalSocketPeripheral = peripheral;
     NSString * strKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"];
     NSData * encryptKeyData= [[NSData alloc] init];
     encryptKeyData = [self getUserKeyconverted:strKey];
+    
     
     if (isRequestedforAddDevice == YES)
     {
@@ -1365,7 +1370,7 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 
     NSData * ssidNSData = [self dataFromHexString:strDate];
     [[BLEService sharedInstance] WriteSocketData:ssidNSData withOpcode:@"03" withLength:@"04" withPeripheral:classPeripheral];
-
+    
     [self ShowAlerttoEnterDeviceName];
     [self CheckRecievedWifiConfiguredStatus];
 }
@@ -1384,16 +1389,11 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
     [alert makeAlertTypeCaution];
     alert.delegate = self;
     alert.tag = 999;
+    __strong typeof(self) strongSelf = self;
+
     [alert addButton:@"Yes" withActionBlock:
      ^{
-        [APP_DELEGATE startHudProcess:@"Cheking availble Wi-Fi..."];
-        NSInteger intPacket = [@"0" integerValue];
-        NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-        [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->classPeripheral];
-        isWifiListFound = NO;
-        WifiScanTimer = nil;
-        wifiConnectionStatusRetryCount = 0;
-        WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:20 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
+        [strongSelf ScanforNearbyWifiMethod];
     }];
     [alert showAlertInView:self
                  withTitle:@"Smart socket"
@@ -1401,10 +1401,29 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
            withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
        withDoneButtonTitle:@"No" andButtons:nil];
 }
+-(void)ScanforNearbyWifiMethod
+{
+    [scannerHud removeFromSuperview];
+    scannerHud = [[MBProgressHUD alloc] initWithView:self.view];
+    [self.view addSubview:scannerHud];
+    scannerHud.labelText = @"Checking for availble Wi-Fi...";
+    [scannerHud show:YES];
+
+    NSInteger intPacket = [@"0" integerValue];
+    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
+    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"18" withLength:@"00" withPeripheral:self->classPeripheral];
+    isWifiListFound = NO;
+    WifiScanTimer = nil;
+    [WifiScanTimer invalidate];
+    wifiConnectionStatusRetryCount = 0;
+    WifiScanTimer = [NSTimer scheduledTimerWithTimeInterval:30 target:self selector:@selector(wifiScanTimeoutMethod) userInfo:nil repeats:NO];
+
+}
 -(void)wifiScanTimeoutMethod
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
-        [APP_DELEGATE endHudProcess];
+        [self RemoveHudProcess:scannerHud];
+
         if (isWifiListFound == NO)
         {
             [self AlertViewFCTypeCautionCheck:@"No Wi-Fi available nearby !"];
@@ -1414,75 +1433,7 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
     });
 
 }
-#pragma mark :- BLEService Delegate Methods
--(void)RecievedWifiConfiguredStatus:(NSString *)strStatus
-{
-
-    isCurrentDeviceWIFIConfigured = YES;
-    if ([strStatus isEqualToString:@"0000"])
-    {
-        isCurrentDeviceWIFIConfigured = NO;
-    }
-    else if ([strStatus isEqualToString:@"0100"])
-    {
-    }
-    else if ([strStatus isEqualToString:@"0101"])
-    {
-    }
-    else if ([strStatus isEqualToString:@"0102"])
-    {
-    }
-
-    if (isAfterWifiConfigured == YES)
-    {
-        [connectionTimer invalidate];
-        connectionTimer = nil;
-
-        if (isCurrentDeviceWIFIConfigured == NO)
-        {
-            if (wifiConnectionStatusRetryCount == 0)
-            {
-                wifiConnectionStatusRetryCount = 1;
-                connectionTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
-                [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(CheckforWifiStatus) userInfo:nil repeats:NO];
-            }
-            else
-            {
-                [APP_DELEGATE endHudProcess];
-                [alert removeFromSuperview];
-                alert = [[FCAlertView alloc] init];
-                [alert makeAlertTypeCaution];
-                alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
-                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Something went wrong. Please try again later..." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
-            }
-        }
-        else
-        {
-            NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '1' where id = '%@'",strSavedTableID];
-            [[DataBaseManager dataBaseManager] execute:strUpdate];
-
-            if (![IS_USER_SKIPPED isEqualToString:@"YES"])
-            {
-                [self UpdateWifiConfigurationStatustoServer];
-            }
-            else
-            {
-                [APP_DELEGATE endHudProcess];
-                [alert removeFromSuperview];
-                alert = [[FCAlertView alloc] init];
-                [alert makeAlertTypeSuccess];
-                alert.tag = 555;
-                alert.delegate = self;
-                alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
-                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wi-Fi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
-            }
-        }
-    }
-    else
-    {
-        
-    }
-}
+#pragma mark :- BLEService Delegate Methods for WIFI
 -(void)NoWIIFoundNearby
 {
     isWifiListFound = YES;
@@ -1500,17 +1451,19 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 
     arrayWifiavl = [[NSMutableArray alloc] init];
     dispatch_async(dispatch_get_main_queue(), ^(void){
+        
+        [self RemoveHudProcess:scannerHud];
+
     if (arrayWifiList.count > 0)
     {
         self->arrayWifiavl = arrayWifiList;
-        [APP_DELEGATE endHudProcess];
+
         [self SetupForShowWifiSSIList];
         [self->tblSSIDList reloadData];
         NSLog(@"Connected WI fi ===>>%@",arrayWifiList);
     }
     else
     {
-        [APP_DELEGATE endHudProcess];
 //        [self AlertViewFCTypeCautionCheck:@"There is no Wi-Fi nearby!"];
     }
     });
@@ -1518,91 +1471,96 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 -(void)WifiSSIDIndexAcknowlegement:(NSString *)strStatus
 {
     NSString * strPassword  = txtRouterPassword.text;
-    [[BLEService sharedInstance] WriteWifiPassword:strPassword];
+    [[BLEService sharedInstance] WriteWifiPassword:strPassword withPeripheral:classPeripheral];
 }
 -(void)WifiPasswordAcknowledgement:(NSString *)strStatus
 {
     if ([strStatus isEqualToString:@"01"])
     {
-        [connectionTimer invalidate];
-        connectionTimer = nil;
-        connectionTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(ConnectWifiTimeout) userInfo:nil repeats:NO];
-        
-        [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(CheckforWifiStatus) userInfo:nil repeats:NO];
+        isAfterWifiConfigured = YES;
+        [wifiWaitConnectConfirmTimer invalidate];
+        wifiWaitConnectConfirmTimer = nil;
+        wifiWaitConnectConfirmTimer = [NSTimer scheduledTimerWithTimeInterval:30 target:self selector:@selector(WaitWIFIConnectedStateNotify) userInfo:nil repeats:NO];
     }
 }
--(void)CheckforWifiStatus
+-(void)RecievedWifiConfiguredStatus:(NSString *)strStatus
 {
-    NSLog(@"Sent Opcode 10 after delay");
-    isAfterWifiConfigured = YES;
-    NSInteger intPacket = [@"0" integerValue];
-    NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
-    [[BLEService sharedInstance] WriteSocketData:dataPacket withOpcode:@"16" withLength:@"00" withPeripheral:classPeripheral];
-}
--(void)AddDeviceDatatoSocketArray
-{
-    if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strCurrentSelectedAddress])
+    isCurrentDeviceWIFIConfigured = YES;
+    if ([strStatus isEqualToString:@"0000"])
     {
-        NSInteger idxAddress = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strCurrentSelectedAddress];
-        if (idxAddress != NSNotFound)
-        {
-            if (idxAddress < [arrSocketDevices count])
-            {
-                [[arrSocketDevices objectAtIndex:idxAddress]setObject:classPeripheral forKey:@"peripheral"];
-                [[arrSocketDevices objectAtIndex:idxAddress]setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
-            }
-        }
+        isCurrentDeviceWIFIConfigured = NO;
     }
-    else
+    else if ([strStatus isEqualToString:@"0100"])
     {
-        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
-        [dict setValue:classPeripheral forKey:@"peripheral"];
-        [dict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
-        [dict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
-        
-        NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
-        if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+    }
+    else if ([strStatus isEqualToString:@"0101"])
+    {
+    }
+    else if ([strStatus isEqualToString:@"0102"])
+    {
+    }
+
+    if (isAfterWifiConfigured == YES)
+    {
+
+        if (isCurrentDeviceWIFIConfigured == NO)
         {
-            [arrSocketDevices addObject:dict];
+            
         }
         else
         {
-            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+            [wifiWaitConnectConfirmTimer invalidate];
+            wifiWaitConnectConfirmTimer = nil;
+
+            NSString * strUpdate = [NSString stringWithFormat:@"update Device_Table set wifi_configured = '1' where id = '%@'",strSavedTableID];
+            [[DataBaseManager dataBaseManager] execute:strUpdate];
+
+            if (![IS_USER_SKIPPED isEqualToString:@"YES"])
             {
-                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
-                if (foudIndex != NSNotFound)
-                {
-                    if ([arrSocketDevices count] > foudIndex)
-                    {
-                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
-                        [dataDict setValue:classPeripheral forKey:@"peripheral"];
-                        [dataDict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
-                        [dataDict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
-                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
-                    }
-                }
+                [self UpdateWifiConfigurationStatustoServer];
+            }
+            else
+            {
+                
+                [self RemoveHudProcess:connectDisconnectHud];
+
+                [alert removeFromSuperview];
+                alert = [[FCAlertView alloc] init];
+                [alert makeAlertTypeSuccess];
+                alert.tag = 555;
+                alert.delegate = self;
+                alert.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
+                [alert showAlertWithTitle:@"Vithamas" withSubtitle:@"Wi-Fi configured successfully." withCustomImage:[UIImage imageNamed:@"alert-round.png"] withDoneButtonTitle:@"OK" andButtons:nil];
             }
         }
     }
+}
+-(void)WaitWIFIConnectedStateNotify
+{
+    [self RemoveHudProcess:scannerHud];
+    [self RemoveHudProcess:connectDisconnectHud];
 
+    if (isCurrentDeviceWIFIConfigured == YES)
+    {
+        //ignore...
+    }
+    else
+    {
+        //show popup something went wrong...
+        [self AlertViewFCTypeCautionCheck:@"something went wrong. Please try again"];
+    }
 }
 #pragma mark - BLE Received data...
 -(void)ReceivedSwitchStatusfromDevice:(NSMutableDictionary *)dictSwitch
 {
     dictSwState = dictSwitch;
 }
-
-
 -(void)ShowNowifiAvailablePopUP
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
         [self AlertViewFCTypeCautionCheck:@"No Wi-Fi available nearby !"];
     });
 }
-
-
-
-
 -(NSData *)getUserKeyconverted:(NSString *)strAddress
 {
     NSMutableData * keyData = [[NSMutableData alloc] init];
@@ -1683,6 +1641,59 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
         [btnShowPass setImage:[UIImage imageNamed:@"visible.png"] forState:UIControlStateNormal];
         txtRouterPassword.secureTextEntry = NO;
     }
+}
+-(void)AddDeviceDatatoSocketArray
+{
+    if ([[arrSocketDevices valueForKey:@"ble_address"] containsObject:strCurrentSelectedAddress])
+    {
+        NSInteger idxAddress = [[arrSocketDevices valueForKey:@"ble_address"] indexOfObject:strCurrentSelectedAddress];
+        if (idxAddress != NSNotFound)
+        {
+            if (idxAddress < [arrSocketDevices count])
+            {
+                [[arrSocketDevices objectAtIndex:idxAddress]setObject:classPeripheral forKey:@"peripheral"];
+                [[arrSocketDevices objectAtIndex:idxAddress]setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+            }
+        }
+    }
+    else
+    {
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:classPeripheral forKey:@"peripheral"];
+        [dict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+        [dict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
+        
+        NSString * strCurrentIdentifier = [NSString stringWithFormat:@"%@",classPeripheral.identifier];
+        if (![[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+        {
+            [arrSocketDevices addObject:dict];
+        }
+        else
+        {
+            if ([[arrSocketDevices valueForKey:@"identifier"] containsObject:strCurrentIdentifier])
+            {
+                NSInteger  foudIndex = [[arrSocketDevices valueForKey:@"identifier"] indexOfObject:strCurrentIdentifier];
+                if (foudIndex != NSNotFound)
+                {
+                    if ([arrSocketDevices count] > foudIndex)
+                    {
+                        NSMutableDictionary * dataDict = [arrSocketDevices objectAtIndex:foudIndex];
+                        [dataDict setValue:classPeripheral forKey:@"peripheral"];
+                        [dataDict setValue:[NSString stringWithFormat:@"%@",classPeripheral.identifier] forKey:@"identifier"];
+                        [dataDict setValue:strCurrentSelectedAddress forKey:@"ble_address"];
+                        [arrSocketDevices replaceObjectAtIndex:foudIndex withObject:dataDict];
+                    }
+                }
+            }
+        }
+    }
+
+}
+-(void)RemoveHudProcess:(MBProgressHUD *)hudprocess
+{
+    [hudprocess hide:YES];
+    [hudprocess removeFromSuperview];
+    hudprocess = nil;
 }
 @end
 

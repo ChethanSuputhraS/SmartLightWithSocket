@@ -34,7 +34,8 @@
 #define CKPTD_CHARACTERISTICS_DATA_CHAR                       @"0001D100-AB00-11E1-9B23-00025B00A5A5"
 #define CKPTD_CHARACTERISTICS_DATA_CHAR1                      @"0002D100-AB00-11E1-9B23-00025B00A5A5"
 #define CKPTD_CHARACTERISTICS_DATAAUTH                        @"0002D200-AB00-11E1-9B23-00025B00A5A5"
-#define UUID_SMART_MESH_FACTORY_RESET_CHAR                    @"0003D100-AB00-11E1-9B23-00025B00A5A5" //0x0002D100AB0011E19B2300025B00A5A5
+#define UUID_SMART_MESH_FACTORY_RESET_CHAR                    @"0003D100-AB00-11E1-9B23-00025B00A5A5"
+//0x0002D100AB0011E19B2300025B00A5A5
 
 //#define CKPTD_SERVICE_UUID_STRING1                             @"0000AB00-0100-0800-0008-05F9B34FB000"
 //#define CKPTD_CHARACTERISTICS_DATA_CHAR1                       @"0000AB02-0100-0800-0008-05F9B34FB000"
@@ -44,6 +45,7 @@
 //
 //#define CKPTD_SERVICE_UUID_STRING4                             @"0000AB00-0100-0800-0008-05F9B34FB000"
 //#define CKPTD_CHARACTERISTICS_DATA_CHAR4                       @"0000ab04-0100-0800-0008-05F9B34FB000"
+#define SOCKET_FACTORY_RESET_CHARACTERISTICS                     @"0000AB02-2687-4433-2208-ABF9B34FB000"
 
 static BLEService    *sharedInstance    = nil;
 
@@ -271,15 +273,11 @@ static BLEService    *sharedInstance    = nil;
     {
         [self Socket_peripheral:peripheral didUpdateValueForCharacteristic:characteristic error:error];
     }
-    
-    
 }
-
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error{
-//    NSLog(@"didUpdateNotificationStateForCharacteristic =%@",characteristic);
+//    NSLog(@"didUpdateNotificationStateForCharacteristic =%@",characteristic.value);
     //    [self readValue:TI_KEYFOB_BATT_SERVICE_UUID characteristicUUID:TI_KEYFOB_LEVEL_SERVICE_UUID p:peripheral];
 }
-
 - (void)peripheralDidUpdateRSSI:(CBPeripheral *)peripheral error:(NSError *)error
 {
 //    NSLog(@"peripheralDidUpdateRSSI peripheral.name ==%@ ::RSSI ==%f, error==%@",peripheral.name,[peripheral.RSSI doubleValue],error);
@@ -294,14 +292,12 @@ static BLEService    *sharedInstance    = nil;
 //            NSLog(@"Wrong peripheral\n");
             return ;
         }
-        
         if (peripheral==servicePeripheral)
         {
             if (_delegate) {
                 //            [_delegate updateSignalImage:[[peripheral RSSI] intValue] forDevice:peripheral];
                 [_delegate updateSignalImage:[peripheral.RSSI doubleValue] forDevice:peripheral];
             }
-            
             //            rssiValue = [peripheral.RSSI doubleValue];
             //            NSLog(@"rssiValue peripheralDidUpdateRSSI =====================================================>>%f",rssiValue);
             
@@ -372,7 +368,6 @@ static BLEService    *sharedInstance    = nil;
         }
     }
 }
-
 -(void) peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(NSError *)error
 {
 //    NSLog(@"didReadRSSI peripheral.name ==%@ ::RSSI ==%f, error==%@",peripheral.name,[RSSI doubleValue],error);
@@ -436,7 +431,6 @@ static BLEService    *sharedInstance    = nil;
          }*/
     }
 }
-
 #pragma mark- Helper Methods
 -(int) compareCBUUID:(CBUUID *) UUID1 UUID2:(CBUUID *)UUID2
 {
@@ -447,12 +441,10 @@ static BLEService    *sharedInstance    = nil;
     if (memcmp(b1, b2, UUID1.data.length) == 0)return 1;
     else return 0;
 }
-
 -(const char *) CBUUIDToString:(CBUUID *) UUID
 {
     return [[UUID.data description] cStringUsingEncoding:NSStringEncodingConversionAllowLossy];
 }
-
 -(CBService *) findServiceFromUUID:(CBUUID *)UUID p:(CBPeripheral *)p
 {
     for(int i = 0; i < p.services.count; i++) {
@@ -461,13 +453,11 @@ static BLEService    *sharedInstance    = nil;
     }
     return nil; //Service not found on this peripheral
 }
-
 -(UInt16) swap:(UInt16)s {
     UInt16 temp = s << 8;
     temp |= (s >> 8);
     return temp;
 }
-
 -(CBCharacteristic *) findCharacteristicFromUUID:(CBUUID *)UUID service:(CBService*)service {
     for(int i=0; i < service.characteristics.count; i++)
     {
@@ -476,7 +466,6 @@ static BLEService    *sharedInstance    = nil;
     }
     return nil; //Characteristic not found on this service
 }
-
 -(void) notification:(int)serviceUUID characteristicUUID:(int)characteristicUUID p:(CBPeripheral *)p on:(BOOL)on {
     UInt16 s = [self swap:serviceUUID];
     UInt16 c = [self swap:characteristicUUID];
@@ -522,7 +511,6 @@ static BLEService    *sharedInstance    = nil;
     [UUID.data getBytes:b1];
     return ((b1[0] << 8) | b1[1]);
 }
-
 #pragma mark - SoundBuzzer (Sending signals)
 -(void) soundBuzzer:(Byte)buzzerValue peripheral:(CBPeripheral *)peripheral
 {
@@ -1346,7 +1334,7 @@ static BLEService    *sharedInstance    = nil;
 -(void)Socket_peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
     //here notification will come
-//    NSLog(@"========SOCKET_RECIEVED_DATA========%@",characteristic);
+//    NSLog(@"========SOCKET_RECIEVED_DATA========%@",characteristic.value);
     NSString * strUUID = [NSString stringWithFormat:@"%@",characteristic.UUID];
     if ([strUUID isEqualToString:@"0000AB00-2687-4433-2208-ABF9B34FB000"])//For Authentication 0000AB01-0143-0800-0008-E5F9B34FB000
     {
@@ -1367,9 +1355,10 @@ static BLEService    *sharedInstance    = nil;
                     NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
                     if ([strOpcode isEqualToString:@"01"] || [strOpcode isEqualToString:@"02"])
                     {
-                        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+//                        arrSocketDevices
+                        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
                         {
-                            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+                            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
                             if (foundIndex != NSNotFound)
                             {
                                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -1391,20 +1380,21 @@ static BLEService    *sharedInstance    = nil;
                     NSString * strPacket = [self getStringConvertedinUnsigned:[valueCharStr substringWithRange:NSMakeRange(4, 32)]];
                     NSString * strPactLength = [self stringFroHex:[valueCharStr substringWithRange:NSMakeRange(2, 2)]];
                     NSString * strDecrypted = [APP_DELEGATE GetSocketDecrypedData:strPacket withKey:strKeyUnsigned withLength:defaultKey.length / 2];
-                    NSLog(@"====SOCKET_FULL_DECRYPTED_PACKET========%@%@%@",strOpcode,[valueCharStr substringWithRange:NSMakeRange(2, 2)],strDecrypted);
+                    NSLog(@"== SOCKET_RECIEVED_DECRYPTED_PACKET ==%@%@%@",strOpcode,[valueCharStr substringWithRange:NSMakeRange(2, 2)],strDecrypted);
 
                     if ([strDecrypted length]>=6)
                     {
                         if ([strOpcode isEqualToString:@"01"])
                         {
                             NSString * strCode = [strDecrypted substringWithRange:NSMakeRange(0, 2)];
-                            [self WriteSockethAuthenticationCode:strCode withPeripheral:peripheral];
+                            [self WriteSockethAuthenticationCode:strCode withPeripheral:peripheral isforSocketReset:NO];
                         }
                         else if ([strOpcode isEqualToString:@"02"])
                         {
                             if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
                             {
                                 [addSocketdelegate AuthenticationCompleted:peripheral];
+                                
                             }
                             
                             NSInteger intPacket = [@"0" integerValue];
@@ -1460,9 +1450,9 @@ static BLEService    *sharedInstance    = nil;
                         {
                             if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
                             {
-                                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+                                if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
                                 {
-                                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+                                    NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
                                     if (foundIndex != NSNotFound)
                                     {
                                         if ([arrPeripheralsCheck count] > foundIndex)
@@ -1485,7 +1475,9 @@ static BLEService    *sharedInstance    = nil;
                             [[BLEManager sharedManager] disconnectDevice:peripheral];
                             if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
                             {
-                                
+                                NSString * strIdentifier = [NSString stringWithFormat:@"%@",peripheral.identifier];
+                                [[BLEManager sharedManager] RemoveDevicefromAutoConnection:strIdentifier];
+                                [[BLEManager sharedManager] disconnectDevice:peripheral];
                             }
                             else
                             {
@@ -1503,16 +1495,20 @@ static BLEService    *sharedInstance    = nil;
                         }
                         else if ([strOpcode isEqualToString:@"09"])
                         {
-                            if ([strDecrypted length]>=6)
+                            if ([strDecrypted length]>=14)
                             {
-                                if ([[strDecrypted substringWithRange:NSMakeRange(4, 2)] isEqualToString:@"01"])
+                                if ([[strDecrypted substringWithRange:NSMakeRange(12, 2)] isEqualToString:@"01"])
                                 {
+                                    
+                                    [globalSocketDetailVC ReceiveAllSoketONOFFState:[strDecrypted substringWithRange:NSMakeRange(0, 12)] withStatus:YES];
+
                                 }
                                 else
                                 {
-                                    //Send Error and Undo Switch Status
+                                    [globalSocketDetailVC ReceiveAllSoketONOFFState:[strDecrypted substringWithRange:NSMakeRange(0, 12)] withStatus:NO];
                                 }
                             }
+
                         }
                         else if ([strOpcode isEqualToString:@"10"]) // Check WIFI Configured or not...
                         {
@@ -1547,17 +1543,18 @@ static BLEService    *sharedInstance    = nil;
                         }
                         else if ([strOpcode isEqualToString:@"0a"])
                         {
-                            if ([strDecrypted length]>=6)
+                            if ([strDecrypted length]>=14)
                             {
-                                [globalSocketDetailVC ReceiveAllSoketONOFFState:[strDecrypted substringWithRange:NSMakeRange(2, 4)]];
-                                if ([[strDecrypted substringWithRange:NSMakeRange(4, 2)] isEqualToString:@"01"])
+                                if ([[strDecrypted substringWithRange:NSMakeRange(12, 2)] isEqualToString:@"01"])
                                 {
-                                    NSInteger intData = [@"00" integerValue];
-                                    NSData * requestData = [[NSData alloc] initWithBytes:&intData length:1];
-                                    [self WriteSocketData:requestData withOpcode:@"05" withLength:@"0" withPeripheral:peripheral];
+                                    
+                                    [globalSocketDetailVC ReceiveAllSoketONOFFState:[strDecrypted substringWithRange:NSMakeRange(0, 12)] withStatus:YES];
+
                                 }
                                 else
                                 {
+                                    [globalSocketDetailVC ReceiveAllSoketONOFFState:[strDecrypted substringWithRange:NSMakeRange(0, 12)] withStatus:NO];
+
                                     //Send Error and Undo Switch Status
                                 }
                             }
@@ -1610,16 +1607,16 @@ static BLEService    *sharedInstance    = nil;
                         }
                         else if ([strOpcode isEqualToString:@"0c"]) //
                         {
-                            if ([strDecrypted length]>=4)
+                            if ([strDecrypted length]>=8)
                             {
                                 NSMutableDictionary * dictAlaramDelete = [[NSMutableDictionary alloc] init];
                                 NSString * strAlarmID = [strDecrypted substringWithRange:NSMakeRange(0, 2)];
-                                NSString * strAlarmdeletConfirm = [strDecrypted substringWithRange:NSMakeRange(2, 2)];
+                                NSString * strAlarmdeletConfirm = [strDecrypted substringWithRange:NSMakeRange(6, 2)];
                                 
                                 [dictAlaramDelete setValue:strAlarmID forKey:@"alarm_id"];
                                 [dictAlaramDelete setValue:strAlarmdeletConfirm forKey:@"deleteSate"];
                                 
-                                if (globalSocketDetailVC)
+                                if (globalSocketAlarmVC)
                                 {
                                     [globalSocketAlarmVC DeleteAlarmConfirmFromDevice:dictAlaramDelete];
                                 }
@@ -1627,6 +1624,7 @@ static BLEService    *sharedInstance    = nil;
                         }
                         else if ([strOpcode isEqualToString:@"15"]) //
                         {
+//                            NSLog(@"====ALARM STATE======%@",strDecrypted);
                             if ([strDecrypted length]>=16)
                             {
                                 if ([[valueCharStr substringWithRange:NSMakeRange(0, 4)] isEqualToString:@"1501"])
@@ -1637,9 +1635,9 @@ static BLEService    *sharedInstance    = nil;
                                 {
                                     NSMutableDictionary * dictAlarmID = [[NSMutableDictionary alloc] init];
                                             
-                                    NSString * strALID = [NSString stringWithFormat:@"%d",[[strDecrypted substringWithRange:NSMakeRange(0, 2)] intValue]];
+                                    NSString * strALID = [NSString stringWithFormat:@"%d",[[self stringFroHex:[strDecrypted substringWithRange:NSMakeRange(0, 2)]] intValue]];
                                     NSString * strSocketID = [strDecrypted substringWithRange:NSMakeRange(2, 2)];
-                                    NSString * strDayVal = [strDecrypted substringWithRange:NSMakeRange(4, 2)];
+                                    NSString * strDayVal = [self stringFroHex:[strDecrypted substringWithRange:NSMakeRange(4, 2)]];
                                     NSString * strONTime = [strDecrypted substringWithRange:NSMakeRange(6, 8)];
                                     NSString * strOffTime = [strDecrypted substringWithRange:NSMakeRange(14, 8)];
                                     NSString * strAlarmSate = [strDecrypted substringWithRange:NSMakeRange(22, 2)];
@@ -1668,17 +1666,16 @@ static BLEService    *sharedInstance    = nil;
                                 }
                             }
                         }
-                        else if ([strOpcode isEqualToString:@"19"]) // Firmaware version
+                        else if ([strOpcode isEqualToString:@"19"]) // Firmware version
                         {
                             if ([strDecrypted length]>=4)
                             {
-                                if ([[strDecrypted substringWithRange:NSMakeRange(2, 2)] isEqualToString:@"01"])
-                                {
-                                    
-                                }
+                                NSString * strHardwareversion = [strDecrypted substringWithRange:NSMakeRange(0, 4)];
+                                NSLog(@"Hardware version ====>> %@",strHardwareversion);
+                                [globalSocketDetailVC ReceivedFirmwareVersionFromDevice:strHardwareversion];
                             }
                         }
-                        else if ([strOpcode isEqualToString:@"12"]) // css add this
+                        else if ([strOpcode isEqualToString:@"12"]) // wifi list
                         {
                             if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"] && [[valueCharStr substringWithRange:NSMakeRange(2, 2)] isEqualToString:@"01"])
                             {
@@ -1746,7 +1743,15 @@ static BLEService    *sharedInstance    = nil;
                                     }
                                     else
                                     {
-                                        strSSIDdata = [strDecrypted substringWithRange:NSMakeRange(6, remainingLength * 2)];
+
+                                        if([strDecrypted length] > (remainingLength * 2) + 6)
+                                        {
+                                            strSSIDdata = [strDecrypted substringWithRange:NSMakeRange(6, remainingLength * 2)];
+                                        }
+                                        else
+                                        {
+                                            strSSIDdata = [strDecrypted substringWithRange:NSMakeRange(6, [strDecrypted length] - 6)];
+                                        }
                                     }
                                     NSMutableString * strWifiName = [[NSMutableString alloc] init];
                                     int i = 0;
@@ -1806,20 +1811,84 @@ static BLEService    *sharedInstance    = nil;
             }
         }
     }
+    else if ([strUUID isEqualToString:@"0000AB02-2687-4433-2208-ABF9B34FB000"])//For Socket Factory Reset
+    {
+        if ([currentScreen isEqualToString:@"SocketReset"])
+        {
+            NSData * valData = characteristic.value;
+            NSString * valueCharStr = [NSString stringWithFormat:@"%@",valData.debugDescription];
+            valueCharStr = [valueCharStr stringByReplacingOccurrencesOfString:@" " withString:@""];
+            valueCharStr = [valueCharStr stringByReplacingOccurrencesOfString:@">" withString:@""];
+            valueCharStr = [valueCharStr stringByReplacingOccurrencesOfString:@"<" withString:@""];
+            
+            if (![[self checkforValidString:valueCharStr] isEqualToString:@"NA"])
+            {
+                if ([valueCharStr length]>=36)
+                {
+                    NSString * strOpcode = [valueCharStr substringWithRange:NSMakeRange(0, 2)];
+                    dispatch_async(dispatch_get_main_queue(), ^(void)
+                    {
+                        NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
+                        
+                        NSString * strKeyUnsigned = [self getStringConvertedinUnsigned:defaultKey];
+                        NSString * strPacket = [self getStringConvertedinUnsigned:[valueCharStr substringWithRange:NSMakeRange(4, 32)]];
+                        NSString * strDecrypted = [APP_DELEGATE GetSocketDecrypedData:strPacket withKey:strKeyUnsigned withLength:defaultKey.length / 2];
+                        NSLog(@"====SOCKET_FULL_DECRYPTED_PACKET========%@%@%@",strOpcode,[valueCharStr substringWithRange:NSMakeRange(2, 2)],strDecrypted);
+
+                        if ([strDecrypted length]>=6)
+                        {
+                            if ([strOpcode isEqualToString:@"01"])
+                            {
+                                NSString * strCode = [strDecrypted substringWithRange:NSMakeRange(0, 2)];
+                                [self WriteSockethAuthenticationCode:strCode withPeripheral:peripheral isforSocketReset:YES];
+                            }
+                            else if ([strOpcode isEqualToString:@"02"])
+                            {
+                                if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
+                                {
+                                    [[NSNotificationCenter defaultCenter] postNotificationName:@"ResetSocketAuthenticationCompleted" object:nil];
+                                }
+                            }
+                            else if ([strOpcode isEqualToString:@"24"])
+                            {
+                                if ([[strDecrypted substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"01"])
+                                {
+                                    [[BLEManager sharedManager] RemoveDevicefromAutoConnection:[NSString stringWithFormat:@"%@",peripheral.identifier]];
+                                    [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowSocketTurnOnOffPopup" object:nil];
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
 }
--(void)EnableNotificationsForCommandSKT:(CBPeripheral*)kp withType:(BOOL)isMulti
+-(void)EnableNotificationsForCommandSKT:(CBPeripheral*)kp withSocketReset:(BOOL)isResetSocket;
 {
     CBUUID * sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
     CBUUID * cUUID = [CBUUID UUIDWithString:CPTD_CHARACTERISTIC_SKT];
+
+    if (isResetSocket == YES)
+    {
+        sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
+        cUUID = [CBUUID UUIDWithString:SOCKET_FACTORY_RESET_CHARACTERISTICS];
+    }
     
     kp.delegate = self;
     [self CBUUIDnotification:sUUID characteristicUUID:cUUID p:kp on:YES];
 }
--(void)EnableNotificationsForDATASKT:(CBPeripheral*)kp withType:(BOOL)isMulti
+-(void)EnableNotificationsForDATASKT:(CBPeripheral*)kp withSocketReset:(BOOL)isResetSocket;
 {
     CBUUID * sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
     CBUUID * cUUID = [CBUUID UUIDWithString:CPTD_CHARACTERISTIC_SKT];
-    
+
+    if (isResetSocket == YES)
+    {
+        sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
+        cUUID = [CBUUID UUIDWithString:SOCKET_FACTORY_RESET_CHARACTERISTICS];
+    }
+
     kp.delegate = self;
     [self CBUUIDnotification:sUUID characteristicUUID:cUUID p:kp on:YES];
 }
@@ -1830,14 +1899,14 @@ static BLEService    *sharedInstance    = nil;
     kp.delegate = self;
     [self CBUUIDnotification:sUUID characteristicUUID:cUUID p:kp on:YES];
 }
--(void)GetAuthcodeforSocket:(CBPeripheral *)peripheral withValue:(NSString *)strValue
+-(void)GetAuthcodeforSocket:(CBPeripheral *)peripheral withValue:(NSString *)strValue isforSocketReset:(BOOL)isResetSocket;
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
         
         NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
-        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
         {
-            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
             if (foundIndex != NSNotFound)
             {
                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -1884,6 +1953,10 @@ static BLEService    *sharedInstance    = nil;
 
             CBUUID * sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
             CBUUID * cUUID = [CBUUID UUIDWithString:CPTD_CHARACTERISTIC_SKT];
+        if (isResetSocket == YES)
+        {
+           cUUID = [CBUUID UUIDWithString:SOCKET_FACTORY_RESET_CHARACTERISTICS];
+        }
             [self CBUUIDwriteValue:sUUID characteristicUUID:cUUID p:peripheral data:completeData];
     });
 }
@@ -1904,13 +1977,13 @@ static BLEService    *sharedInstance    = nil;
 }
 
 #pragma mark - SEND COMMAND NSDATA WITH TOTAL BYTES
--(void)WriteSockethAuthenticationCode:(NSString *)strCode withPeripheral:(CBPeripheral *)peripheral
+-(void)WriteSockethAuthenticationCode:(NSString *)strCode withPeripheral:(CBPeripheral *)peripheral isforSocketReset:(BOOL)isResetSocket
 {
     dispatch_async(dispatch_get_main_queue(), ^(void){
         NSString * defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
-        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
         {
-            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
             if (foundIndex != NSNotFound)
             {
                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -1921,6 +1994,10 @@ static BLEService    *sharedInstance    = nil;
                     }
                 }
             }
+        }
+        if (isResetSocket == YES)
+        {
+            defaultKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
         }
         NSString * strKey  =  [APP_DELEGATE getStringConvertedinUnsigned:defaultKey];
         NSString * strKeyUnsigned = [self getStringConvertedinUnsigned:defaultKey];
@@ -1959,6 +2036,10 @@ static BLEService    *sharedInstance    = nil;
 
         CBUUID * sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
         CBUUID * cUUID = [CBUUID UUIDWithString:CPTD_CHARACTERISTIC_SKT];
+        if (isResetSocket == YES)
+        {
+            cUUID = [CBUUID UUIDWithString:SOCKET_FACTORY_RESET_CHARACTERISTICS];
+        }
         [self CBUUIDwriteValue:sUUID characteristicUUID:cUUID p:peripheral data:completeData];
         NSLog(@"Wrote Authentication Code back Value==%ld and Data packet=%@",(long)valuInt,authData);
 
@@ -1970,9 +2051,9 @@ static BLEService    *sharedInstance    = nil;
     dispatch_async(dispatch_get_main_queue(), ^(void){
         
         NSString * strEncryptKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
-        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:peripheral.identifier])
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
         {
-            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:peripheral.identifier];
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
             if (foundIndex != NSNotFound)
             {
                 if ([arrPeripheralsCheck count] > foundIndex)
@@ -2034,10 +2115,83 @@ static BLEService    *sharedInstance    = nil;
         CBUUID * sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
         CBUUID * cUUID = [CBUUID UUIDWithString:CPTD_CHARACTERISTIC_SKT];
         [self CBUUIDwriteValue:sUUID characteristicUUID:cUUID p:peripheral data:completeData];
-        NSLog(@"wrote SOCKET DATA ====>>%@",completeData);
+        NSLog(@"== Wrote SOCKET DATA ==%@%@%@",dataOpcode,dataLength,StrData);
     });
 }
--(void)WriteWifiPassword:(NSString *)strPassword
+-(void)WriteSocketDataToResetSocket:(NSData *)socketData withOpcode:(NSString *)strOpcode withLength:(NSString *)strLength withPeripheral:(CBPeripheral *)peripheral;
+{
+    dispatch_async(dispatch_get_main_queue(), ^(void){
+        
+        NSString * strEncryptKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
+        if ([[arrPeripheralsCheck valueForKey:@"identifier"] containsObject:[NSString stringWithFormat:@"%@",peripheral.identifier]])
+        {
+            NSInteger foundIndex = [[arrPeripheralsCheck valueForKey:@"identifier"] indexOfObject:[NSString stringWithFormat:@"%@",peripheral.identifier]];
+            if (foundIndex != NSNotFound)
+            {
+                if ([arrPeripheralsCheck count] > foundIndex)
+                {
+                    if ([[[arrPeripheralsCheck objectAtIndex:foundIndex] valueForKey:@"status"] isEqualToString:@"1700"])
+                    {
+                        strEncryptKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"];
+                    }
+                }
+            }
+        }
+        
+            strEncryptKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
+//        NSString * strEncryptKey  = [[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"];
+//        if ([strOpcode isEqualToString:@"06"])
+//        {
+//             strEncryptKey = [[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"];
+//        }
+
+        if ([strOpcode isEqualToString:@"18"]) //Wifi Scan Opcode...Clear Wifi List Array
+        {
+            [arrWifiList removeAllObjects];
+            arrWifiList = [[NSMutableArray alloc] init];
+        }
+        
+        NSString * strKey  =  [APP_DELEGATE getStringConvertedinUnsigned:strEncryptKey];
+        NSString * strKeyUnsigned = [self getStringConvertedinUnsigned:strEncryptKey];
+
+        NSInteger intOpCode = [strOpcode integerValue];
+        NSData * dataOpcode = [[NSData alloc] initWithBytes:&intOpCode length:1];
+            
+        NSInteger intLength = [strLength integerValue];
+        NSData * dataLength = [[NSData alloc] initWithBytes:&intLength length:1];
+
+        NSString * strData = [NSString stringWithFormat:@"%@",socketData.debugDescription];
+        if (intLength < 16)
+        {
+            strData = [NSString stringWithFormat:@"%@",socketData.debugDescription];
+            strData = [strData stringByReplacingOccurrencesOfString:@" " withString:@""];
+            strData = [strData stringByReplacingOccurrencesOfString:@"<" withString:@""];
+            strData = [strData stringByReplacingOccurrencesOfString:@">" withString:@""];
+
+            for (int i = 0; i < 16 - ([strData length] / 2); i ++)
+            {
+                strData = [strData stringByAppendingString:@"00"];
+            }
+        }
+        NSString * StrData = [NSString stringWithFormat:@"%@",strData];
+        StrData = [StrData stringByReplacingOccurrencesOfString:@" " withString:@""];
+        StrData = [StrData stringByReplacingOccurrencesOfString:@"<" withString:@""];
+        StrData = [StrData stringByReplacingOccurrencesOfString:@">" withString:@""];
+            
+        NSString * strPacket = [self getStringConvertedinUnsigned:StrData];
+        NSData * strEncrypted = [APP_DELEGATE GetSocketEncryptedKeyforData:strPacket withKey:strKeyUnsigned withLength:strKey.length / 2];
+
+        NSMutableData *completeData = [dataOpcode mutableCopy];
+        [completeData appendData:dataLength];
+        [completeData appendData:strEncrypted];
+
+        CBUUID * sUUID = [CBUUID UUIDWithString:CPTD_SERVICE_UUID_SKT];
+        CBUUID * cUUID = [CBUUID UUIDWithString:SOCKET_FACTORY_RESET_CHARACTERISTICS];
+        [self CBUUIDwriteValue:sUUID characteristicUUID:cUUID p:peripheral data:completeData];
+        NSLog(@"wrote SOCKET RESET DATA ====>>%@%@%@",dataOpcode,dataLength,StrData);
+    });
+}
+-(void)WriteWifiPassword:(NSString *)strPassword withPeripheral:(CBPeripheral *)peripheral;
 {
     float lenghtFloat = [strPassword length];
     NSString * strLength = [NSString stringWithFormat:@"%f",lenghtFloat / 14];
@@ -2076,7 +2230,7 @@ static BLEService    *sharedInstance    = nil;
             [completeData appendData:dataPacketNo];
             [completeData appendData:msgData];
 
-            [self WriteSocketData:completeData withOpcode:@"14" withLength:@"16" withPeripheral:globalSocketPeripheral];
+            [self WriteSocketData:completeData withOpcode:@"14" withLength:@"16" withPeripheral:peripheral];
 
             NSLog(@"Pass=%@   TotalLength=%@    PacketNo=%d    MsgData=%@",strMsg, dataTotalLength, i, msgData);
         }
@@ -2093,7 +2247,7 @@ static BLEService    *sharedInstance    = nil;
                 [completeData appendData:msgData];
                 NSString * strRemainLength = [NSString stringWithFormat:@"%d",totallength - (i * 14) + 2];
 
-                [self WriteSocketData:completeData withOpcode:@"14" withLength:strRemainLength withPeripheral:globalSocketPeripheral];
+                [self WriteSocketData:completeData withOpcode:@"14" withLength:strRemainLength withPeripheral:peripheral];
                 NSLog(@"Pass=%@   TotalLength=%@   PacketLength=%@ PacketNo=%d    MsgData=%@",strMsg, dataTotalLength, strRemainLength, i, msgData);
             }
         }
