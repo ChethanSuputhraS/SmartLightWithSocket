@@ -420,7 +420,6 @@
     }
     [intialConnectHud show:YES];
 
-
     if (classMqttObj == nil)
     {
         [self ConnecttoMQTTSocketServer];
@@ -2599,7 +2598,6 @@
         }
     }
 }
-
 #pragma mark - Alarm MQTT Setup & Receive Methods
 -(void)SetupAlarm:(NSMutableData *)alarmDict
 {
@@ -2622,7 +2620,6 @@
         UInt16 subTop = [classMqttObj publish:msg];
         NSLog(@"MQTT MSG Sent==%hu",subTop);
     }
-
 }
 - (BOOL)textFieldShouldReturn:(UITextField *)textField
 {
@@ -2661,7 +2658,6 @@
            withCustomImage:nil
        withDoneButtonTitle:nil
                 andButtons:nil];
-
 }
 -(void)UpdateDatabaseforAlarm:(NSArray *)arrResponse withBleAddress:(NSString *)strBleAdress
 {

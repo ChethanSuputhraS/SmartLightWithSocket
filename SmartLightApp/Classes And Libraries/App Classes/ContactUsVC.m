@@ -74,18 +74,19 @@
 #pragma mark - set UI Frames
 -(void) setContentViewFrames
 {
-    tblContent =[[UITableView alloc]initWithFrame:CGRectMake(0, 84, self.view.frame.size.width,285) style:UITableViewStylePlain];
+    tblContent =[[UITableView alloc]initWithFrame:CGRectMake(0, 84, self.view.frame.size.width,400) style:UITableViewStylePlain];
     [tblContent setBackgroundColor:[UIColor clearColor]];
     tblContent.showsVerticalScrollIndicator = NO;
-    tblContent.showsHorizontalScrollIndicator=NO;
+    tblContent.showsHorizontalScrollIndicator = NO;
     [tblContent setDelegate:self];
     [tblContent setDataSource:self];
     tblContent.scrollEnabled = false;
     [tblContent setSeparatorStyle:UITableViewCellSeparatorStyleNone];
     [self.view addSubview:tblContent];
     
+    
     UILabel * lblFollow = [[UILabel alloc]init];
-    lblFollow.frame = CGRectMake(10, tblContent.frame.origin.y+tblContent.frame.size.height, DEVICE_WIDTH/2, 30);
+    lblFollow.frame = CGRectMake(10, tblContent.frame.origin.y+tblContent.frame.size.height+10, DEVICE_WIDTH/2, 30);
     lblFollow.backgroundColor = UIColor.clearColor;
     lblFollow.text = @"Follow Us On";
     lblFollow.textColor = UIColor.whiteColor;
@@ -120,12 +121,10 @@
 {
     return 1;
 }
-
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 3;
+    return 5;
 }
-
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (indexPath.row == 0)
@@ -137,6 +136,18 @@
         return 65;
     }
     else if (indexPath.row == 2)
+    {
+        return 65;
+    }
+    else if (indexPath.row == 3)
+    {
+        return 65;
+    }
+    else if (indexPath.row == 4)
+    {
+        return 65;
+    }
+    else if (indexPath.row == 5)
     {
         return 65;
     }
@@ -155,17 +166,17 @@
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     cell.backgroundColor = [UIColor clearColor];
     
-    NSArray * imgArr = [[NSArray alloc]initWithObjects:@"map-marker.png",@"email-plus.png",@"web.png", nil];
+    NSArray * imgArr = [[NSArray alloc]initWithObjects:@"map-marker.png",@"email-plus.png",@"web.png",@"call.png",@"techsupport.png", nil];
     cell.imgLogo.image =  [UIImage imageNamed:[NSString stringWithFormat:@"%@",[imgArr objectAtIndex:indexPath.row]]];
     
-    NSArray * nameArr = [[NSArray alloc]initWithObjects:@"Address",@"Email",@"Website", nil];
+    NSArray * nameArr = [[NSArray alloc]initWithObjects:@"Address",@"Email",@"Website",@"Sales",@"Tech Support", nil];
     cell.lblName.text = [NSString stringWithFormat:@"%@",[nameArr objectAtIndex:indexPath.row]];
     
     if (indexPath.row == 0)
     {
         cell.lblContent.frame = CGRectMake(60, 25, DEVICE_WIDTH-60, 100);
         cell.lblLine.frame = CGRectMake(60, cell.lblContent.frame.origin.y+100+5, cell.lblContent.frame.size.width-5, 0.5);
-        cell.lblContent.text = @"Vithamas Technologies,\n136/D,Chandana Chethana Complex,Abhishek Road, Vani Vilas Layout,Vijaynagar 2nd Stage,Mysuru-570016,Karnataka,India";
+        cell.lblContent.text = @"Vithamas Technologies,\n136/D, Chandana Chethana Complex, Abhishek Road, Vani Vilas Layout, Vijaynagar 2nd Stage, Mysuru-570016, Karnataka, India";
         cell.lblContent.numberOfLines = 5;
         cell.imgCellBG.frame = CGRectMake(0, 0, DEVICE_WIDTH, 140) ;
     }
@@ -178,7 +189,6 @@
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         cell.imgCellBG.frame = CGRectMake(0, 0, DEVICE_WIDTH, 65) ;
 
-
     }
     else if (indexPath.row == 2)
     {
@@ -189,7 +199,25 @@
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         cell.imgCellBG.frame = CGRectMake(0, 0, DEVICE_WIDTH, 65) ;
     }
-  
+    else if (indexPath.row == 3)
+    {
+        cell.lblContent.frame = CGRectMake(60, 25, DEVICE_WIDTH-60, 30);
+        cell.lblLine.frame = CGRectMake(60, cell.lblContent.frame.origin.y+30+5, cell.lblContent.frame.size.width-5, 0.5);
+        cell.lblContent.text = @"+91 9916602770  (Mon-Fri 11AM - 4PM)";
+        cell.lblContent.numberOfLines = 1;
+//        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        cell.imgCellBG.frame = CGRectMake(0, 0, DEVICE_WIDTH, 65);
+        
+    }
+    else if (indexPath.row == 4)
+    {
+        cell.lblContent.frame = CGRectMake(60, 25, DEVICE_WIDTH-60, 30);
+        cell.lblLine.frame = CGRectMake(60, cell.lblContent.frame.origin.y+30+5, cell.lblContent.frame.size.width-5, 0.5);
+        cell.lblContent.text = @"+91 8088523856  (Mon-Fri 11AM - 4PM)";
+        cell.lblContent.numberOfLines = 1;
+//        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        cell.imgCellBG.frame = CGRectMake(0, 0, DEVICE_WIDTH, 65);
+    }
 
     return cell;
 
@@ -209,6 +237,40 @@
         webViewVC*view1 = [[webViewVC alloc]init];
         view1.btnIndex = 4;
         [self.navigationController pushViewController:view1 animated:true];
+    }
+    else if (indexPath.row == 3)
+    {
+
+        FCAlertView *  alert2 = [[FCAlertView alloc] init];
+        alert2.colorScheme = [UIColor blackColor];
+        [alert2 makeAlertTypeCaution];
+        [alert2 addButton:@"Call" withActionBlock:
+         ^{
+            
+            NSString *phoneNumber = [@"tel:" stringByAppendingString:@"+91 8088523856"];
+            
+//            if([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@",phoneNumber]]])
+//            {
+    //            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@",phoneNumber]]];
+                [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@",phoneNumber]]];
+//             }
+//             else
+//             {
+//                 NSLog(@"Unable to open");
+//             }
+         }];
+        
+        alert2.firstButtonCustomFont = [UIFont fontWithName:CGRegular size:textSizes];
+        [alert2 showAlertInView:self
+                      withTitle:@"Vithamas"
+                   withSubtitle:@"Contact through?"
+                withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
+            withDoneButtonTitle:@"Cancel" andButtons:nil];
+    }
+    else if (indexPath.row == 4)
+    {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@",@"+91 8088523856"]]];
+//        [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@",@"+91 8088523856"]]];
     }
 }
 #pragma mark For Sending Mail
@@ -398,6 +460,7 @@
     // Dispose of any resources that can be recreated.
 }
 
-
+//Sales Number - 919916602770 (Monday-Friday 11AM - 4PM)
+//Technical Support: +918088523856 (Monday-Friday 11AM - 4PM)
 @end
 

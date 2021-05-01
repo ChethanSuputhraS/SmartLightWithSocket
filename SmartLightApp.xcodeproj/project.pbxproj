@@ -719,6 +719,12 @@
 		FAE7E79525E76A7F00866B11 /* tick@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAE7E78F25E76A7E00866B11 /* tick@3x.png */; };
 		FAE7E79625E76A7F00866B11 /* redcross@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAE7E79025E76A7E00866B11 /* redcross@3x.png */; };
 		FAE7E79725E76A7F00866B11 /* redcross@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAE7E79125E76A7E00866B11 /* redcross@2x.png */; };
+		FAFCD799263D6840003D0D81 /* techsupport@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAFCD793263D683F003D0D81 /* techsupport@3x.png */; };
+		FAFCD79A263D6840003D0D81 /* call.png in Resources */ = {isa = PBXBuildFile; fileRef = FAFCD794263D683F003D0D81 /* call.png */; };
+		FAFCD79B263D6840003D0D81 /* techsupport.png in Resources */ = {isa = PBXBuildFile; fileRef = FAFCD795263D683F003D0D81 /* techsupport.png */; };
+		FAFCD79C263D6840003D0D81 /* call@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAFCD796263D6840003D0D81 /* call@3x.png */; };
+		FAFCD79D263D6840003D0D81 /* techsupport@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAFCD797263D6840003D0D81 /* techsupport@2x.png */; };
+		FAFCD79E263D6840003D0D81 /* call@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FAFCD798263D6840003D0D81 /* call@2x.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1620,6 +1626,12 @@
 		FAE7E78F25E76A7E00866B11 /* tick@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tick@3x.png"; sourceTree = "<group>"; };
 		FAE7E79025E76A7E00866B11 /* redcross@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "redcross@3x.png"; sourceTree = "<group>"; };
 		FAE7E79125E76A7E00866B11 /* redcross@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "redcross@2x.png"; sourceTree = "<group>"; };
+		FAFCD793263D683F003D0D81 /* techsupport@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "techsupport@3x.png"; sourceTree = "<group>"; };
+		FAFCD794263D683F003D0D81 /* call.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = call.png; sourceTree = "<group>"; };
+		FAFCD795263D683F003D0D81 /* techsupport.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = techsupport.png; sourceTree = "<group>"; };
+		FAFCD796263D6840003D0D81 /* call@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "call@3x.png"; sourceTree = "<group>"; };
+		FAFCD797263D6840003D0D81 /* techsupport@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "techsupport@2x.png"; sourceTree = "<group>"; };
+		FAFCD798263D6840003D0D81 /* call@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "call@2x.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2337,6 +2349,12 @@
 		AB0139822063DA2200F8E661 /* Other icons */ = {
 			isa = PBXGroup;
 			children = (
+				FAFCD794263D683F003D0D81 /* call.png */,
+				FAFCD798263D6840003D0D81 /* call@2x.png */,
+				FAFCD796263D6840003D0D81 /* call@3x.png */,
+				FAFCD795263D683F003D0D81 /* techsupport.png */,
+				FAFCD797263D6840003D0D81 /* techsupport@2x.png */,
+				FAFCD793263D683F003D0D81 /* techsupport@3x.png */,
 				FAAA56C3262809AD00AC590E /* blegray.png */,
 				FAAA56C4262809AD00AC590E /* blegray@2x.png */,
 				FAAA56C5262809AD00AC590E /* blegray@3x.png */,
@@ -3178,7 +3196,7 @@
 				TargetAttributes = {
 					AB01386E2063D67B00F8E661 = {
 						CreatedOnToolsVersion = 9.0;
-						ProvisioningStyle = Manual;
+						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.BackgroundModes = {
 								enabled = 1;
@@ -3258,6 +3276,7 @@
 				971587D52211BD95000BF3D5 /* temp.png in Resources */,
 				9703E6D421DB90D7004CA364 /* whatsapp@3x.png in Resources */,
 				AB013A302063DA2200F8E661 /* default_group_icon.png in Resources */,
+				FAFCD79C263D6840003D0D81 /* call@3x.png in Resources */,
 				0494B8F2261485F90020848E /* resetblack@3x.png in Resources */,
 				FA2F4911262E9F4C00EE232C /* 6.png in Resources */,
 				FAE7E79725E76A7F00866B11 /* redcross@2x.png in Resources */,
@@ -3344,6 +3363,7 @@
 				AB013A6E2063DA2300F8E661 /* voice_bg_icon@3x.png in Resources */,
 				AB4E897C2146A77700F9D8A0 /* solidCheck@2x.png in Resources */,
 				AB90B6792100992C00ED28FB /* RGBBulb@2x.png in Resources */,
+				FAFCD79B263D6840003D0D81 /* techsupport.png in Resources */,
 				AB013A8B2063DA2300F8E661 /* support_icon@2x.png in Resources */,
 				AB1A5CE7215BAA840044CA6F /* add@2x.png in Resources */,
 				FA25D92325DE8A0F00096AD6 /* SocketStatusImage@3x.png in Resources */,
@@ -3536,8 +3556,10 @@
 				04F74F8925EA7956009FE7DC /* wifired.png in Resources */,
 				9721D4A321E710D4007E4D2B /* active_alarm_iconBlack.png in Resources */,
 				AB08023520E3CBF600219DED /* ic_wheel_six.png in Resources */,
+				FAFCD79A263D6840003D0D81 /* call.png in Resources */,
 				AB7E4B542101F00A0079A47C /* add_group.png in Resources */,
 				97EED4052186DEE80059A723 /* ic_add_icon@3x.png in Resources */,
+				FAFCD79D263D6840003D0D81 /* techsupport@2x.png in Resources */,
 				AB013A4B2063DA2200F8E661 /* more_icon.png in Resources */,
 				FAAA56CF262844E100AC590E /* youtubebl.png in Resources */,
 				AB013A732063DA2300F8E661 /* whitecolor_wheel@2x.png in Resources */,
@@ -3758,6 +3780,7 @@
 				AB013A782063DA2300F8E661 /* about_icon.png in Resources */,
 				ABF4B0D32147B73700498B6E /* sliderHandleGreen@2x.png in Resources */,
 				044FE15925A728CD004527EC /* vector+@2x.png in Resources */,
+				FAFCD799263D6840003D0D81 /* techsupport@3x.png in Resources */,
 				AB013A722063DA2300F8E661 /* whitecolor_wheel.png in Resources */,
 				AB013A492063DA2200F8E661 /* info_icon@2x.png in Resources */,
 				9721D48C21E710A4007E4D2B /* ic_switch_accountBlue.png in Resources */,
@@ -3766,6 +3789,7 @@
 				97FCBDA422143E83000ECBF7 /* iphone6.png in Resources */,
 				AB487088207F348F00F41B78 /* active_home_icon.png in Resources */,
 				FA8DF0BF2629C29200FBB990 /* scenes1@2x.png in Resources */,
+				FAFCD79E263D6840003D0D81 /* call@2x.png in Resources */,
 				9721D4A821E710D4007E4D2B /* fullBrightness.png in Resources */,
 				97FCBDA122143E83000ECBF7 /* iphonex.png in Resources */,
 				AB013A402063DA2200F8E661 /* default_striplight_icon@2x.png in Resources */,
@@ -4180,9 +4204,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = SmartLightApp/SmartLightApp.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1.0.1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 6W7JS49CTH;
@@ -4195,13 +4219,13 @@
 				GCC_NO_COMMON_BLOCKS = NO;
 				GCC_PREFIX_HEADER = PrefixHeader.pch;
 				INFOPLIST_FILE = SmartLightApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 7.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vithamas.smathome;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
-				PROVISIONING_PROFILE_SPECIFIER = SmartHome_Dev_Profile;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -4229,7 +4253,7 @@
 				GCC_NO_COMMON_BLOCKS = NO;
 				GCC_PREFIX_HEADER = PrefixHeader.pch;
 				INFOPLIST_FILE = SmartLightApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 7.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vithamas.smathome;
