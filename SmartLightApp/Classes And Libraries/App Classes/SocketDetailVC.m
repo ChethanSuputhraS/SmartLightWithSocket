@@ -168,7 +168,7 @@
 }
 -(void)viewWillAppear:(BOOL)animated
 {
-    if (classPeripheral.state == CBPeripheralStateConnected)
+    if (classPeripheral.state == CBPeripheralStateConnected) // css commented for testing
     {
         NSInteger intPacket = [@"0" integerValue];
         NSData * dataPacket = [[NSData alloc] initWithBytes:&intPacket length:1];
@@ -408,7 +408,7 @@
     if (classPeripheral.state == CBPeripheralStateConnected)
     {
         intialConnectHud.labelText = @"Connecting...";
-        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:4 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO]; // 4
     }
     else
     {
@@ -416,7 +416,7 @@
         {
             intialConnectHud.labelText = @"Checking Status...";
         }
-        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
     }
     [intialConnectHud show:YES];
 
@@ -1237,7 +1237,7 @@
         
         NSMutableArray  * arrStatus = [[NSMutableArray alloc] init];
         [arrStatus addObject:@"5"];
-        [arrStatus addObject:@"6"];
+        [arrStatus addObject:@"6"]; //6
 
         for (int i =0 ; i < [allValues count]; i++)
         {
@@ -1347,7 +1347,7 @@
     NSString * strTopic = [self checkforValidString:[message topic]];
     NSArray * arrTopics = [strTopic componentsSeparatedByString:@"/"];
     NSString * strAddress = @"NA";
-    if([arrTopics count]>= 3)
+    if([arrTopics count]>= 4) // 3 previously
     {
         strAddress = [arrTopics lastObject];
     }
@@ -1541,7 +1541,6 @@
       
     }
 }
-                   
 #pragma mark :- MQTT Acknowledgement from Server
 -(void)ReceivedMQTTResponsefromserver:(NSMutableDictionary *)dictData
 {

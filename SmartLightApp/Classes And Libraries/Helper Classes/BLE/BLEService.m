@@ -1420,9 +1420,9 @@ static BLEService    *sharedInstance    = nil;
                         }
                         else if ([strOpcode isEqualToString:@"05"])
                         {
-                            if ([strDecrypted length]>=16)
+                            if ([strDecrypted length]>16) // = 16
                                 {
-                                    if ([[valueCharStr substringWithRange:NSMakeRange(0, 4)] isEqualToString:@"0506"])
+                                    if ([[valueCharStr substringWithRange:NSMakeRange(0, 4)] isEqualToString:@"0508"]) // 0506 previous
                                     {
                                         NSMutableDictionary * dictSwitcState = [[NSMutableDictionary alloc] init];
                                         NSString * strSW1 = [strDecrypted substringWithRange:NSMakeRange(0, 2)];

@@ -538,7 +538,7 @@
                 [connectDisconnectHud removeFromSuperview];
                 connectDisconnectHud = [[MBProgressHUD alloc] initWithView:self.view];
                 [self.view addSubview:connectDisconnectHud];
-                connectDisconnectHud.labelText = @"Disconnecting...";
+                connectDisconnectHud.labelText = @"Connecting...";
                 [connectDisconnectHud show:YES];
 
                 [[BLEManager sharedManager] connectDevice:p];
@@ -591,7 +591,6 @@
         {
             return;
         }
-        
         
         [self RemoveHudProcess:connectDisconnectHud];
 
