@@ -159,7 +159,6 @@
     
     ArrImgForCollectionView = [NSArray arrayWithObjects:@"1.png",@"2.png",@"3.png",@"4.png",@"5.png",@"6.png",@"7.png",@"8.png",@"9.png",@"10.png",@"11.png",@"12.png",@"13.png",@"14.png",@"15.png",@"16.png", nil];
 
-    
     mangerSate = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 
     [[BLEManager sharedManager] setDelegate:self];
@@ -204,26 +203,59 @@
         
             if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
             {
-                imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
-            }
-            else
-            {
                 if ([APP_DELEGATE isNetworkreachable])
                 {
-                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+                    isMQTTConfigured = YES;
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
                 }
                 else
                 {
                     isMQTTConfigured = NO;
-                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
                 }
+                
+            }
+            else
+            {
+//                if ([APP_DELEGATE isNetworkreachable])
+//                {
+//                    isMQTTConfigured = NO;
+//                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+//
+//                }
+//                else
+//                {
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];// gray
+//                }
             }
             
+        
             if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
             {
-                imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
-                isMQTTConfigured = YES;
+                if ([APP_DELEGATE isNetworkreachable])
+                {
+                    isMQTTConfigured = YES;
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+                }
+                else
+                {
+                    isMQTTConfigured = NO;
+                    imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+                }
+         
             }
+        else
+        {
+//            if ([APP_DELEGATE isNetworkreachable])
+//            {
+                imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+//            }
+//            else
+//            {
+//                isMQTTConfigured = NO;
+//                imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+//            }
+//        }
     }
     
 //    if (![APP_DELEGATE isNetworkreachable]) // css commented
@@ -245,6 +277,7 @@
 //
 //    }
 //
+}
     [self.navigationController setNavigationBarHidden:YES animated:NO];
     
     [[BLEManager sharedManager] setDelegate:self];
@@ -382,21 +415,21 @@
     arrAlarmIdsofDevices = [[NSMutableArray alloc] init];
     strMacAddress = [[deviceDetail valueForKey:@"ble_address"] uppercaseString];
         
-    if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
-    {
-        imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
-    }
-    else
-    {
-        if ([APP_DELEGATE isNetworkreachable])
-        {
-            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
-        }
-        else
-        {
-            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
-        }
-    }
+//    if ([[self checkforValidString:[deviceDetail valueForKey:@"wifi_configured"]] isEqual:@"1"])
+//    {
+//        imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+//    }
+//    else
+//    {
+//        if ([APP_DELEGATE isNetworkreachable])
+//        {
+//            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+//        }
+//        else
+//        {
+//            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+//        }
+//    }
     
     [statusCheckTimer invalidate];
     statusCheckTimer = nil;
@@ -416,7 +449,7 @@
         {
             intialConnectHud.labelText = @"Checking Status...";
         }
-        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
+        statusCheckTimer = [NSTimer scheduledTimerWithTimeInterval:8 target:self selector:@selector(TimeOutforWifiConfiguration) userInfo:nil repeats:NO];
     }
     [intialConnectHud show:YES];
 
@@ -1250,7 +1283,15 @@
 }
 -(void)ReceivedFirmwareVersionFromDevice:(NSString *)strVersion
 {
-    strVersionNo = strVersion ;
+    NSString * strVer = [strVersion substringWithRange:NSMakeRange(0, 2)];
+    NSString * strVer1 = [strVersion substringWithRange:NSMakeRange(2, 1)];
+    NSString * strVer2 = [strVersion substringWithRange:NSMakeRange(3, 1)];
+
+    
+    strVer = [strVer stringByReplacingOccurrencesOfString:@"0" withString:@""];
+    strVer1  = [strVer1 stringByReplacingOccurrencesOfString:@"0" withString:@""];
+
+    strVersionNo = [NSString stringWithFormat:@"%@.%@",strVer,strVer2];
     [tblSettings reloadData];
 }
 -(void)ReceivedMQTTStatus:(NSDictionary *)dictSwitch
@@ -1280,18 +1321,25 @@
     
     if (isMQTTConfigured == YES)
     {
-        imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
-    }
-    else
-    {
         if ([APP_DELEGATE isNetworkreachable])
         {
-            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
         }
         else
         {
-            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
         }
+    }
+    else
+    {
+//        if ([APP_DELEGATE isNetworkreachable])
+//        {
+//            imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+//        }
+//        else
+//        {
+//            imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+//        }
 //        [APP_DELEGATE endHudProcess];
     }
 }
@@ -1317,7 +1365,7 @@
 {
     [APP_DELEGATE endHudProcess];
 
-    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+//    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
     NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMacAddress];
     UInt16 subTop = [mqtt subscribe:publishTopic qos:2];
     NSLog(@"%d",subTop);
@@ -1631,7 +1679,7 @@
                         
                         if (classPeripheral.state == CBPeripheralStateDisconnected)
                         {
-                            if (isTopicSubscribed == NO)
+                            if (isTopicSubscribed == YES) // no
                             {
                                 NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
                                 NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:5], nil];
@@ -1709,11 +1757,11 @@
             }
             else if([strOpcode isEqualToString:@"21"])// stored alram from device
             {
-                if ([arrData count] >= 8)
+                if ([arrData count] >= 14) // 8 previosly
                 {
                     [arrMQTTalarmState addObject:arrData];
                     
-                    if ([arrMQTTalarmState count] >= 12)
+                    if ([arrMQTTalarmState count] >= 1) // 12
                     {
                         for (int i = 0; i < [arrMQTTalarmState count]; i++)
                         {

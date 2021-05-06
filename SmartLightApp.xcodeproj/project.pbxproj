@@ -4219,7 +4219,7 @@
 				GCC_NO_COMMON_BLOCKS = NO;
 				GCC_PREFIX_HEADER = PrefixHeader.pch;
 				INFOPLIST_FILE = SmartLightApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 7.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vithamas.smathome;
@@ -4253,7 +4253,7 @@
 				GCC_NO_COMMON_BLOCKS = NO;
 				GCC_PREFIX_HEADER = PrefixHeader.pch;
 				INFOPLIST_FILE = SmartLightApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 7.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vithamas.smathome;

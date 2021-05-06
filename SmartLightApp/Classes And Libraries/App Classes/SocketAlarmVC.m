@@ -330,13 +330,14 @@
     [datePicker removeFromSuperview];
     datePicker = nil;
     datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(50, 40, DEVICE_WIDTH-100, 180)];
-    [datePicker setBackgroundColor:[UIColor clearColor]];
+    [datePicker setBackgroundColor:[UIColor whiteColor]];
     datePicker.tag = Tag;
     datePicker.timeZone = [NSTimeZone localTimeZone];
     [datePicker addTarget:self action:@selector(dateChanged:) forControlEvents:UIControlEventValueChanged];
 //    datePicker.date = [NSDate date];
      datePicker.minimumDate = [NSDate date];
-
+    
+    
 
     if (Tag >= 800)//2nd index
     {

@@ -1545,7 +1545,7 @@ static BLEService    *sharedInstance    = nil;
                         {
                             if ([strDecrypted length]>=14)
                             {
-                                if ([[strDecrypted substringWithRange:NSMakeRange(12, 2)] isEqualToString:@"01"])
+                                if ([[strDecrypted substringWithRange:NSMakeRange(16, 2)] isEqualToString:@"01"]) // 12 previosly
                                 {
                                     
                                     [globalSocketDetailVC ReceiveAllSoketONOFFState:[strDecrypted substringWithRange:NSMakeRange(0, 12)] withStatus:YES];

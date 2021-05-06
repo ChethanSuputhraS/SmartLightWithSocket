@@ -147,6 +147,24 @@
     updateConnectedDeviceTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:self selector:@selector(CheckSockectConnectionTimer) userInfo:nil repeats:YES];
     
     [[BLEManager sharedManager] rescan];
+    
+    // for testing purpose
+    
+    NSString * appVersionString = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    if (![[self checkforValidString:appVersionString] isEqualToString:@"NA"])
+    {
+        UILabel * lblTitle = [[UILabel alloc] initWithFrame:CGRectMake(10, DEVICE_HEIGHT-100, 100, 50)];
+        [lblTitle setBackgroundColor:[UIColor clearColor]];
+        [lblTitle setText:[NSString stringWithFormat:@"Version %@",appVersionString]];
+        [lblTitle setTextAlignment:NSTextAlignmentCenter];
+        [lblTitle setFont:[UIFont fontWithName:CGRegularItalic size:textSizes-5]];
+        [lblTitle setTextColor:[UIColor whiteColor]];
+        lblTitle.alpha = 0.8;
+//        lblTitle.text = appVersionString;
+        [self.view addSubview:lblTitle];
+    }
+    
+    
 }
 
 -(void)viewWillAppear:(BOOL)animated
