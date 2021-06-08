@@ -97,7 +97,6 @@
                     [dict setValue:[[dictSocketDetail objectAtIndex:foundIndex] valueForKey:@"socket_name"] forKey:@"socket_name"];
                     [dict setValue:[[dictSocketDetail objectAtIndex:foundIndex] valueForKey:@"image_type"] forKey:@"image_type"];
                     [dict setValue:[NSString stringWithFormat:@"%d",i] forKey:@"socket_id"];
-
                     [arrSocketNames addObject:dict];
                 }
             }
@@ -229,8 +228,8 @@
 //                }
             }
             
-        
-            if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
+
+         if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
             {
                 if ([APP_DELEGATE isNetworkreachable])
                 {
@@ -242,7 +241,6 @@
                     isMQTTConfigured = NO;
                     imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
                 }
-         
             }
         else
         {

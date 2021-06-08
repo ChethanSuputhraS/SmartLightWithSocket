@@ -329,14 +329,14 @@
     
     [datePicker removeFromSuperview];
     datePicker = nil;
-    datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(50, 40, DEVICE_WIDTH-100, 180)];
-    [datePicker setBackgroundColor:[UIColor whiteColor]];
+    datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0, 45, timeBackView.frame.size.width-40, timeBackView.frame.size.height)];
+//    [datePicker setBackgroundColor:[UIColor whiteColor]];
     datePicker.tag = Tag;
     datePicker.timeZone = [NSTimeZone localTimeZone];
     [datePicker addTarget:self action:@selector(dateChanged:) forControlEvents:UIControlEventValueChanged];
 //    datePicker.date = [NSDate date];
+     datePicker.backgroundColor = UIColor.whiteColor;
      datePicker.minimumDate = [NSDate date];
-    
     
 
     if (Tag >= 800)//2nd index
@@ -1071,7 +1071,6 @@
                    {
                        [self AlertViewFCTypeCautionCheck:@"Please check your Internet Connection."];
                    }
-                   
                }
                else
                {

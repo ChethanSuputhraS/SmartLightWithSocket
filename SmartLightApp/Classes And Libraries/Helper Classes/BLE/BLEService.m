@@ -1444,6 +1444,28 @@ static BLEService    *sharedInstance    = nil;
                                             [globalSocketDetailVC ReceivedSwitchStatusfromDevice:dictSwitcState];
                                         }
                                     }
+                                    else if ([[valueCharStr substringWithRange:NSMakeRange(0, 4)] isEqualToString:@"0506"])
+                                    {
+                                        NSMutableDictionary * dictSwitcState = [[NSMutableDictionary alloc] init];
+                                        NSString * strSW1 = [strDecrypted substringWithRange:NSMakeRange(0, 2)];
+                                        NSString * strSW2 = [strDecrypted substringWithRange:NSMakeRange(2, 2)];
+                                        NSString * strSW3 = [strDecrypted substringWithRange:NSMakeRange(4, 2)];
+                                        NSString * strSW4 = [strDecrypted substringWithRange:NSMakeRange(6, 2)];
+                                        NSString * strSW5 = [strDecrypted substringWithRange:NSMakeRange(8, 2)];
+                                        NSString * strSW6 = [strDecrypted substringWithRange:NSMakeRange(10, 2)];
+                                    
+                                        [dictSwitcState setValue:strSW1 forKey:@"Switch1"];
+                                        [dictSwitcState setValue:strSW2 forKey:@"Switch2"];
+                                        [dictSwitcState setValue:strSW3 forKey:@"Switch3"];
+                                        [dictSwitcState setValue:strSW4 forKey:@"Switch4"];
+                                        [dictSwitcState setValue:strSW5 forKey:@"Switch5"];
+                                        [dictSwitcState setValue:strSW6 forKey:@"Switch6"];
+                                    
+                                        if (globalSocketDetailVC)
+                                        {
+                                            [globalSocketDetailVC ReceivedSwitchStatusfromDevice:dictSwitcState];
+                                        }
+                                    }
                                 }
                         }
                         else if ([strOpcode isEqualToString:@"06"]) // Device registration Confirm
