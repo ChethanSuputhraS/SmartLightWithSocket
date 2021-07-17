@@ -1,0 +1,31 @@
+id,color_name,color_rgb,name
+1,Red,#FF0000,Red
+2,Green,#00FF00,Green
+3,Blue,#0000FF,Blue
+4,White,#FFFFFF,White
+5,Pink,#FF1493,Pink
+6,Orange,#FF4100,Orange
+7,Yellow,#FF8502,Yellow
+8,Purple,#800080,Purple
+9,Gold,#FF8502,Gold
+10,Silver,#C0C0C0,Silver
+11,Cream,#9D432C,Cream
+12,Sky Blue,#6698FF,Sky Blue
+13,Light Green,#90EE90,Light Green
+14,Magenta,#E00024,Magenta
+15,Turquoise,#00FFFF,Turquoise
+16,Lilac,#C8A2C8,Lilac
+17,Indigo,#4B0082,Indigo
+18,Cyan,#7FFFD4,Cyan
+19,Peach,#FFDAB9,Peach
+20,bed,#FF0000,Red
+21,led,#FF0000,Red
+22,ted,#FF0000,Red
+23,read,#FF0000,Red
+24,hellow,#FF8502,Yellow
+25,inc,#FF1493,Pink
+26,hold,#FF8502,Gold
+27,good,#FF8502,Gold
+28,arrange,#FF4100,Orange
+29,range,#FF4100,Orange
+30,cheyenne,#7FFFD4,Cyan
