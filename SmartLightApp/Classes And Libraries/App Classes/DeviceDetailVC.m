@@ -27,15 +27,14 @@
 #import "AlarmColorSelectVC.h"
 #import "PatternCell.h"
 #import "HRHSVColorUtil.h"
-#import "SettingsVC.h"
-#import "SocketCell.h"
-#import "BridgeVC.h"
-#import "FactoryResetVC.h"
+#import "DBColorNames.h"
 
-
+@import Speech;
+@import AVKit;
 #define kColorCellIdentifier @"KPSolidColorViewCellReuseIdentifier"
 
-@interface DeviceDetailVC ()<FCAlertViewDelegate,UICollectionViewDataSource, UICollectionViewDelegateFlowLayout,CBCentralManagerDelegate>
+API_AVAILABLE(ios(10.0))
+@interface DeviceDetailVC ()<FCAlertViewDelegate,UICollectionViewDataSource, UICollectionViewDelegateFlowLayout,CBCentralManagerDelegate, SFSpeechRecognizerDelegate,CocoaMQTTDelegate>
 {
     BOOL isVoiceCreated;
     UILabel * lblTitle, * lblVoiceStatus;
@@ -55,9 +54,17 @@
     CBCentralManager *centralManager;
     UISlider *brightnessSliderColorView;
     UIButton * btnOptions;
-    BOOL isfromSolid;
-    UIView * settingView;
-    UITableView * tblSettings;
+    BOOL isVoiceWordFound;
+    
+    SFSpeechRecognizer * speechRecognizer;
+    SFSpeechAudioBufferRecognitionRequest *  recognitionRequest;
+    SFSpeechRecognitionTask * recognitionTask;
+    AVAudioEngine * audioEngine;
+    AVAudioSession * audioSession;
+    DBColorNames *colorNames;
+    
+    BOOL isTopicSubscribed, isMQTTConfigured;
+
 }
 @property (strong, nonatomic) JMMarkSlider * redSlider;
 @property (strong, nonatomic) JMMarkSlider * greenSlider;
@@ -80,15 +87,21 @@
 {
     NSArray<NSArray<AHTag *> *> *_dataSource;
 }
-@synthesize  brightnessSliderVal;
+@synthesize  brightnessSliderVal, classMqttObj, strMacAddress;
 
 @synthesize _switchLight, deviceName,deviceDict,isFromScan,isFromAll,isfromGroup,isDeviceWhite,colorPicker;
+
+-(void)speechRecognizer:(SFSpeechRecognizer *)speechRecognizer availabilityDidChange:(BOOL)available
+{
+    
+}
 - (void)viewDidLoad
 {
-
     self.view.backgroundColor = UIColor.blackColor;
     centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 
+    self->colorNames = [DBColorNames new];
+    
     patternSelected = -1;
     imageBrighValue = 1.0;
     
@@ -115,16 +128,50 @@
         [self setVoiceArrays];
         [self setSegmentView];
         [self SetViewforColorWheel];
-        [self SetupForSetting];
-
     }
-    brighcount = 100;
+//    brighcount = 100;
     isChanged = NO;
     isShowPopup = YES;
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"GetFavoriteColors" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(GetFavoriteColors:) name:@"GetFavoriteColors" object:nil];
+    
+    [self setupSpeech];
+
+if (classMqttObj == nil)
+{
+    [self ConnecttoMQTTSocketServer];
 }
+else
+{
+    if ([classMqttObj connState] == 2)
+    {
+//                NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMacAddress];
+        NSString * publishTopic = @"smarthome/app/10521C677C3E";//
+            UInt16 subTop = [classMqttObj subscribe:publishTopic qos:2];
+
+            isMQTTConfigured = NO;
+            classMqttObj.delegate = self;
+            classMqttObj.autoReconnect = YES;
+
+        if (globalPeripheral.state != CBPeripheralStateConnected)
+            {
+                NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+                NSArray * arrPackets = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+
+//                    arrMQTTalarmState = [[NSMutableArray alloc] init];
+                NSArray * arrAlarm = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:21],[NSNumber numberWithInt:0], nil];
+                [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrAlarm];
+            }
+        }
+        else if ([classMqttObj connState] == 3)
+        {
+            [self ConnecttoMQTTSocketServer];
+        }
+    }
+}
+
 -(void)viewDidAppear:(BOOL)animated
 {
     if (isDeviceWhite == NO)
@@ -157,11 +204,18 @@
     }
     else
     {
-        [colorTimer invalidate];
-        colorTimer = [NSTimer scheduledTimerWithTimeInterval:.52 target:self selector:@selector(MethodtoSendColor) userInfo:nil repeats:YES];
-        
+//        UIBackgroundTaskIdentifier bgTask = 0;
+//        UIApplication  *app = [UIApplication sharedApplication];
+//        bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+//            [app endBackgroundTask:bgTask];
+//        }];
+//        [colorTimer invalidate];
+//        colorTimer = [NSTimer scheduledTimerWithTimeInterval:.52 target:self selector:@selector(MethodtoSendColor) userInfo:nil repeats:YES];
+
         [brightTimer invalidate];
         brightTimer = [NSTimer scheduledTimerWithTimeInterval:.4 target:self selector:@selector(brightcol) userInfo:nil repeats:YES];
+
+        
     }
     [[BLEManager sharedManager] centralmanagerScanStop];
     
@@ -171,11 +225,9 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"ShowColorSelectScreen" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ShowAddFavColorScreen) name:@"ShowColorSelectScreen" object:nil];
 
-
-    
     if (isMusicModeOn)
     {
-        [self startRecording];
+        [self startMusicRecording];
     }
     [super viewWillAppear:YES];
 }
@@ -184,7 +236,7 @@
     isNonConnectScanning = NO;
     [[BLEManager sharedManager] updateBluetoothState];
     
-    [colorTimer invalidate];
+//    [colorTimer invalidate];
     [brightTimer invalidate];
     [timeoutTimer invalidate];
     
@@ -292,17 +344,7 @@
     long yy = 0;
 
     [blueSegmentedControl removeFromSuperview];
-    
-    if (isFromAll == YES)
-    {
-        blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music"]];
-    }
-    else
-    {
-        blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music",@"Settings"]];
-    }
-    
-//    blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music",@"Settings"]];
+    blueSegmentedControl =[[NYSegmentedControl alloc] initWithItems:@[@"Color",@"Scenes",@"Music"]];
     blueSegmentedControl.titleTextColor = [UIColor colorWithRed:0.38f green:0.68f blue:0.93f alpha:1.0f];
     blueSegmentedControl.titleTextColor = global_brown_color;
     blueSegmentedControl.selectedTitleTextColor = [UIColor whiteColor];
@@ -370,24 +412,6 @@
         yAbove =  (yy+22)*approaxSize + 40*approaxSize;
     }
 }
--(void)SetupForSetting
-{
-    int yHeight = (blueSegmentedControl.frame.size.height + blueSegmentedControl.frame.origin.y)*approaxSize + 0;
-
-    settingView = [[UIView alloc] initWithFrame:CGRectMake(0, yHeight, DEVICE_WIDTH, DEVICE_HEIGHT-yHeight)];
-    settingView.backgroundColor = UIColor.clearColor;
-    settingView.hidden = true;
-    [self.view addSubview:settingView];
-    
-    
-    tblSettings = [[UITableView alloc] initWithFrame:CGRectMake(0, 10, settingView.frame.size.width, settingView.frame.size.height-20)];
-    tblSettings.backgroundColor = UIColor.clearColor;
-    tblSettings.delegate = self;
-    tblSettings.dataSource = self;
-    tblSettings.separatorStyle = UITableViewCellSeparatorStyleNone;
-    [settingView addSubview:tblSettings];
-    
-}
 #pragma mark - ===========Here Send COLORS to Device===========
 -(void)MethodtoSendColor
 {
@@ -404,24 +428,23 @@
             [self stopRecording];
         }
         
-        CGFloat brightness; [imgColor getHue:NULL saturation:NULL brightness:&brightness alpha:NULL];
+        CGFloat brightness;
+        [imgColor getHue:NULL saturation:NULL brightness:&brightness alpha:NULL];
+
         if (brightness >= 0.1)
         {
             HRHSVColor hsvColor;
             HSVColorFromUIColor(imgColor, &hsvColor);
-            if (imageBrighValue == 0)
-            {
-                imageBrighValue = 1;
-            }
             hsvColor.v = imageBrighValue;
-            UIColor *newColor = [[UIColor alloc] initWithHue:hsvColor.h
-                                                  saturation:hsvColor.s
-                                                  brightness:hsvColor.v
-                                                       alpha:1];
-            if (isfromSolid)
-            {
-                newColor = imgColor;
-            }
+            
+
+            NSLog(@"==========>Before New Color MethodtoSendColor=%@",imgColor);
+
+            UIColor *newColor = [[UIColor alloc] initWithHue:hsvColor.h saturation:hsvColor.s brightness:hsvColor.v alpha:1];
+            NSLog(@"==========>After New Color MethodtoSendColor=%@",newColor);
+//            NSLog(@"==========>BrightNesss=%f",imageBrighValue);
+
+            
             const  CGFloat *_components = CGColorGetComponents(newColor.CGColor);
             CGFloat red     = _components[0]; CGFloat green = _components[1]; CGFloat blue   = _components[2];
             
@@ -441,7 +464,7 @@
             [completeData appendData:dR];
             [completeData appendData:dG];
             [completeData appendData:dB];
-            isChanged = YES;
+//            isChanged = YES;
             if (isSentNoticication)
             {
             }
@@ -476,7 +499,7 @@
                 [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
             }
         }
-        
+        [self ChangeColorviaMQTT];
         isChanged = NO;
         
         if (isFromAll)
@@ -622,10 +645,98 @@
         [colorSquareView setHidden:NO];
     } completion:nil];
     imgColorOptionView.currentColorBlock = ^(UIColor *color){
-        isfromSolid = NO;
         imgColor = color;
-        isChanged = YES;
+        isChanged = NO;
+        
+        [self MethodtoSendWheelColor:color];
     };
+}
+-(void)MethodtoSendWheelColor:(UIColor *)currentColor
+{
+    imgColor = currentColor;
+//    const  CGFloat *_components = CGColorGetComponents(currentColor.CGColor);
+//    CGFloat red     = _components[0];
+//    CGFloat green = _components[1];
+//    CGFloat blue   = _components[2];
+    
+    CGFloat brightness;
+    [currentColor getHue:NULL saturation:NULL brightness:&brightness alpha:NULL];
+
+    if (brightness >= 0.1)
+    {
+        HRHSVColor hsvColor;
+        HSVColorFromUIColor(currentColor, &hsvColor);
+        hsvColor.v = imageBrighValue;
+        
+        NSLog(@"==========>Before New Color MethodtoSendColor=%@",imgColor);
+
+        UIColor *newColor = [[UIColor alloc] initWithHue:hsvColor.h saturation:hsvColor.s brightness:hsvColor.v alpha:1];
+        NSLog(@"==========>After New Color MethodtoSendColor=%@",newColor);
+
+        const  CGFloat *_components = CGColorGetComponents(newColor.CGColor);
+        CGFloat red     = _components[0]; CGFloat green = _components[1]; CGFloat blue   = _components[2];
+
+        NSInteger sixth = [@"66" integerValue];
+        NSData * dSix = [[NSData alloc] initWithBytes:&sixth length:1];
+        NSInteger seven = [@"00" integerValue];
+        NSData * dSeven = [[NSData alloc] initWithBytes:&seven length:1];
+        fullRed = red * 255;
+        NSData * dR = [[NSData alloc] initWithBytes:&fullRed length:1];
+        fullGreen = green * 255;
+        NSData * dG = [[NSData alloc] initWithBytes:&fullGreen length:1];
+        fullBlue = blue * 255;
+        NSData * dB = [[NSData alloc] initWithBytes:&fullBlue length:1];
+        completeData = [[NSMutableData alloc] init];
+        completeData = [dSix mutableCopy];
+        [completeData appendData:dSeven];
+        [completeData appendData:dR];
+        [completeData appendData:dG];
+        [completeData appendData:dB];
+
+        if (isSentNoticication)
+        {
+        }
+        else
+        {
+            isSentNoticication = YES;
+            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+            [dict setValue:@"1" forKey:@"isSwitch"];
+            NSString * strSwitchNotify = [NSString stringWithFormat:@"updateDataforONOFF%@",strGlogalNotify];
+            [[NSNotificationCenter defaultCenter] postNotificationName:strSwitchNotify object:dict];
+            _switchLight.isOn = YES;
+            [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+
+    }
+
+        if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+        {
+        }
+        else
+        {
+            [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+        }
+    
+    isChanged = NO;
+    
+    if (isFromAll)
+    {
+        _switchLight.isOn = YES;
+        isAlldevicePowerOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    else
+    {
+        _switchLight.isOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    if (globalPeripheral.state == CBPeripheralStateConnected)
+    {
+//            [[BLEService sharedInstance] writeColortoDevice:completeData with:globalPeripheral withDestID:globalGroupId];
+    }
+    [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
 }
 -(void)btnMoreColorOptionClick
 {
@@ -819,11 +930,93 @@
     }
     UISlider *slider = (UISlider*)sender;
     imageBrighValue = slider.value/100;
-    isChanged = YES;
-    int currentvalue = slider.value;
+    isChanged = NO;
     
-    CGRect trackRect = [slider trackRectForBounds:slider.bounds];
-    CGRect thumbRect = [slider thumbRectForBounds:slider.bounds trackRect:trackRect value:slider.value];
+    CGFloat brightness;
+    [imgColor getHue:NULL saturation:NULL brightness:&brightness alpha:NULL];
+
+    if (brightness >= 0.1)
+    {
+        HRHSVColor hsvColor;
+        HSVColorFromUIColor(imgColor, &hsvColor);
+        hsvColor.v = imageBrighValue;
+        
+        NSLog(@"==========>Before New Color MethodtoSendColor=%@",imgColor);
+
+        UIColor *newColor = [[UIColor alloc] initWithHue:hsvColor.h saturation:hsvColor.s brightness:hsvColor.v alpha:1];
+        NSLog(@"==========>After New Color MethodtoSendColor=%@",newColor);
+
+        const  CGFloat *_components = CGColorGetComponents(newColor.CGColor);
+        CGFloat red = _components[0]; CGFloat green = _components[1]; CGFloat blue   = _components[2];
+
+        NSInteger sixth = [@"66" integerValue];
+        NSData * dSix = [[NSData alloc] initWithBytes:&sixth length:1];
+        NSInteger seven = [@"00" integerValue];
+        NSData * dSeven = [[NSData alloc] initWithBytes:&seven length:1];
+        fullRed = red * 255;
+        NSData * dR = [[NSData alloc] initWithBytes:&fullRed length:1];
+        fullGreen = green * 255;
+        NSData * dG = [[NSData alloc] initWithBytes:&fullGreen length:1];
+        fullBlue = blue * 255;
+        NSData * dB = [[NSData alloc] initWithBytes:&fullBlue length:1];
+        completeData = [[NSMutableData alloc] init];
+        completeData = [dSix mutableCopy];
+        [completeData appendData:dSeven];
+        [completeData appendData:dR];
+        [completeData appendData:dG];
+        [completeData appendData:dB];
+
+        if (isSentNoticication)
+        {
+        }
+        else
+        {
+            isSentNoticication = YES;
+            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+            [dict setValue:@"1" forKey:@"isSwitch"];
+            NSString * strSwitchNotify = [NSString stringWithFormat:@"updateDataforONOFF%@",strGlogalNotify];
+            [[NSNotificationCenter defaultCenter] postNotificationName:strSwitchNotify object:dict];
+            _switchLight.isOn = YES;
+            [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+
+    }
+    
+    
+    
+
+        if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+        {
+        }
+        else
+        {
+            [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+        }
+    
+    isChanged = NO;
+    
+    if (isFromAll)
+    {
+        _switchLight.isOn = YES;
+        isAlldevicePowerOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    else
+    {
+        _switchLight.isOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    if (globalPeripheral.state == CBPeripheralStateConnected)
+    {
+//            [[BLEService sharedInstance] writeColortoDevice:completeData with:globalPeripheral withDestID:globalGroupId];
+    }
+    [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+//    int currentvalue = slider.value;
+//
+//    CGRect trackRect = [slider trackRectForBounds:slider.bounds];
+//    CGRect thumbRect = [slider thumbRectForBounds:slider.bounds trackRect:trackRect value:slider.value];
     
     
 //    lblThumbTint.center = CGPointMake(thumbRect.origin.x +slider.frame.origin.x+20,slider.frame.origin.y-5); // baiyya commented
@@ -859,13 +1052,11 @@
         solidColorView.frame = CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_HEIGHT-yAbove-45);
     }
 //    solidView.hidden = YES;
-    [UIView transitionWithView:self.view duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
-        [solidView setHidden:NO];
-    } completion:nil];
+    [solidView setHidden:NO];
+
 }
 -(void)pickSolidColor:(KPSolidColorView *)pickerView didSelectColor:(UIColor *)color;
 {
-    isfromSolid = YES;
     imgColor = color;
     const  CGFloat *_components = CGColorGetComponents(color.CGColor);
     CGFloat red   = _components[0];
@@ -895,7 +1086,37 @@
     [completeData appendData:dG];
     [completeData appendData:dB];
     
-    isChanged = YES;
+    isChanged = NO;
+    
+ 
+        isSentNoticication = YES;
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:@"1" forKey:@"isSwitch"];
+        NSString * strSwitchNotify = [NSString stringWithFormat:@"updateDataforONOFF%@",strGlogalNotify];
+        [[NSNotificationCenter defaultCenter] postNotificationName:strSwitchNotify object:dict];
+        _switchLight.isOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+
+    if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+    {
+    }
+    else
+    {
+        [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+    }
+    if (isFromAll)
+    {
+        _switchLight.isOn = YES;
+        isAlldevicePowerOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    else
+    {
+        _switchLight.isOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 -(NSArray *)CreateNewColors
 {
@@ -997,7 +1218,6 @@
 }
 -(void)sendPattern
 {
-    isfromSolid = NO;
     
     [APP_DELEGATE sendSignalViaScan:@"Pattern" withDeviceID:globalGroupId withValue:[NSString stringWithFormat:@"%ld",(long)selecedPtrn]]; //KalpeshScanCode
     if (globalPeripheral.state ==CBPeripheralStateConnected)
@@ -1087,9 +1307,8 @@
         
     }
     colorPicker.currentColorBlock = ^(UIColor *color){
-        isfromSolid = NO;
         imgColor = color;
-        isChanged = YES;
+        [self MethodtoSendWheelColor:color];
     };
     [UIView transitionWithView:self.view duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
         [bgWhiteView setHidden:NO];
@@ -1184,22 +1403,46 @@
 -(void)setVoiceArrays
 {
     voiceColors = [[NSMutableArray alloc] init];
-    NSString * str = [NSString stringWithFormat:@"select * from tbl_voice_color"];
-    [[DataBaseManager dataBaseManager] execute:str resultsArray:voiceColors];
+    
+    NSString *pathToFile =[[NSBundle mainBundle] pathForResource:@"tbl_voice_color" ofType: @"csv"];
 
-    arrRecognizeList = [[NSMutableArray alloc] init];
-    NSString * str1 = [NSString stringWithFormat:@"select color_name from tbl_voice_color"];
-    [[DataBaseManager dataBaseManager] getJustValues:str1 resultsArray:arrRecognizeList];
+    NSString *content =  [NSString stringWithContentsOfFile:pathToFile encoding:NSUTF8StringEncoding error:nil];
+
+     
+        NSArray * itemArray = [content componentsSeparatedByString:@"\n"];
+        
+        for (int i = 0; i < [itemArray count]; i++)
+        {
+            NSString * strArr = [itemArray objectAtIndex:i];
+            NSArray * arrStrings = [strArr componentsSeparatedByString:@","];
+            
+            if ([arrStrings count] >= 4)
+            {
+                NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                [dict setValue:[arrStrings objectAtIndex:0] forKey:@"id"];
+                [dict setValue:[arrStrings objectAtIndex:1] forKey:@"color_name"];
+                [dict setValue:[arrStrings objectAtIndex:2] forKey:@"color_rgb"];
+                [dict setValue:[arrStrings objectAtIndex:3] forKey:@"name"];
+                [voiceColors addObject:dict];
+            }
+            
+        }
+//    NSLog(@"color=====>>><<<>><<%@",voiceColors);
+
+
+   
+    
+//    NSString * str = [NSString stringWithFormat:@"select * from tbl_voice_color"];
+//    [[DataBaseManager dataBaseManager] execute:str resultsArray:voiceColors];
+
 }
 -(void)setupVoiceView
 {
-
     voiceView = [[UIView alloc] init];
     voiceView.frame = CGRectMake(0, yAbove, DEVICE_WIDTH, DEVICE_HEIGHT-yAbove);
     voiceView.backgroundColor = [UIColor clearColor];
     [self.view addSubview:voiceView];
     voiceView.hidden=YES;
-    
 
     UIButton * btnInfo = [UIButton buttonWithType:UIButtonTypeCustom];
     [btnInfo addTarget:self action:@selector(SetVoiceHintView) forControlEvents:UIControlEventTouchUpInside];
@@ -1207,7 +1450,7 @@
     [btnInfo addTarget:self action:@selector(SetVoiceHintView) forControlEvents:UIControlEventTouchUpInside];
     [btnInfo setImage:[UIImage imageNamed:@"info_icon.png"] forState:UIControlStateNormal];
     [btnInfo setTitleColor:global_brown_color forState:UIControlStateNormal];
-    [voiceView addSubview:btnInfo];
+//    [voiceView addSubview:btnInfo];
     
     imgVoice = [[UIImageView alloc] init];
     imgVoice.frame = CGRectMake((DEVICE_WIDTH-175)/2,-80+((DEVICE_HEIGHT-yAbove)-175)/2, 175, 175);
@@ -1225,7 +1468,8 @@
     lblVoiceStatus = [[UILabel alloc] initWithFrame:CGRectMake(0, imgVoice.frame.size.height + imgVoice.frame.origin.y -20*approaxSize, DEVICE_WIDTH, 100*approaxSize)];
     [lblVoiceStatus setBackgroundColor:[UIColor clearColor]];
     [lblVoiceStatus setText:[NSString stringWithFormat:@"Tap & Speak"]];
-    [lblVoiceStatus setTextAlignment:NSTextAlignmentCenter];     [lblVoiceStatus setFont:[UIFont fontWithName:CGRegular size:textSizes+1]];
+    [lblVoiceStatus setTextAlignment:NSTextAlignmentCenter];
+    [lblVoiceStatus setFont:[UIFont fontWithName:CGRegular size:textSizes+1]];
     lblVoiceStatus.numberOfLines = 0;
     [lblVoiceStatus setTextColor:[UIColor whiteColor]];
     [voiceView addSubview:lblVoiceStatus];
@@ -1272,92 +1516,347 @@
     tblv.tableView.frame = CGRectMake(0, 0, DEVICE_WIDTH, DEVICE_WIDTH);
     [self.navigationController presentViewController:tblv animated:YES completion:nil];
 }
--(void)setupVoiceLibrary
+
+-(void)startRecording
 {
-    self.openEarsEventsObserver = [[OEEventsObserver alloc] init];
-    [self.openEarsEventsObserver setDelegate:self];
-    
-    OELanguageModelGenerator *lmGenerator = [[OELanguageModelGenerator alloc] init];
-    
-    NSString *name = @"NameIWantForMyLanguageModelFiles";
-    NSError *err = [lmGenerator generateLanguageModelFromArray:arrRecognizeList withFilesNamed:name forAcousticModelAtPath:[OEAcousticModel pathToModel:@"AcousticModelEnglish"]]; // Change "AcousticModelEnglish" to "AcousticModelSpanish" to create a Spanish language model instead of an English one.
-    
-    lmPath = nil;
-    dicPath = nil;
-    
-    if(err == nil)
+    if (isMusicModeOn == YES)
     {
-        lmPath = [lmGenerator pathToSuccessfullyGeneratedLanguageModelWithRequestedName:@"NameIWantForMyLanguageModelFiles"];
-        dicPath = [lmGenerator pathToSuccessfullyGeneratedDictionaryWithRequestedName:@"NameIWantForMyLanguageModelFiles"];
+        isMusicModeOn = NO;
+        [btnMusic setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [btnMusic setTitle:@"Start Music Mode" forState:UIControlStateNormal];
+        [self stopRecording];
+
     }
-    else
+    
+    audioRecorder = nil;
+
+
+//    [[audioEngine inputNode] removeTapOnBus:0];
+    // Clear all previous session data and cancel task
+    if (recognitionTask != nil)
     {
-//        NSLog(@"Error: %@",[err localizedDescription]);
+        [recognitionTask cancel];
+        recognitionTask = nil;
+    }
+    
+    // Create instance of audio session to record voice
+    if (audioSession)
+    {
+        audioSession = [[AVAudioSession alloc] init];
+    }
+  audioSession = [AVAudioSession sharedInstance];
+    if (@available(iOS 10.0, *)) {
+        [audioSession setCategory:AVAudioSessionCategoryRecord mode:AVAudioSessionModeMeasurement options:AVAudioSessionCategoryOptionDefaultToSpeaker error:nil];
+        
+        [audioSession setActive:YES withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:nil];
+        
+        recognitionRequest = [[SFSpeechAudioBufferRecognitionRequest alloc] init];
+        [recognitionRequest setShouldReportPartialResults:YES];
+        
+        AVAudioInputNode *  inputNode = [audioEngine inputNode];
+        recognitionTask = [speechRecognizer recognitionTaskWithRequest:recognitionRequest resultHandler:^(SFSpeechRecognitionResult * _Nullable result, NSError * _Nullable error) {
+            
+            bool isFinal = NO;
+            
+            if (result != nil)
+            {
+                if (result.bestTranscription.formattedString.lowercaseString != nil)
+                {
+                    if (isVoiceWordFound == NO)
+                    {
+                        isVoiceWordFound = YES;
+                        lblVoiceStatus.text = result.bestTranscription.formattedString; // baiyya commented
+                        isFinal = result.isFinal;
+                        NSLog(@"Result==================%@ ",result.bestTranscription.formattedString);
+                        
+//                        UIColor *color = result.bestTranscription.formattedString.color;
+                        [self VoiceTextToColorChange:result.bestTranscription.formattedString];
+                       
+                        [audioEngine stop];
+                        [recognitionRequest endAudio];
+                        [inputNode removeTapOnBus:0];
+
+                        btnVoice.enabled = YES;
+                        isFinal = YES;
+
+                    }
+                }
+
+                
+
+            }
+            if (error != nil || isFinal == YES)
+            {
+                [audioEngine stop];
+                [recognitionRequest endAudio];
+//                [inputNode removeTapOnBus:0];
+                
+                recognitionRequest = nil;
+                recognitionTask = nil;
+                btnVoice.enabled = YES;
+//                isFinal = YES;// css add this
+            }
+        }];
+        
+       AVAudioFormat * recordingFormat =  [inputNode outputFormatForBus:0];
+        [inputNode installTapOnBus:0 bufferSize:1024 format:recordingFormat block:^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when) {
+            
+            [recognitionRequest appendAudioPCMBuffer:buffer];
+        }];
+
+        [audioEngine prepare];
+        
+        [audioEngine startAndReturnError:nil];
+        lblVoiceStatus.text = @"Say something, I'm listening!";
+
+    } else {
+        // Fallback on earlier versions
+    }
+    
+}
+-(void)VoiceTextToColorChange:(NSString *)hypothesis
+{
+    hypothesis = [hypothesis lowercaseString];
+    if ([hypothesis rangeOfString:@"on"].location != NSNotFound)
+    {
+        NSString * deviceID = @"NA";
+        deviceID = globalGroupId;
+        [deviceDict setObject:@"Yes" forKey:@"switch_status"];
+        
+        if (isFromAll)
+        {
+            isAlldevicePowerOn = YES;
+        }
+        if (![deviceID isEqualToString:@"NA"])
+        {
+            [self switchOffDevice:deviceID withType:YES];
+        }
+//        lblVoiceDetected.text = @"ON";
+    }
+    else if ([hypothesis rangeOfString:@"of"].location != NSNotFound)
+    {
+        NSString * deviceID = @"NA";
+        deviceID = globalGroupId;
+        [deviceDict setObject:@"No" forKey:@"switch_status"];
+        
+        if (isFromAll)
+        {
+            isAlldevicePowerOn = NO;
+        }
+        if (![deviceID isEqualToString:@"NA"])
+        {
+            [self switchOffDevice:deviceID withType:NO];
+        }
+//        lblVoiceDetected.text = @"OFF";
+
+    }
+else
+{
+    for (int i =0; i<[voiceColors count]; i++)
+    {
+        NSString * strSavedColor = [[[voiceColors objectAtIndex:i]valueForKey:@"color_name"] lowercaseString];
+        if ([strSavedColor rangeOfString:hypothesis].location != NSNotFound)
+        {
+//            lblVoiceDetected.text = [[voiceColors objectAtIndex:i] valueForKey:@"name"];
+
+            UIColor * rgbColor = [self colorWithHexString:[[voiceColors objectAtIndex:i]valueForKey:@"color_rgb"]];
+            lblVoiceStatus.text = [[voiceColors objectAtIndex:i] valueForKey:@"name"]; //
+
+            imgColor = rgbColor;
+            const  CGFloat *_components = CGColorGetComponents(rgbColor.CGColor);
+            CGFloat red   = _components[0];
+            CGFloat green = _components[1];
+            CGFloat blue   = _components[2];
+
+            NSInteger sixth = [@"66" integerValue];
+            NSData * dSix = [[NSData alloc] initWithBytes:&sixth length:1];
+
+            NSInteger seven = [@"00" integerValue];
+            NSData * dSeven = [[NSData alloc] initWithBytes:&seven length:1];
+
+            fullRed = red * 255;
+            NSData * dR = [[NSData alloc] initWithBytes:&fullRed length:1];
+
+            fullGreen = green * 255;
+            NSData * dG = [[NSData alloc] initWithBytes:&fullGreen length:1];
+
+            fullBlue = blue * 255;
+            NSData * dB = [[NSData alloc] initWithBytes:&fullBlue length:1];
+
+            completeData = [[NSMutableData alloc] init];
+            completeData = [dSix mutableCopy];
+            [completeData appendData:dSeven];
+            [completeData appendData:dR];
+            [completeData appendData:dG];
+            [completeData appendData:dB];
+            isChanged = NO;
+            
+            if (isSentNoticication)
+            {
+            }
+            else
+            {
+                isSentNoticication = YES;
+                NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                [dict setValue:@"1" forKey:@"isSwitch"];
+                NSString * strSwitchNotify = [NSString stringWithFormat:@"updateDataforONOFF%@",strGlogalNotify];
+                [[NSNotificationCenter defaultCenter] postNotificationName:strSwitchNotify object:dict];
+                _switchLight.isOn = YES;
+                [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+            }
+            
+            if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+            {
+            }
+            else
+            {
+                [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+            }
+            
+            if (isFromAll)
+            {
+                _switchLight.isOn = YES;
+                isAlldevicePowerOn = YES;
+                [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+            }
+            else
+            {
+                _switchLight.isOn = YES;
+                [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+            }
+            if (globalPeripheral.state == CBPeripheralStateConnected)
+            {
+    //            [[BLEService sharedInstance] writeColortoDevice:completeData with:globalPeripheral withDestID:globalGroupId];
+            }
+            [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+
+            break;
+        }
+    }
+}
+}
+-(void)setupSpeech
+{
+    if (@available(iOS 10.0, *)) {
+        speechRecognizer = [[SFSpeechRecognizer alloc] initWithLocale:[NSLocale localeWithLocaleIdentifier:@"en-US"]];
+        audioEngine = [[AVAudioEngine alloc] init];
+        
+    } else {
+        // Fallback on earlier versions
+    }
+    
+    btnVoice.enabled = NO;
+    speechRecognizer.delegate = self;
+    
+    if (@available(iOS 10.0, *)) {
+        [SFSpeechRecognizer requestAuthorization:^(SFSpeechRecognizerAuthorizationStatus status) {
+            
+            bool isButtonEnabled = NO;
+        
+            switch (status)
+            {
+                case  SFSpeechRecognizerAuthorizationStatusAuthorized:
+                    isButtonEnabled = YES;
+
+                case  SFSpeechRecognizerAuthorizationStatusDenied:
+                    isButtonEnabled = NO;
+                    NSLog(@"User denied access to speech recognition");
+
+                    case  SFSpeechRecognizerAuthorizationStatusNotDetermined:
+                        isButtonEnabled = NO;
+                        NSLog(@"Speech recognition not yet authorized");
+                                        
+                    btnVoice.enabled = YES;
+
+                default:
+                    break;
+            }
+            
+        }];
+    } else {
+        // Fallback on earlier versions
     }
 }
 -(void)btnStartListen
 {
-    if (isListening)
+    if ([audioEngine isRunning])
     {
+        [audioEngine stop];
+        [recognitionRequest endAudio];
         btnVoice.enabled = YES;
-        // This is the action for the button which shuts down the recognition loop.
-        NSError *error = nil;
-        if([OEPocketsphinxController sharedInstance].isListening)
-        { // Stop if we are currently listening.
-            error = [[OEPocketsphinxController sharedInstance] stopListening];
-            if(error)NSLog(@"Error stopping listening in stopButtonAction: %@", error);
-        }
-        isListening = NO;
-        [lblVoiceStatus setText:[NSString stringWithFormat:@"Tap & Speak again."]];
+//        lblVoiceStatus.text = @"Start Listening";
+//        [btnVoice setTitle:@"Start Listening" forState:UIControlStateNormal];
     }
     else
     {
-        [lblVoiceStatus setText:[NSString stringWithFormat:@"Listening....."]];
+        isVoiceWordFound = NO;
+        [self startRecording];
+//        [btnVoice setTitle:@"Stop Listening" forState:UIControlStateNormal];
+        btnVoice.enabled = NO;
 
-        if ([[OEPocketsphinxController sharedInstance] micPermissionIsGranted])
-        {
-            btnVoice.enabled = NO;
-            // This is the action for the button which starts up the recognition loop again if it has been shut down.
-            if(![OEPocketsphinxController sharedInstance].isListening)
-            {
-                [[OEPocketsphinxController sharedInstance] setActive:TRUE error:nil];
-                [[OEPocketsphinxController sharedInstance] startListeningWithLanguageModelAtPath:lmPath dictionaryAtPath:dicPath acousticModelAtPath:[OEAcousticModel pathToModel:@"AcousticModelEnglish"] languageModelIsJSGF:NO];
-                // Change "AcousticModelEnglish" to "AcousticModelSpanish" to perform Spanish recognition instead of English.
-            }
-               // [self performSelector:@selector(btnStopListen) withObject:nil afterDelay:15];
-        }
-        else
-        {
-            [[OEPocketsphinxController sharedInstance] requestMicPermission];
-            
-            AVAudioSessionRecordPermission permissionStatus = [[AVAudioSession sharedInstance] recordPermission];
-            
-            switch (permissionStatus) {
-                case AVAudioSessionRecordPermissionUndetermined:{
-                    [[AVAudioSession sharedInstance] requestRecordPermission:^(BOOL granted) {
-                        // CALL YOUR METHOD HERE - as this assumes being called only once from user interacting with permission alert!
-                        if (granted) {
-                            // Microphone enabled code
-                        }
-                        else {
-                            // Microphone disabled code
-                        }
-                    }];
-                    break;
-                }
-                case AVAudioSessionRecordPermissionDenied:
-                    // direct to settings...
-                    break;
-                case AVAudioSessionRecordPermissionGranted:
-                    // mic access ok...
-                    break;
-                default:
-                    // this should not happen.. maybe throw an exception.
-                    break;
-            }
-        }
-        isListening = YES;
     }
+//    if (isListening)
+//    {
+//        btnVoice.enabled = YES;
+//        // This is the action for the button which shuts down the recognition loop.
+//        NSError *error = nil;
+//        if([OEPocketsphinxController sharedInstance].isListening)
+//        { // Stop if we are currently listening.
+//            error = [[OEPocketsphinxController sharedInstance] stopListening];
+//            if(error)NSLog(@"Error stopping listening in stopButtonAction: %@", error);
+//        }
+//        isListening = NO;
+//        [lblVoiceStatus setText:[NSString stringWithFormat:@"Tap & Speak again."]];
+//    }
+//    else
+//    {
+//        [lblVoiceStatus setText:[NSString stringWithFormat:@"Listening....."]];
+//
+//        if ([[OEPocketsphinxController sharedInstance] micPermissionIsGranted])
+//        {
+//            btnVoice.enabled = NO;
+//            // This is the action for the button which starts up the recognition loop again if it has been shut down.
+//            if(![OEPocketsphinxController sharedInstance].isListening)
+//            {
+//                [[OEPocketsphinxController sharedInstance] setActive:TRUE error:nil];
+//                [[OEPocketsphinxController sharedInstance] startListeningWithLanguageModelAtPath:lmPath dictionaryAtPath:dicPath acousticModelAtPath:[OEAcousticModel pathToModel:@"AcousticModelEnglish"] languageModelIsJSGF:NO];
+//                // Change "AcousticModelEnglish" to "AcousticModelSpanish" to perform Spanish recognition instead of English.
+//            }
+//               // [self performSelector:@selector(btnStopListen) withObject:nil afterDelay:15];
+//        }
+//        else
+//        {
+//            [[OEPocketsphinxController sharedInstance] requestMicPermission];
+//
+//            AVAudioSessionRecordPermission permissionStatus = [[AVAudioSession sharedInstance] recordPermission];
+//
+//            switch (permissionStatus) {
+//                case AVAudioSessionRecordPermissionUndetermined:{
+//                    [[AVAudioSession sharedInstance] requestRecordPermission:^(BOOL granted) {
+//                        // CALL YOUR METHOD HERE - as this assumes being called only once from user interacting with permission alert!
+//                        if (granted) {
+//                            // Microphone enabled code
+//                        }
+//                        else {
+//                            // Microphone disabled code
+//                        }
+//                    }];
+//                    break;
+//                }
+//                case AVAudioSessionRecordPermissionDenied:
+//                    // direct to settings...
+//                    break;
+//                case AVAudioSessionRecordPermissionGranted:
+//                    // mic access ok...
+//                    break;
+//                default:
+//                    // this should not happen.. maybe throw an exception.
+//                    break;
+//            }
+//        }
+//        isListening = YES;
+//    }
 }
 
 -(void)btnStopListen
@@ -1455,7 +1954,37 @@
         [completeData appendData:dG];
         [completeData appendData:dB];
         
-        isChanged = YES;
+        isChanged = NO;
+        
+
+            if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+            {
+            }
+            else
+            {
+                [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+            }
+        
+        isChanged = NO;
+        
+        if (isFromAll)
+        {
+            _switchLight.isOn = YES;
+            isAlldevicePowerOn = YES;
+            [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+        else
+        {
+            _switchLight.isOn = YES;
+            [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+        if (globalPeripheral.state == CBPeripheralStateConnected)
+        {
+//            [[BLEService sharedInstance] writeColortoDevice:completeData with:globalPeripheral withDestID:globalGroupId];
+        }
+        [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+
     }
 }
 - (void)changeBrightness:(StepSlider *)sender
@@ -1517,7 +2046,6 @@
         [completeData appendData:dG];
         [completeData appendData:dB];
         
-        isChanged = YES;
     }
     isBrighNess = YES;
 }
@@ -1549,7 +2077,6 @@
     _brightnessSlider.hidden = YES; solidView.hidden = YES; musicView.hidden = YES; imgColorOptionView.hidden = YES;
     
     isWarmWhite = NO;
-    isfromSolid = NO;
     
     if ([sender tag] == 50)
     {
@@ -1582,13 +2109,9 @@
     else if ([sender tag]==51)
     {
         imgBack.hidden = true;
-        isfromSolid = YES;
         if (solidView)
         {
-            [UIView transitionWithView:self.view duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
-                [solidView setHidden:NO];
-            } completion:nil];
-
+            [solidView setHidden:NO];
         }
         else
         {
@@ -1621,23 +2144,11 @@
 
         isWhite  = NO; isWarmWhite = NO; isVoicView = YES;
 
-        if (voiceView)
-        {
-        }
-        else
-        {
-            [self setupVoiceView];
-        }
-        if (isVoiceCreated)
-        {
-        }
-        else
-        {
-            [APP_DELEGATE showScannerView:@"Setting up Voice View"];
-            [self performSelector:@selector(setupVoiceLibrary) withObject:nil afterDelay:1];
-            [self performSelector:@selector(stopIndicatorPlease) withObject:nil afterDelay:3];
-            isVoiceCreated = YES;
-        }
+        speechRecognizer = [[SFSpeechRecognizer alloc] initWithLocale:[NSLocale localeWithLocaleIdentifier:@"en-US"]];
+        audioEngine = [[AVAudioEngine alloc] init];
+
+        [self setupVoiceView];
+
         [UIView transitionWithView:self.view duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
             [voiceView setHidden:NO];
         } completion:nil];
@@ -1733,14 +2244,13 @@
 -(void)segmentClick:(NYSegmentedControl *) sender
 {
     colorSquareView.hidden = YES; patternView.hidden = YES; bgWhiteView.hidden = YES; rgbView.hidden = YES; optionView.hidden = YES;
-    voiceView.hidden = YES; musicView.hidden = YES; solidView.hidden = YES; settingView.hidden = YES;
+    voiceView.hidden = YES; musicView.hidden = YES; solidView.hidden = YES;
     
     isWarmWhite = NO;
-    isfromSolid = NO;
     
     if (sender.selectedSegmentIndex==0)
     {
-        colorSquareView.hidden = NO; optionView.hidden = NO; imgBack.hidden = YES; settingView.hidden = YES;
+        colorSquareView.hidden = NO; optionView.hidden = NO; imgBack.hidden = YES;
 
         [UIView transitionWithView:colorSquareView duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
             [colorSquareView setHidden:NO];
@@ -1773,19 +2283,22 @@
     else if (sender.selectedSegmentIndex==1)
     {
         imgBack.hidden = true;
+        [self setPatternView];
+
         patternSelected = -1;
-        if (patternView)
-        {
-            [UIView transitionWithView:patternView duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
-                [patternView setHidden:NO];
-            } completion:nil];
-        }
-        else
-        {
-            [self setPatternView];
-        }
+//        if (patternView)
+//        {
+//            [UIView transitionWithView:patternView duration:0.5 options:UIViewAnimationOptionTransitionCrossDissolve animations:^(void){
+//            } completion:nil];
+//            
+//        }
+//        else
+//        {
+//            [self setPatternView];
+//        }
+        
         voiceView.hidden = YES; bgWhiteView.hidden = YES; rgbView.hidden = YES; colorSquareView.hidden = YES; _brightnessSlider.hidden = YES;
-        solidView.hidden = YES; musicView.hidden = YES; settingView.hidden = YES;
+        solidView.hidden = YES; musicView.hidden = YES;
     }
     else if (sender.selectedSegmentIndex==2)
     {
@@ -1800,14 +2313,6 @@
         {
             [self CreateMusicView];
         }
-    }
-    else if (sender.selectedSegmentIndex == 3)
-    {
-        voiceView.hidden = YES; bgWhiteView.hidden = YES; rgbView.hidden = YES; colorSquareView.hidden = YES; _brightnessSlider.hidden = YES;
-        solidView.hidden = YES; musicView.hidden = YES; patternView.hidden = YES;
-        imgBack.hidden = false;
-
-        settingView.hidden = false;
     }
 }
 -(void)updateBleStatus
@@ -1997,29 +2502,24 @@
     }
     return @"";
 }
+
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     if (tableView == tblVoices)
     {
         return _dataSource.count;
     }
-    else if (tableView == tblSettings)
-    {
-        return 1;
-    }
     return 1;
 }
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if (tableView == tblVoices)
     {
         return 1;
     }
-    else if (tableView == tblSettings)
-    {
-        return 3;
-    }
-    return 4;
+    return 5;
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -2032,52 +2532,6 @@
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         return cell;
     }
-    else if (tableView == tblSettings)
-    {
-        static NSString *cellReuseIdentifier = @"cellIdentifier";
-        SocketCell *cell = [tableView dequeueReusableCellWithIdentifier:cellReuseIdentifier];
-        if (cell == nil)
-        {
-            cell = [[SocketCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellReuseIdentifier];
-        }
-        
-        cell.lblSettings.hidden = false;
-        cell.lblDeviceName.hidden = true;
-        cell.imgSwitch.hidden = false;
-        cell.swSocket.hidden = true;
-        cell.btnAlaram.hidden = true;
-        cell.imgArrow.hidden = false;
-        cell.lblLineLower.hidden = true;
-        cell.lblBack.frame = CGRectMake (20, 0,DEVICE_WIDTH-40,60);
-        cell.lblBack.layer.borderColor = UIColor.lightGrayColor.CGColor;
-        cell.lblSettings.frame = CGRectMake (70, 0,DEVICE_WIDTH-140,60);
-        cell.imgSwitch.frame = CGRectMake (5, 15, 32, 30);
-
-        if (indexPath.row == 0)
-        {
-            cell.lblSettings.text = @"Device Connection";
-            cell.imgSwitch.image = [UIImage imageNamed:@"bridge2_icon.png"];
-        }
-//       else if (indexPath.row == 1)
-//        {
-//            cell.lblSettings.text = @"Reset device";
-//            cell.imgSwitch.image = [UIImage imageNamed:@"reset.png"];
-//        }
-       else if (indexPath.row == 1)
-        {
-            cell.lblSettings.text = @"Delete All Devices";
-            cell.imgSwitch.image = [UIImage imageNamed:@"ic_delete_device.png"];
-        }
-       else if (indexPath.row == 2)
-        {
-            cell.lblSettings.text = @"Main Power On Setting";
-            cell.imgSwitch.image = [UIImage imageNamed:@"ic_light_state.png"];
-        }
-        
-        cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        cell.backgroundColor = UIColor.clearColor;
-        return cell;
-    }
     else
     {
         if (cell==nil)
@@ -2085,11 +2539,14 @@
             cell = [[PatternCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"cellIdentifier"];
         }
         
+  
+        
         float heightV = 150*approaxSize;
          NSMutableArray * arrPatternNames = [[NSMutableArray alloc]initWithObjects:@"Dance Party",@"Love Romance",@"Soothing",@"Strobe",@"Disco Strobe", nil];
         
+        
+        
         [cell.parallaxImage setImage:[UIImage imageNamed:[NSString stringWithFormat:@"scenes%ld.png",indexPath.row+1]]];
-
         cell.lblName.font = [UIFont fontWithName:CGBold size:textSizes+15];
         cell.lblName.text = [arrPatternNames objectAtIndex:indexPath.row];
         cell.lblLine.frame = CGRectMake(0, heightV-40, DEVICE_WIDTH, 40);
@@ -2098,11 +2555,13 @@
         cell.lblName.textAlignment = NSTextAlignmentCenter;
         cell.lblLine.hidden = YES;
         
+        
+  
+        
         cell.lblPatternHighlighter.hidden = YES;
 
         cell.selectionStyle = UITableViewCellSelectionStyleGray;
     }
-
 
     return cell;
 }
@@ -2136,45 +2595,6 @@
             [tblView reloadData];
         }
     }
-    else if(tableView == tblSettings)
-    {
-        if (indexPath.row ==0)
-        {
-            BridgeVC * userDetails = [[BridgeVC alloc] init];
-            [self.navigationController pushViewController:userDetails animated:YES];
-        }
-//        else if (indexPath.row == 1)
-//        {
-//            FactoryResetVC * userDetails = [[FactoryResetVC alloc] init];
-//            [self.navigationController pushViewController:userDetails animated:YES];
-//        }
-        else if (indexPath.row == 1)
-        {
-            if (globalPeripheral.state == CBPeripheralStateConnected)
-            {
-                FCAlertView *alert = [[FCAlertView alloc] init];
-                alert.colorScheme = [UIColor blackColor];
-                [alert makeAlertTypeWarning];
-                [alert addButton:@"Yes" withActionBlock:
-                 ^{
-//                    [self removeDevice];
-                 }];
-                [alert showAlertInView:self
-                             withTitle:@"Smart Light"
-                          withSubtitle:@"Are you sure want to delete devices"
-                       withCustomImage:[UIImage imageNamed:@"Subsea White 180.png"]
-                   withDoneButtonTitle:@"No" andButtons:nil];
-            }
-            else
-            {
-//                [self ShowalertCustion:@"There is no devices to delete."];
-            }
-        }
-        else if (indexPath.row == 2)
-        {
-//            [self btnPowerOnSettingsClicked];
-        }
-    }
 }
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -2182,16 +2602,11 @@
     {
         return UITableViewAutomaticDimension;
     }
-    else if (tableView == tblSettings)
-    {
-        return 65;
-    }
     else
     {
         return 150*approaxSize;
     }
 }
-
 - (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section
 {
     if (tableView == tblVoices)
@@ -2205,11 +2620,10 @@
 {
     cell.backgroundColor = [UIColor clearColor];
 }
-
 #pragma mark- Speach to Text Methods
 - (void) pocketsphinxDidReceiveHypothesis:(NSString *)hypothesis recognitionScore:(NSString *)recognitionScore utteranceID:(NSString *)utteranceID
 {
-    NSLog(@"The received hypothesis is %@ with a score of %@ and an ID of %@", hypothesis, recognitionScore, utteranceID);
+//    NSLog(@"The received hypothesis is %@ with a score of %@ and an ID of %@", hypothesis, recognitionScore, utteranceID);
     for (int i =0; i<[voiceColors count]; i++)
     {
         if ([[[voiceColors objectAtIndex:i]valueForKey:@"color_name"] rangeOfString:hypothesis].location != NSNotFound)
@@ -2228,7 +2642,7 @@
                 {
                     [self switchOffDevice:deviceID withType:YES];
                 }
-                lblVoiceDetected.text = @"ON";
+//                lblVoiceDetected.text = @"ON";
             }
             if ([hypothesis rangeOfString:@"off"].location != NSNotFound)
             {
@@ -2244,44 +2658,92 @@
                 {
                     [self switchOffDevice:deviceID withType:NO];
                 }
-                lblVoiceDetected.text = @"OFF";
-
+//                lblVoiceDetected.text = @"OFF";
             }
             else
             {
-                lblVoiceDetected.text = [[voiceColors objectAtIndex:i] valueForKey:@"color_name"];
+                lblVoiceDetected.text = [[voiceColors objectAtIndex:i] valueForKey:@"name"];
 
                 UIColor * rgbColor = [self colorWithHexString:[[voiceColors objectAtIndex:i]valueForKey:@"color_rgb"]];
                 imgColor = rgbColor;
-                const  CGFloat *_components = CGColorGetComponents(rgbColor.CGColor);
-                CGFloat red   = _components[0];
-                CGFloat green = _components[1];
-                CGFloat blue   = _components[2];
-                
-                NSInteger sixth = [@"66" integerValue];
-                NSData * dSix = [[NSData alloc] initWithBytes:&sixth length:1];
-                
-                NSInteger seven = [@"00" integerValue];
-                NSData * dSeven = [[NSData alloc] initWithBytes:&seven length:1];
-                
-                fullRed = red * 255;
-                NSData * dR = [[NSData alloc] initWithBytes:&fullRed length:1];
-                
-                fullGreen = green * 255;
-                NSData * dG = [[NSData alloc] initWithBytes:&fullGreen length:1];
-                
-                fullBlue = blue * 255;
-                NSData * dB = [[NSData alloc] initWithBytes:&fullBlue length:1];
-                
-                completeData = [[NSMutableData alloc] init];
-                completeData = [dSix mutableCopy];
-                [completeData appendData:dSeven];
-                [completeData appendData:dR];
-                [completeData appendData:dG];
-                [completeData appendData:dB];
-                isChanged = NO;
-                [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+                CGFloat brightness;
+                [imgColor getHue:NULL saturation:NULL brightness:&brightness alpha:NULL];
 
+                if (brightness >= 0.1)
+                {
+                    HRHSVColor hsvColor;
+                    HSVColorFromUIColor(imgColor, &hsvColor);
+                    hsvColor.v = imageBrighValue;
+                    
+                    NSLog(@"==========>Before New Color MethodtoSendColor=%@",imgColor);
+
+                    UIColor *newColor = [[UIColor alloc] initWithHue:hsvColor.h saturation:hsvColor.s brightness:hsvColor.v alpha:1];
+                    NSLog(@"==========>After New Color MethodtoSendColor=%@",newColor);
+        //            NSLog(@"==========>BrightNesss=%f",imageBrighValue);
+
+                    
+                    const  CGFloat *_components = CGColorGetComponents(newColor.CGColor);
+                    CGFloat red     = _components[0]; CGFloat green = _components[1]; CGFloat blue   = _components[2];
+                    
+                    NSInteger sixth = [@"66" integerValue];
+                    NSData * dSix = [[NSData alloc] initWithBytes:&sixth length:1];
+                    NSInteger seven = [@"00" integerValue];
+                    NSData * dSeven = [[NSData alloc] initWithBytes:&seven length:1];
+                    fullRed = red * 255;
+                    NSData * dR = [[NSData alloc] initWithBytes:&fullRed length:1];
+                    fullGreen = green * 255;
+                    NSData * dG = [[NSData alloc] initWithBytes:&fullGreen length:1];
+                    fullBlue = blue * 255;
+                    NSData * dB = [[NSData alloc] initWithBytes:&fullBlue length:1];
+                    completeData = [[NSMutableData alloc] init];
+                    completeData = [dSix mutableCopy];
+                    [completeData appendData:dSeven];
+                    [completeData appendData:dR];
+                    [completeData appendData:dG];
+                    [completeData appendData:dB];
+                    isChanged = NO;
+                    if (isSentNoticication)
+                    {
+                    }
+                    else
+                    {
+                        isSentNoticication = YES;
+                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                        [dict setValue:@"1" forKey:@"isSwitch"];
+                        NSString * strSwitchNotify = [NSString stringWithFormat:@"updateDataforONOFF%@",strGlogalNotify];
+                        [[NSNotificationCenter defaultCenter] postNotificationName:strSwitchNotify object:dict];
+                        _switchLight.isOn = YES;
+                        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+                    }
+                }
+                
+                if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+                {
+                }
+                else
+                {
+                    [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+                }
+                
+                isChanged = NO;
+                
+                if (isFromAll)
+                {
+                    _switchLight.isOn = YES;
+                    isAlldevicePowerOn = YES;
+                    [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+                }
+                else
+                {
+                    _switchLight.isOn = YES;
+                    [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+                }
+                if (globalPeripheral.state == CBPeripheralStateConnected)
+                {
+        //            [[BLEService sharedInstance] writeColortoDevice:completeData with:globalPeripheral withDestID:globalGroupId];
+                }
+                [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+                [[NSUserDefaults standardUserDefaults] synchronize];
             }
             break;
         }
@@ -2344,54 +2806,7 @@
 //    NSLog(@"A test file that was submitted for recognition is now complete.");
 }
 
-#pragma mark - Check for Connection
--(BOOL)isConnectionAvail
-{
-    if (globalPeripheral.state == CBPeripheralStateConnected)
-    {
-        return YES;
-    }
-    else
-    {
-        if ([[[BLEManager sharedManager] getLastConnected] count]>0)
-        {
-            if (globalPeripheral.state == CBPeripheralStateConnected)
-            {
-                return YES;
-            }
-            else
-            {
-                [APP_DELEGATE showScannerView:@"Connecting..."];
-                if (globalPeripheral)
-                {
-                }
-                else
-                {
-                    isNonConnectScanning = NO;
-                    [[BLEManager sharedManager] updateBluetoothState];
-                }
-                [self performSelector:@selector(checkTimeOut) withObject:nil afterDelay:5];
-                return NO;
-            }
-        }
-        else
-        {
-            [APP_DELEGATE showScannerView:@"Connecting..."];
-            
-            if (globalPeripheral)
-            {
-            }
-            else
-            {
-                isNonConnectScanning = NO;
-                [[BLEManager sharedManager] updateBluetoothState];
-            }
-            [self performSelector:@selector(checkTimeOut) withObject:nil afterDelay:5];
-            return NO;
-        }
-    }
-    return NO;
-}
+
 #pragma mark - RGB VIEW
 -(void)setupRGBView
 {
@@ -2514,7 +2929,102 @@
     [completeData appendData:dB];
     
     imgColor = [UIColor colorWithRed:fullRed/255.0f green:fullGreen/255.0f blue:fullBlue/255.0f alpha:1.0];
-    isChanged = YES;
+    isChanged = NO;
+    CGFloat brightness;
+    [imgColor getHue:NULL saturation:NULL brightness:&brightness alpha:NULL];
+
+    if (brightness >= 0.1)
+    {
+        HRHSVColor hsvColor;
+        HSVColorFromUIColor(imgColor, &hsvColor);
+        hsvColor.v = imageBrighValue;
+        
+
+        NSLog(@"==========>Before New Color MethodtoSendColor=%@",imgColor);
+
+        UIColor *newColor = [[UIColor alloc] initWithHue:hsvColor.h saturation:hsvColor.s brightness:hsvColor.v alpha:1];
+        NSLog(@"==========>After New Color MethodtoSendColor=%@",newColor);
+//            NSLog(@"==========>BrightNesss=%f",imageBrighValue);
+
+        
+        const  CGFloat *_components = CGColorGetComponents(newColor.CGColor);
+        CGFloat red     = _components[0]; CGFloat green = _components[1]; CGFloat blue   = _components[2];
+        
+        NSInteger sixth = [@"66" integerValue];
+        NSData * dSix = [[NSData alloc] initWithBytes:&sixth length:1];
+        NSInteger seven = [@"00" integerValue];
+        NSData * dSeven = [[NSData alloc] initWithBytes:&seven length:1];
+        fullRed = red * 255;
+        NSData * dR = [[NSData alloc] initWithBytes:&fullRed length:1];
+        fullGreen = green * 255;
+        NSData * dG = [[NSData alloc] initWithBytes:&fullGreen length:1];
+        fullBlue = blue * 255;
+        NSData * dB = [[NSData alloc] initWithBytes:&fullBlue length:1];
+        completeData = [[NSMutableData alloc] init];
+        completeData = [dSix mutableCopy];
+        [completeData appendData:dSeven];
+        [completeData appendData:dR];
+        [completeData appendData:dG];
+        [completeData appendData:dB];
+        if (isSentNoticication)
+        {
+        }
+        else
+        {
+            isSentNoticication = YES;
+            NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+            [dict setValue:@"1" forKey:@"isSwitch"];
+            NSString * strSwitchNotify = [NSString stringWithFormat:@"updateDataforONOFF%@",strGlogalNotify];
+            [[NSNotificationCenter defaultCenter] postNotificationName:strSwitchNotify object:dict];
+            _switchLight.isOn = YES;
+            [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+        }
+    }
+    if (isWarmWhite)
+    {
+        if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+        {
+        }
+        else
+        {
+            [APP_DELEGATE sendSignalViaScan:@"ColorWhiteChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+        }
+    }
+    else
+    {
+        if (fullRed ==0 && fullBlue ==0 && fullGreen == 0)
+        {
+        }
+        else
+        {
+            [APP_DELEGATE sendSignalViaScan:@"ColorChange" withDeviceID:globalGroupId withValue:@"0"]; //KalpeshScanCode
+        }
+    }
+    
+    isChanged = NO;
+    
+    if (isFromAll)
+    {
+        _switchLight.isOn = YES;
+        isAlldevicePowerOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    else
+    {
+        _switchLight.isOn = YES;
+        [_switchLight setCustomKnobImage:[UIImage imageNamed:@"on_icon"] inactiveBackgroundImage:[UIImage imageNamed:@"switch_track_icon"] activeBackgroundImage:[UIImage imageNamed:@"switch_track_icon"]];
+    }
+    if (globalPeripheral.state == CBPeripheralStateConnected)
+    {
+//            [[BLEService sharedInstance] writeColortoDevice:completeData with:globalPeripheral withDestID:globalGroupId];
+    }
+    [[NSUserDefaults standardUserDefaults] setInteger:globalCount forKey:@"GlobalCount"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+    
+    
+    
+    
     
     imgRGBBulb.image = [imgRGBBulb.image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     
@@ -2883,10 +3393,17 @@
 }
 -(void)SetupRecording
 {
+    [recognitionTask cancel];
+    recognitionTask = nil;
+
+    [audioEngine stop];
+    [recognitionRequest endAudio];
+    [[audioEngine inputNode] removeTapOnBus:0];
+
     // kSeconds = 150.0;
 //    NSLog(@"startRecording");
     audioRecorder = nil;
-    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    audioSession = [AVAudioSession sharedInstance];
 //    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord error:nil];
     [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord
                   withOptions:AVAudioSessionCategoryOptionMixWithOthers|AVAudioSessionCategoryOptionDefaultToSpeaker
@@ -2943,6 +3460,7 @@
 }
 -(void)btnMusicClick:(id)sender
 {
+
     if (isMusicModeOn)
     {
         isMusicModeOn = NO;
@@ -2967,7 +3485,7 @@
             if (granted)
             {
 //                NSLog(@"Permission granted");
-                [self startRecording];
+                [self startMusicRecording];
                 [self performSelector:@selector(firstCalltoSendMusci) withObject:nil afterDelay:3];
                 [btnMusic setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
                 isMusicModeOn = YES;
@@ -2992,7 +3510,29 @@
         }];
     }
 }
--(void) startRecording
+//-(void) startRecording
+//{
+//    animatedImageView.hidden = NO;
+//
+//    NSURL *url = [[NSBundle mainBundle] URLForResource:@"Equalizer" withExtension:@"gif"];
+//    animatedImageView.image = [UIImage animatedImageWithAnimatedGIFData:[NSData dataWithContentsOfURL:url]];
+//
+//    [animatedImageView startAnimating];
+//
+//    // kSeconds = 150.0;
+//    [audioRecorder stop];
+//
+////    if ([audioRecorder prepareToRecord] == YES)
+//    {
+//        [audioRecorder prepareToRecord];
+//        audioRecorder.meteringEnabled = YES;
+//        [audioRecorder record];
+//        [audioRecorder updateMeters];
+//        timerForPitch =[NSTimer scheduledTimerWithTimeInterval: 0.50 target: self selector: @selector(levelTimerCallbackNew:) userInfo: nil repeats: YES];
+//        timerforMusicCount =[NSTimer scheduledTimerWithTimeInterval: 4.0 target: self selector: @selector(startCountingBits) userInfo: nil repeats: YES];
+//    }
+//}
+-(void)startMusicRecording
 {
     animatedImageView.hidden = NO;
 
@@ -3010,6 +3550,13 @@
         audioRecorder.meteringEnabled = YES;
         [audioRecorder record];
         [audioRecorder updateMeters];
+        
+        UIBackgroundTaskIdentifier bgTask = 0;
+        UIApplication  *app = [UIApplication sharedApplication];
+        bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+            [app endBackgroundTask:bgTask];
+        }];
+
         timerForPitch =[NSTimer scheduledTimerWithTimeInterval: 0.50 target: self selector: @selector(levelTimerCallbackNew:) userInfo: nil repeats: YES];
         timerforMusicCount =[NSTimer scheduledTimerWithTimeInterval: 4.0 target: self selector: @selector(startCountingBits) userInfo: nil repeats: YES];
     }
@@ -3075,6 +3622,7 @@
     {
         setCount = setCount + 4;
     }
+    
     if (setCount <0)
     {
         isAllow = NO;
@@ -3083,6 +3631,11 @@
     {
         isAllow = YES;
     }
+//    if (setCount < 0)
+//    {
+//        setCount = 1;
+//        isAllow = YES;
+//    }
     if(isAllow)
     {
             if (isSentNoticication)
@@ -3205,6 +3758,275 @@
     
     return outputImage;
 }
+
+#pragma mark:- MQTT Methods
+-(void)ChangeColorviaMQTT
+{
+    NSInteger decimalTTL = [@"100" integerValue];
+    NSData * dataTTL = [[NSData alloc] initWithBytes:&decimalTTL length:1];
+    
+    globalCount = globalCount + 1;
+    NSInteger decimalSequence = globalCount;
+    NSData * dataSequence = [[NSData alloc] initWithBytes:&decimalSequence length:2];
+    
+    NSInteger decimalDeviceId = [@"9000" integerValue];
+    NSData * dataDeviceId = [[NSData alloc] initWithBytes:&decimalDeviceId length:2];
+    
+    NSInteger decimalDestinationID = [globalGroupId integerValue];
+    NSData * dataDestinationID = [[NSData alloc] initWithBytes:&decimalDestinationID length:2];
+    
+    NSInteger decimalCRC = [@"0000" integerValue];
+    NSData * dataCRC = [[NSData alloc] initWithBytes:&decimalCRC length:2];
+    
+    NSInteger decimalOpcode = [@"66" integerValue];
+    NSData * dataOpcode = [[NSData alloc] initWithBytes:&decimalOpcode length:1];
+    
+    NSInteger decimalOcode2 = [@"00" integerValue]; //to Append 00 to opcode
+    NSData * dataOpcode2 = [[NSData alloc] initWithBytes:&decimalOcode2 length:1];
+    
+    NSData * dataRed = [[NSData alloc] initWithBytes:&fullRed length:1];
+    NSData * dataGreen = [[NSData alloc] initWithBytes:&fullGreen length:1];
+    NSData * dataBlue = [[NSData alloc] initWithBytes:&fullBlue length:1];
+    
+    NSMutableData * message = [[NSMutableData alloc] init];
+    message = [dataOpcode mutableCopy];
+    [message appendData:dataOpcode2];
+    [message appendData:dataRed];
+    [message appendData:dataGreen];
+    [message appendData:dataBlue];
+
+    NSMutableData *completeData = [dataSequence mutableCopy];
+    [completeData appendData:dataDeviceId];
+    [completeData appendData:dataDestinationID];
+    [completeData appendData:dataCRC];
+    [completeData appendData:message];
+    
+//    NSLog(@"CHECKSUM DATA=%@",completeData);
+        
+    NSData * checkSumData = [APP_DELEGATE GetCountedCheckSumData:completeData];
+    
+//    NSLog(@"Got CheckSumt=%@",checkSumData);
+    
+    
+    NSMutableData * finalData = [dataTTL mutableCopy];
+    [finalData appendData:dataSequence];
+    [finalData appendData:dataDeviceId];
+    [finalData appendData:dataDestinationID];
+    [finalData appendData:checkSumData];
+    [finalData appendData:message];
+    
+    NSString * StrData = [NSString stringWithFormat:@"%@",finalData.debugDescription];
+    StrData = [StrData stringByReplacingOccurrencesOfString:@" " withString:@""];
+    StrData = [StrData stringByReplacingOccurrencesOfString:@"<" withString:@""];
+    StrData = [StrData stringByReplacingOccurrencesOfString:@">" withString:@""];
+    
+    for (int i=0; i<40-[StrData length]; i++)
+    {
+        StrData = [StrData stringByAppendingString:@"00"];
+    }
+    
+    NSString * strVal = [self getStringConvertedinUnsigned:StrData];
+    NSString * strPassKey = [[NSUserDefaults standardUserDefaults] valueForKey:@"passKey"];
+    NSString * strEncryptKey = [self getStringConvertedinUnsigned:strPassKey];
+    NSData *data = [APP_DELEGATE GetEncryptedKeyforData:strVal withKey:strEncryptKey withLength:finalData.length];
+    
+    
+    NSString * strTopic = [NSString stringWithFormat:@"smarthome/dev/10521C677C3E"];
+    CocoaMQTTMessage * msg = [[CocoaMQTTMessage alloc] initWithTopic:strTopic alarmpayload:data qos:2 retained:NO dup:NO];
+    UInt16 subTop = [classMqttObj publish:msg];
+    NSLog(@"MQTT MSG Sent==%hu",subTop);
+}
+-(NSString*)stringFroHex:(NSString *)hexStr
+{
+    unsigned long long startlong;
+    NSScanner* scanner1 = [NSScanner scannerWithString:hexStr];
+    [scanner1 scanHexLongLong:&startlong];
+    double unixStart = startlong;
+    NSNumber * startNumber = [[NSNumber alloc] initWithDouble:unixStart];
+    return [startNumber stringValue];
+}
+-(void)ConnecttoMQTTSocketServer
+{
+    NSUUID *uuid = [NSUUID UUID];
+    NSString *strClientId = [uuid UUIDString];
+
+    classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
+    classMqttObj.delegate = self;
+    [classMqttObj selfSignedSSLSetting];
+    classMqttObj.autoReconnect = YES;
+    BOOL isConnected =  [classMqttObj connect];
+    if (isConnected)
+    {
+        NSLog(@"MQTT is CONNECTING....");
+    }
+}
+#pragma mark - Common Method to Publish on MQTT
+-(void)PublishMessageonMQTTwithTopic:(NSString *)strTopic withDataArray:(NSArray *)arrData
+{
+//    [APP_DELEGATE startHudProcess:@"Conneting..."];
+    NSLog(@"===========================================================================================%hhu",[classMqttObj connState]);
+    CocoaMQTTMessage * msg = [[CocoaMQTTMessage alloc] initWithTopic:strTopic payload:arrData qos:2 retained:NO dup:NO];
+    UInt16 subTop = [classMqttObj publish:msg];
+    NSLog(@"MQTT MSG Sent==%hu",subTop);
+}
+#pragma mark :- MQTT Delegate Methods
+-(void)mqtt:(CocoaMQTT *)mqtt didReceive:(SecTrustRef)trust completionHandler:(void (^)(BOOL))completionHandler
+{
+    NSLog(@"Trust==%@",trust);
+    if (completionHandler)
+    {
+        completionHandler(YES);
+    }
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didConnectAck:(enum CocoaMQTTConnAck)ack
+{
+    [APP_DELEGATE endHudProcess];
+
+//    imgWifiNotConnected.image = [UIImage imageNamed:@"wifiGreen.png"];
+//    NSString * publishTopic = [NSString stringWithFormat:@"/vps/app/%@",strMacAddress];
+    NSString * publishTopic = @"smarthome/app/10521C677C3E";
+    UInt16 subTop = [mqtt subscribe:publishTopic qos:2];
+    NSLog(@"%d",subTop);
+    NSLog(@"MQTT Connected --->");
+//    [self.delegate ConnectedSocketfromSocketDetailPage:mqtt];
+    if (globalSocketAlarmVC)
+    {
+        
+    }
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didPublishMessage:(CocoaMQTTMessage *)message id:(uint16_t)id
+{
+    NSArray * arrAck = [message payload];
+    if([arrAck count]>0)
+    {
+        NSString * strAck = [arrAck componentsJoinedByString:@","];
+        NSLog(@"Socket Detail mqtt didPublishMessage =%@",strAck);
+    }
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didPublishAck:(uint16_t)id
+{
+    
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didReceiveMessage:(CocoaMQTTMessage *)message id:(uint16_t)id
+{
+    //Whenever message received we will send it to socketdtailvc.
+    //    NSLog(@"Socket Detail mqtt didReceiveMessage =%@",[message payload]);
+    
+    NSString * strTopic = [self checkforValidString:[message topic]];
+    NSArray * arrTopics = [strTopic componentsSeparatedByString:@"/"];
+    NSString * strAddress = @"NA";
+    if([arrTopics count]>= 4) // 3 previously
+    {
+        strAddress = [arrTopics lastObject];
+    }
+    
+    NSArray * arrReceive = [message payload];
+    if([arrReceive count]>0)
+    {
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:arrReceive forKey:@"data"];
+        [dict setValue:strAddress forKey:@"ble_address"];
+//        [self ReceivedMQTTResponsefromserver:dict];
+    }
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didSubscribeTopic:(NSArray<NSString *> *)topics
+{
+    NSLog(@"Topic Subscried successfully Device Detail =%@",topics);
+    
+//    [deviceDetail setValue:@"1" forKey:@"wifi_configured"];
+    
+//    isTopicSubscribed = YES;
+//
+//    if (classPeripheral)
+//    {
+//        if (classPeripheral.state != CBPeripheralStateConnected)
+//        {
+//            NSString * strTopic = [NSString stringWithFormat:@"/vps/device/%@",[strMacAddress uppercaseString]];
+//            NSArray * arrPackets =[[NSArray alloc] initWithObjects:[NSNumber numberWithInt:16],[NSNumber numberWithInt:0], nil];
+//            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
+//            arrMQTTalarmState = [[NSMutableArray alloc] init];
+//            NSArray * arrAlarm = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:21],[NSNumber numberWithInt:0], nil];
+//            [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrAlarm];
+//        }
+//    }
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didUnsubscribeTopic:(NSString *)topic
+{
+    NSLog(@"Topic didUnsubscribeTopic =%@",topic);
+}
+-(void)mqtt:(CocoaMQTT *)mqtt didStateChangeTo:(enum CocoaMQTTConnState)state
+{
+//    NSLog(@"State Changed===>%hhu",state);
+    if (state == 3)
+    {
+        isTopicSubscribed = NO;
+    }
+}
+-(void)mqttDidDisconnect:(CocoaMQTT *)mqtt withError:(NSError *)err
+{
+    isTopicSubscribed = NO;
+
+    NSDictionary * dictError = [err userInfo];
+    if ([[dictError allKeys] containsObject:@"NSLocalizedDescription"])
+    {
+        isMQTTConfigured = NO;
+        if ([[[err userInfo] valueForKey:@"NSLocalizedDescription"] isEqualToString:@"nodename nor servname provided, or not known"])
+        {
+            if ([APP_DELEGATE isNetworkreachable])
+            {
+//                imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
+            }
+            else
+            {
+//                imgWifiNotConnected.image = [UIImage imageNamed:@"wifigray.png"];
+            }
+        }
+    }
+    else
+    {
+//        NSUUID *uuid = [NSUUID UUID];
+//        NSString *strClientId = [uuid UUIDString];
+
+        //        classMqttObj = [[CocoaMQTT alloc] initWithClientID:strClientId host:@"iot.vithamastech.com" port:8883];
+//        classMqttObj.delegate = self;
+//        [classMqttObj selfSignedSSLSetting];
+//        BOOL isConnected =  [classMqttObj connect];
+//        if (isConnected)
+//        {
+//            NSLog(@"MQTT is CONNECTING....");
+//        }
+    }
+//    NSLog(@"Disconnect Errore===>%@",err.description);
+}
+-(void)mqttDidPing:(CocoaMQTT *)mqtt
+{
+    
+}
+-(void)mqttDidReceivePong:(CocoaMQTT *)mqtt
+{
+    
+}
+-(NSString *)getStringConvertedinUnsigned:(NSString *)strNormal
+{
+    NSString * strKey = strNormal;
+    long ketLength = [strKey length]/2;
+    NSString * strVal;
+    for (int i=0; i<ketLength; i++)
+    {
+        NSRange range73 = NSMakeRange(i*2, 2);
+        NSString * str3 = [strKey substringWithRange:range73];
+        if ([strVal length]==0)
+        {
+            strVal = [NSString stringWithFormat:@" 0x%@",str3];
+        }
+        else
+        {
+            strVal = [strVal stringByAppendingString:[NSString stringWithFormat:@" 0x%@",str3]];
+        }
+    }
+    return strVal;
+}
+
 /*- (void)changeBrightness:(id)sender {
     hellSlider = (UISlider *)sender;
     

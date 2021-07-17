@@ -466,6 +466,8 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 }
 -(void)ShowSocketTurnOnOffPopup:(NSNotification *)notify
 {
+    [[[BLEManager sharedManager] arrBLESocketDevices] removeAllObjects];
+    
     resetDeviceCount = 0;
     [deviceRestedCheckTimer invalidate];
     deviceRestedCheckTimer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(CheckDeviceResettedOrNot) userInfo:nil repeats:YES];
@@ -501,13 +503,15 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
                     strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@" " withString:@""];
                     strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@">" withString:@""];
                     strManufacture = [strManufacture stringByReplacingOccurrencesOfString:@"<" withString:@""];
-
+                    NSLog(@"--------CheckDeviceResettedOrNot---------->%@",strManufacture);
                     if ([strManufacture length] >= 22)
                     {
-                        NSRange rangeCheck = NSMakeRange(4, 4);
+                        NSRange rangeCheck = NSMakeRange(18, 4);
                         NSString * strOpCodeCheck = [strManufacture substringWithRange:rangeCheck];
-                        if ([strOpCodeCheck isEqualToString:@"0000"])
+                        if ([strOpCodeCheck isEqualToString:@"3000"])
                         {
+                            [[BLEManager sharedManager] RemoveDevicefromAutoConnection:[NSString stringWithFormat:@"%@",classPeripheral.identifier]];
+
                             [deviceRestedCheckTimer invalidate];
                             deviceRestedCheckTimer = nil;
                             [timeOutAlert removeFromSuperview];
@@ -541,6 +545,10 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 }
 -(void)ShowSuccessPopup
 {
+    if (globalDashBoardVC)
+    {
+        [globalDashBoardVC DeleteSocketDeviceforBLEAddress:strSelectedAddress];
+    }
     FCAlertView * alert = [[FCAlertView alloc] init];
     alert.colorScheme = [UIColor blackColor];
     [alert makeAlertTypeSuccess];
@@ -604,7 +612,7 @@ dispatch_async(dispatch_get_main_queue(), ^(void)
 {
     [timertoStopIndicator invalidate];
 
-    if (globalPeripheral.state == CBPeripheralStateConnected)
+    if (classPeripheral.state == CBPeripheralStateConnected)
     {
     }
     else

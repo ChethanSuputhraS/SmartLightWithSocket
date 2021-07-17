@@ -27,6 +27,8 @@
 #import "KPWhiteColorImgView.h"
 #import <AVFoundation/AVFoundation.h>
 
+@import CocoaMQTT;
+
 @protocol HRColorPickerViewControllerDelegate
 - (void)setSelectedColor:(UIColor *)color;
 @end
@@ -118,8 +120,10 @@
 @property  float brightnessSliderVal;
 
 @property (weak) id <HRColorPickerViewControllerDelegate> delegate;
+@property (nonatomic, retain) NSTimer *silenceTimer;
 
-
+@property(nonatomic,strong) CocoaMQTT * classMqttObj;
+@property(nonatomic,strong) NSString *  strMacAddress;
 
 
 @end

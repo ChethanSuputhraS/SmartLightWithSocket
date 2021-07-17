@@ -6,6 +6,7 @@
 //  Copyright © 2017 Kalpesh Panchasara. All rights reserved.
 //
 
+
 #import <UIKit/UIKit.h>
 #import "FCAlertView.h"
 @interface AddDeviceVC : UIViewController
@@ -13,6 +14,7 @@
     NSString * strRequetAddress;
     FCAlertView *alert;
     NSString * strHexIdofDevice;
+    CBPeripheral * tempPeripheral;
 
 }
 @property BOOL isForGroup;

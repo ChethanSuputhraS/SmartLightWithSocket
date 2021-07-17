@@ -33,6 +33,7 @@
 #import "ManageAccVC.h"
 #import <objc/runtime.h>
 #import <CommonCrypto/CommonDigest.h>
+#import "UserInstructionVC.h"
 
 @import Firebase;
 
@@ -849,6 +850,18 @@ typedef signed long                     SInt32;
     navControl.navigationBarHidden=YES;
     self.window.rootViewController = navControl;
 }
+-(void)movetoUserInstructionVC
+{
+    [UIView beginAnimations:nil context:NULL];
+    [UIView setAnimationDuration:1.3];
+    [UIView setAnimationTransition:UIViewAnimationTransitionFlipFromLeft forView:[[UIApplication sharedApplication] keyWindow] cache:YES];
+    [UIView commitAnimations];
+    
+    UserInstructionVC * userInstVC = [[UserInstructionVC alloc] init];
+    UINavigationController * navControl = [[UINavigationController alloc] initWithRootViewController:userInstVC];
+    navControl.navigationBarHidden = YES;
+    self.window.rootViewController = navControl;
+}
 #pragma mark - Add Scanner view
 -(void)addScannerView
 {
@@ -1299,6 +1312,9 @@ typedef signed long                     SInt32;
     {
         [[NSUserDefaults standardUserDefaults] setValue:strRawUUID forKey:@"IdentifyUUID"];
     }
+    NSLog(@"=====Opcode====%@",strOpcode);
+    NSLog(@"=====Advertise UUID====%@",strRawUUID);
+
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 -(void)generateUUIDforColor:(NSString *)deviceID withOpcode:(NSString *)strOpcode
@@ -1496,6 +1512,8 @@ typedef signed long                     SInt32;
 -(void)sendSignalViaScan:(NSString *)strType withDeviceID:(NSString *)strDeviceID withValue:(NSString *)strValue
 {
     NSLog(@"Command Type==%@   Value===%@",strType, strValue);
+    NSLog(@"=======>RED=%ld  GREEN=%ld   BLUE=%ld",(long)fullRed, (long)fullGreen, (long)fullBlue);
+
     
     if ([strType isEqualToString:@"ColorChange"])
     {

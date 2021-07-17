@@ -62,4 +62,6 @@
 -(void)DisconnectMQTTSocketServer;
 -(void)UpdateSocketSwithchStatus:(NSArray *)arrData withMacAddress:(NSString *)strAddress;
 -(void)UpdateSocketSwithwithBLE:(BOOL)isOn withMacAddress:(NSString *)strAddress;
+-(void)DeleteSocketDeviceforBLEAddress:(NSString *)strMacAddress;
+
 @end

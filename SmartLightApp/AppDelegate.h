@@ -28,7 +28,7 @@ NSString * deviceTokenStr, * currentScreen, * globalUUID, * globalGroupId, * glo
 NSString * strSelectedAddress;
 NSDate * dateDeviceLastSync, * dateGroupLastSync;
 int statusHeight, textSizes, alarmRed, alarmBlue, alarmGreen;
-BOOL  isNonConnectScanning, isDashScanning, isfromBridge, isfromAddDevice, isChanged, globalConnStatus, isAlldevicePowerOn, isOnAddGroup,isTimeSetSuccess,isFeedbackOpen,isFromFactoryRest, isScanningSocket;
+BOOL isDashConnect,isNonConnectScanning, isDashScanning, isfromBridge, isfromAddDevice, isChanged, globalConnStatus, isAlldevicePowerOn, isOnAddGroup,isTimeSetSuccess,isFeedbackOpen,isFromFactoryRest, isScanningSocket;
 BOOL isSearchingfromFactory,isScanCheckforDashboard, isCheckforDashScann, isViewWillAppeared, isUserDetailedCheck;
 NSInteger fullRed,fullGreen, fullBlue, alphaGlob, approaxSize, globalCount,updatedRSSI;
 
@@ -86,6 +86,8 @@ NSMutableDictionary * dictCheckDeviceNotified;
 -(BOOL)validateEmail:(NSString*)email;
 -(BOOL)detectBluetooth;
 -(BOOL)isBluetoothOn;
+-(void)movetoUserInstructionVC;
+
 
 
 -(UIColor *) colorWithHexString:(NSString *)stringToConvert;

@@ -767,6 +767,7 @@
     DeviceDetailVC * detailVC = [[DeviceDetailVC alloc] init];
     detailVC.deviceDict = selectedDict;
     detailVC.isFromAll = YES;
+    detailVC.classMqttObj = mqttObj;
     [self.navigationController pushViewController:detailVC animated:YES];
 }
 -(void)btnSettingsClick:(UIButton *)sender
@@ -952,6 +953,23 @@
     [alert makeAlertTypeWarning];
     [alert addButton:@"Yes" withActionBlock:^{
         {
+            if ([IS_USER_SKIPPED isEqualToString:@"NO"])
+            {
+                if ([APP_DELEGATE isNetworkreachable])
+                {
+                    isRequestfor = @"DeleteDeviceCheck";
+                    [self CheckUserCredentialDetials];
+                }
+            }
+            else
+            {
+                [APP_DELEGATE startHudProcess:@"Removing Device..."];
+                [self performSelector:@selector(timeOutForDeleteDevice) withObject:nil afterDelay:2.5];
+                [self removeDevice];
+
+                
+            }
+            
             [APP_DELEGATE startHudProcess:@"Removing Device..."];
             
             if ([IS_USER_SKIPPED isEqualToString:@"NO"] && ![[[sectionArr objectAtIndex:selectedIndexPathl.row] valueForKey:@"device_type"] isEqual:@"4"])
@@ -1417,7 +1435,7 @@
 }
 -(void)CellforAllDevices:(NewCustomGroupCell *)cell WithIndexPath:(NSIndexPath *)indexx
 {
-    cell.lblName.text = @"All Samrt light's";//@"All Devices"
+    cell.lblName.text = @"All Smart light's";//@"All Devices"
     cell._switchLight.tag = 123;
     cell._switchLight.frame = CGRectMake(DEVICE_WIDTH-110+30+15, 0+10, 60, 40);
     cell.lblBack.frame = CGRectMake(4, 0,DEVICE_WIDTH-8,60);
@@ -1611,6 +1629,8 @@
             }
             else
             {
+              
+                
                 selectedDict = [[NSMutableDictionary alloc] init];
                 selectedDict = [groupsArr objectAtIndex:indexPath.row-1];
                 globalGroupId  = [NSString stringWithFormat:@"%@",[selectedDict valueForKey:@"local_group_id"]];
@@ -1618,7 +1638,7 @@
                 DeviceDetailVC * detailVC = [[DeviceDetailVC alloc] init];
                 detailVC.deviceDict = selectedDict;
                 detailVC.isfromGroup = isForGroup;
-                
+
                 if ([[selectedDict valueForKey:@"device_type"] isEqualToString:@"2"])
                 {
                     detailVC.isDeviceWhite = YES;
@@ -1669,8 +1689,15 @@
             }
             else
             {
+                CustomTableViewCell * tblCell = (CustomTableViewCell *)[(UITableView *)tableView cellForRowAtIndexPath:indexPath];
+                
                 DeviceDetailVC *detailVC  = [[DeviceDetailVC alloc] init];
+                detailVC.deviceDict = selectedDict;
+                detailVC.isfromGroup = isForGroup;
+
                 [self.navigationController pushViewController:detailVC animated:YES];
+                detailVC.brightnessSliderVal = tblCell.brightnessSlider.value;
+
             }
         }
     }
@@ -2576,6 +2603,53 @@
                withCustomImage:[UIImage imageNamed:@"logo.png"]
            withDoneButtonTitle:nil
                     andButtons:nil];*/
+    }
+    
+    if ([sectionArr count]> selectedIndexPathl.row)
+    {
+        syncedDeletedListArr = [[NSMutableArray alloc] init];
+        if ([sectionArr count]> selectedIndexPathl.row)
+        {
+            syncedDeletedListArr = [[NSMutableArray alloc] init];
+            NSString * strUpdate = [NSString stringWithFormat:@"Update Device_Table set status ='2',is_sync = '0' where device_id = '%@'",strDeviceID];
+            [[DataBaseManager dataBaseManager] execute:strUpdate];
+            [syncedDeletedListArr addObject:strDeviceID];
+            
+            if ([sectionArr count] > selectedIndexPathl.row)
+            {
+                NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+                dict = [sectionArr objectAtIndex:selectedIndexPathl.row];
+                [dict setObject:@"0" forKey:@"status"];
+                [self SaveDeviceDetailstoServer:dict];
+                [APP_DELEGATE hudEndProcessMethod];
+                
+                [sectionArr removeObjectAtIndex:selectedIndexPathl.row];
+                [tblView reloadData];
+            }
+            self.expandingIndexPathGroup = nil;
+            self.expandedIndexPathGroup = nil;
+            self.expandingIndexPath = nil;
+            self.expandedIndexPath = nil;
+            
+            if ([sectionArr count]>0)
+            {
+                noMsgView.hidden = YES;
+            }
+            else
+            {
+                noMsgView.hidden = NO;
+            }
+            
+            FCAlertView *alert = [[FCAlertView alloc] init];
+            alert.colorScheme = [UIColor blackColor];
+            [alert makeAlertTypeSuccess];
+            [alert showAlertInView:self
+                         withTitle:@"Smart Light"
+                      withSubtitle:@"Device has been removed successfully."
+                   withCustomImage:[UIImage imageNamed:@"logo.png"]
+               withDoneButtonTitle:nil
+                        andButtons:nil];
+        }
     }
 }
 -(void)BLEConnectionErrorPopup
@@ -3712,9 +3786,9 @@ alert.colorScheme = [UIColor blackColor];
                     {
                         if (p.state == CBPeripheralStateDisconnected)
                         {
-                           if (![currentScreen isEqualToString: @"AddSocket"])
+                           if (![currentScreen isEqualToString: @"AddSocket"] && ![currentScreen isEqualToString: @"SocketReset"])
                             {
-//                                NSLog(@"Auto Connection Timer ArrSocket Device trying to connect =%@",[arrSocketDevices objectAtIndex:i]);
+                                NSLog(@"Auto Connection Timer ArrSocket Device trying to connect =%@",[arrSocketDevices objectAtIndex:i]);
                                 globalRetrievedSocketPeripheral = p;
                                 [[BLEManager sharedManager] connectDevice:p];
                             }
@@ -3917,6 +3991,22 @@ alert.colorScheme = [UIColor blackColor];
         [self PublishMessageonMQTTwithTopic:strTopic withDataArray:arrPackets];
     }
 }
+-(void)DeleteSocketDeviceforBLEAddress:(NSString *)strMacAddress
+{
+    if ([[sectionArr valueForKey:@"ble_address"] containsObject:strMacAddress])
+    {
+        NSInteger foundIndex  = [[sectionArr valueForKey:@"ble_address"] indexOfObject:strMacAddress];
+        if(foundIndex != NSNotFound)
+        {
+            if([sectionArr count] > foundIndex)
+            {
+                [self deleteSocketDevice:[NSIndexPath indexPathForRow:foundIndex inSection:0]];
+            }
+        }
+    }
+//    NSString * strBleAddress = [[[sectionArr objectAtIndex:selectedIndex.row] valueForKey:@"ble_address"] uppercaseString];
+
+}
 #pragma mark - Common Method to Publish on MQTT
 -(void)PublishMessageonMQTTwithTopic:(NSString *)strTopic withDataArray:(NSArray *)arrData
 {
@@ -3995,7 +4085,9 @@ alert.colorScheme = [UIColor blackColor];
     }
     else
     {
-        NSString * strCurrentTopic = [NSString stringWithFormat:@"/vps/app/%@",[strBleAddress uppercaseString]];
+//        NSString * strCurrentTopic = [NSString stringWithFormat:@"/vps/app/%@",[strBleAddress uppercaseString]];
+        
+//        NSString * strCurrentTopic = @"smarthome/app/10521C677C3E";
         UInt16 subTop =  [self->mqttObj subscribe:strCurrentTopic qos:2];
         NSLog(@"%d",subTop);
     }
@@ -4021,12 +4113,12 @@ alert.colorScheme = [UIColor blackColor];
     [[DataBaseManager dataBaseManager] execute:str resultsArray:tmpArr];
 
     //Here we will subscribe for all the sockets
-    for (int i = 0 ; i< [tmpArr count]; i++)
-    {
-        NSString * strCurrentTopic = [NSString stringWithFormat:@"/vps/app/%@",[[[tmpArr objectAtIndex:i] valueForKey:@"ble_address"] uppercaseString]];
-        UInt16 subTop = [mqtt subscribe:strCurrentTopic qos:2];
-        NSLog(@"%d",subTop);
-    }
+//    for (int i = 0 ; i< [tmpArr count]; i++)
+//    {
+//        NSString * strCurrentTopic = [NSString stringWithFormat:@"/vps/app/%@",[[[tmpArr objectAtIndex:i] valueForKey:@"ble_address"] uppercaseString]];
+//        UInt16 subTop = [mqtt subscribe:strCurrentTopic qos:2];
+//        NSLog(@"%d",subTop);
+//    }
 
     NSLog(@"MQTT Connected --->");
 }
@@ -4122,7 +4214,7 @@ alert.colorScheme = [UIColor blackColor];
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didSubscribeTopic:(NSArray<NSString *> *)topics
 {
-    NSLog(@"Topic Subscried successfully =%@",topics);
+    NSLog(@"Topic Subscried successfully Dashboard=%@",topics);
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didUnsubscribeTopic:(NSString *)topic
 {

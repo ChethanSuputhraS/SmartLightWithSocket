@@ -108,12 +108,15 @@
             }
             else if ([IS_USER_SKIPPED isEqualToString:@"NO"] || [IS_USER_LOGGED isEqualToString:@"NO"])
             {
-                [APP_DELEGATE movetoLogin];
+//                [APP_DELEGATE movetoLogin];
+                [APP_DELEGATE movetoUserInstructionVC];
+
                 [APP_DELEGATE addScannerView];
             }
             else
             {
-                [APP_DELEGATE movetoLogin];
+//                [APP_DELEGATE movetoLogin];
+                [APP_DELEGATE movetoUserInstructionVC]; 
                 [APP_DELEGATE addScannerView];
             }
         }

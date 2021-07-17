@@ -34,6 +34,118 @@
             endingLineNumber = "1335"
             landmarkName = "-DeviceDidDisConnectNotificationSocket:"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "6F20A4E7-D524-4300-95ED-27A78923BA4D - b53ac159de702292"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "-[AddSocketVC DeviceDidDisConnectNotificationSocket:]"
+                  moduleName = "SmartLightApp"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/Kalpesh/Projects/Power%20Socket/Source%20Code/July%2021/1-7-21/13th%20May%20Code/SmartLightWithSocket-main/SmartLightApp/Classes%20And%20Libraries/App%20Classes/AddSocketVC.m"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1336"
+                  endingLineNumber = "1336"
+                  offsetFromSymbolStart = "56">
+               </Location>
+               <Location
+                  uuid = "6F20A4E7-D524-4300-95ED-27A78923BA4D - 8c2167c40c532cd"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "__53-[AddSocketVC DeviceDidDisConnectNotificationSocket:]_block_invoke"
+                  moduleName = "SmartLightApp"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/Kalpesh/Projects/Power%20Socket/Source%20Code/July%2021/1-7-21/13th%20May%20Code/SmartLightWithSocket-main/SmartLightApp/Classes%20And%20Libraries/App%20Classes/AddSocketVC.m"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1337"
+                  endingLineNumber = "1337"
+                  offsetFromSymbolStart = "28">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "CDF45D93-1FEF-490F-9607-169AA9046B8B"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3643"
+            endingLineNumber = "3643"
+            landmarkName = "-GetSocketDevicesfromDatabase"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "743D09B1-A408-477E-ACC4-DE9B8DE98F75"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3720"
+            endingLineNumber = "3720"
+            landmarkName = "-CheckSockectConnectionTimer"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "15239C1E-795F-4C5B-893F-2D4B1AC3F1B4"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3780"
+            endingLineNumber = "3780"
+            landmarkName = "-SearchOnlySocketDevicesforUser"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "AA0411D1-2F05-4B48-A741-AB4709783921"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3825"
+            endingLineNumber = "3825"
+            landmarkName = "-SearchOnlySocketDevicesforUser"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "BE2F6278-F1E0-4D13-A4C0-831815FDAE40"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "SmartLightApp/Classes And Libraries/App Classes/DashboardVC.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3719"
+            endingLineNumber = "3719"
+            landmarkName = "-CheckSockectConnectionTimer"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

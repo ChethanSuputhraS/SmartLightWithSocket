@@ -97,6 +97,7 @@
                     [dict setValue:[[dictSocketDetail objectAtIndex:foundIndex] valueForKey:@"socket_name"] forKey:@"socket_name"];
                     [dict setValue:[[dictSocketDetail objectAtIndex:foundIndex] valueForKey:@"image_type"] forKey:@"image_type"];
                     [dict setValue:[NSString stringWithFormat:@"%d",i] forKey:@"socket_id"];
+
                     [arrSocketNames addObject:dict];
                 }
             }
@@ -228,8 +229,8 @@
 //                }
             }
             
-
-         if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
+        
+            if ([[arrSocketDevices valueForKey:@"BLE_WIFI_CONFIG_STATUS"] containsObject:@"1"])
             {
                 if ([APP_DELEGATE isNetworkreachable])
                 {
@@ -241,6 +242,7 @@
                     isMQTTConfigured = NO;
                     imgWifiNotConnected.image = [UIImage imageNamed:@"wifired.png"];
                 }
+         
             }
         else
         {
@@ -750,7 +752,6 @@
             cell.lblDeviceName.text = [[arrSocketNames objectAtIndex:indexPath.row] valueForKey:@"socket_name"];
         }
     }
-    
     
     if (tableView == tblSettings)
     {
@@ -1409,7 +1410,7 @@
 }
 -(void)mqtt:(CocoaMQTT *)mqtt didSubscribeTopic:(NSArray<NSString *> *)topics
 {
-    NSLog(@"Topic Subscried successfully =%@",topics);
+    NSLog(@"Topic Subscried successfully Socket Detail=%@",topics);
     
 //    [deviceDetail setValue:@"1" forKey:@"wifi_configured"];
     

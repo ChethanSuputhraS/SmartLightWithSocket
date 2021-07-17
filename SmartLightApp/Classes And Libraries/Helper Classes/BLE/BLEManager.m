@@ -298,7 +298,7 @@ static BLEManager    *sharedManager    = nil;
     if ([checkNameStr rangeOfString:@"Vithamas"].location != NSNotFound || [advertiseName rangeOfString:@"Vithamas"].location != NSNotFound )
     {
             NSString * checkNameStr = [NSString stringWithFormat:@"%@",peripheral.name];
-            if ([checkNameStr rangeOfString:@"Vithamas"].location != NSNotFound)
+            if ([checkNameStr rangeOfString:@"Vithamas"].location != NSNotFound && ![checkNameStr isEqualToString:@"Vithamas’s iPhone"] && ![checkNameStr isEqualToString:@"Vithamas MacBook Air"])
             {
                 NSString * strConnect = [NSString stringWithFormat:@"%@",[advertisementData valueForKey:@"kCBAdvDataIsConnectable"]];
         //        NSLog(@"Here is Found Peripheral===%@",peripheral);
@@ -480,7 +480,6 @@ static BLEManager    *sharedManager    = nil;
             [self ScannedSocketDevices:peripheral withManufacturerData:advertisementData];
         }
     }
-    
 }
 -(void)SendCallBackforAddingGroups:(CBPeripheral *)peripheral withData:(NSDictionary *)advertisementData
 {
@@ -587,22 +586,25 @@ static BLEManager    *sharedManager    = nil;
             kpstr = [kpstr stringByReplacingOccurrencesOfString:@">" withString:@""];
             kpstr = [kpstr stringByReplacingOccurrencesOfString:@"<" withString:@""];
             
-            NSString * str1 = @"NA";
+            NSString * strAddressFound = @"NA";
             NSString * strDestID = [kpstr substringWithRange:NSMakeRange(6,4)];
             NSString * strKeys;
             
             if ([kpstr length] >=42)
             {
-//                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
+                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",kpstr);
                 return;
             }
             if ([strDestID isEqualToString:@"0000"])
             {
                 strKeys = [APP_DELEGATE getStringConvertedinUnsigned:[[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"]];
+//                NSLog(@"VDKKKKKKKKKKKKK====>>>>>>>>>>>>>>>%@",kpstr);
+
             }
             else
             {
                 strKeys = [APP_DELEGATE getStringConvertedinUnsigned:[[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"]];
+//                NSLog(@"PASSSSKKEEYYYY====>>>>>>>>>>>>>>>%@",kpstr);
             }
             
             NSString * strFinalData = [APP_DELEGATE getStringConvertedinUnsigned:kpstr];
@@ -616,23 +618,24 @@ static BLEManager    *sharedManager    = nil;
             {
                 NSRange rangeCheck = NSMakeRange(18, 4);
                 NSString * strOpCodeCheck = [strDecrypted substringWithRange:rangeCheck];
+                NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+
                 if ([strOpCodeCheck isEqualToString:@"1700"] || [strOpCodeCheck isEqualToString:@"3000"])
                 {
                     NSRange range71 = NSMakeRange(22, 12);
-                    str1 = [strDecrypted substringWithRange:range71];
-                    if ([[nonConnectArr valueForKey:@"address"] containsObject:str1])
+                    strAddressFound = [[strDecrypted substringWithRange:range71] uppercaseString];
+                    if ([[nonConnectArr valueForKey:@"address"] containsObject:strAddressFound])
                     {
-                        NSInteger foundIndex = [[nonConnectArr valueForKey:@"address"] indexOfObject:str1];
+                        NSInteger foundIndex = [[nonConnectArr valueForKey:@"address"] indexOfObject:strAddressFound];
                         if (foundIndex != NSNotFound)
                         {
                             if ([nonConnectArr count] > foundIndex)
                             {
                                 if ([[[nonConnectArr objectAtIndex:foundIndex] valueForKey:@"Manufac"] length]>20)
                                 {
-                                    NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
                                     [dict setObject:peripheral forKey:@"peripheral"];
                                     [dict setObject:nameString forKey:@"Manufac"];
-                                    [dict setObject:str1 forKey:@"address"];
+                                    [dict setObject:strAddressFound forKey:@"address"];
                                     
                                     if (![strOpCodeCheck isEqualToString:@"1700"])
                                     {
@@ -645,15 +648,14 @@ static BLEManager    *sharedManager    = nil;
                                     [nonConnectArr replaceObjectAtIndex:foundIndex withObject:dict];
                                 }
                             }
-                            
                         }
                     }
                     else
                     {
-                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
+//                        NSMutableDictionary * dict = [[NSMutableDictionary alloc] init];
                         [dict setObject:peripheral forKey:@"peripheral"];
                         [dict setObject:nameString forKey:@"Manufac"];
-                        [dict setObject:str1 forKey:@"address"];
+                        [dict setObject:strAddressFound forKey:@"address"];
                         if (![strOpCodeCheck isEqualToString:@"1700"])
                         {
                             [dict setObject:@"1" forKey:@"isAdded"];
@@ -664,13 +666,26 @@ static BLEManager    *sharedManager    = nil;
                         }
                         [nonConnectArr addObject:dict];
                     }
+                    if ([strSelectedAddress isEqualToString:[strAddressFound uppercaseString]])
+                    {
+                        if ([strOpCodeCheck isEqualToString:@"1700"])
+                        {
+                            if(delegate)
+                            {
+                                [self.delegate DeviceAddedSuccessfully:dict];
+                            }
+                            strSelectedAddress = @"NA";
+                        }
+                    }
                 }
             }
         }
     }
+    
     if ([nameData length]>0)
     {
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"CallNotificationforNonConnectforAdd" object:peripheral userInfo:advertisementData];
+        [delegate DeviceScannedSuccessfully:advertisementData];
+//        [[NSNotificationCenter defaultCenter] postNotificationName:@"CallNotificationforNonConnectforAdd" object:peripheral userInfo:advertisementData];
     }
 }
 -(void)ScanforFactoryResetTest:(CBPeripheral *)peripheral withData:(NSDictionary *)advertisementData
@@ -1089,6 +1104,8 @@ static BLEManager    *sharedManager    = nil;
         else
         {
             [[NSNotificationCenter defaultCenter] postNotificationName:@"deviceDidConnectNotification" object:peripheral];
+            [delegate DeviceConnectedSuccessfully:peripheral];
+
         }
 
         globalPeripheral = peripheral;
@@ -1171,6 +1188,8 @@ static BLEManager    *sharedManager    = nil;
         else
         {
             [[NSNotificationCenter defaultCenter] postNotificationName:@"deviceDidDisConnectNotification" object:peripheral];
+            [delegate DeviceDiscConnectedSuccessfully:peripheral];
+
         }
     }
     else if ([checkNameStr rangeOfString:@"V"].location != NSNotFound)
@@ -1369,22 +1388,20 @@ static BLEManager    *sharedManager    = nil;
         NSString * strOpCodeCheck = [nameString substringWithRange:rangeFirst];
         
 //        NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",nameString);
-
-       
         if ([strOpCodeCheck isEqualToString:@"3200"])
         {
             rangeFirst = NSMakeRange(0, [nameString length]);
-            NSString * strDecrypted = [nameString substringWithRange:rangeFirst];
-            strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@" " withString:@""];
-            strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@">" withString:@""];
-            strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@"<" withString:@""];
+            NSString * strOriginalData = [nameString substringWithRange:rangeFirst];
+            strOriginalData = [strOriginalData stringByReplacingOccurrencesOfString:@" " withString:@""];
+            strOriginalData = [strOriginalData stringByReplacingOccurrencesOfString:@">" withString:@""];
+            strOriginalData = [strOriginalData stringByReplacingOccurrencesOfString:@"<" withString:@""];
             NSString * strMacAddress = @"NA";
           
             //Encryption Code Start Here.......
-          NSString * strDestID = [strDecrypted substringWithRange:NSMakeRange(6,4)];
+          NSString * strDestID = [strOriginalData substringWithRange:NSMakeRange(6,4)];
             NSString * strKeys;
 
-            if ([strDecrypted length] >=56)
+            if ([strOriginalData length] >=56)
             {
 //                NSLog(@"HERE IT IS====>>>>>>>>>>>>>>>%@",strDecrypted);
                 return;
@@ -1399,9 +1416,9 @@ static BLEManager    *sharedManager    = nil;
                 strKeys = [APP_DELEGATE getStringConvertedinUnsigned:[[NSUserDefaults standardUserDefaults]valueForKey:@"passKey"]];
             }
 
-            NSString * strFinalData = [APP_DELEGATE getStringConvertedinUnsigned:strDecrypted];
-            NSData * updatedMFData = [APP_DELEGATE GetSocketManufactureDataDecrypted:strFinalData withKey:strKeys withLength:[strDecrypted length]/2];
-            strDecrypted = [NSString stringWithFormat:@"%@",updatedMFData.debugDescription];
+            NSString * strFinalData = [APP_DELEGATE getStringConvertedinUnsigned:strOriginalData];
+            NSData * updatedMFData = [APP_DELEGATE GetSocketManufactureDataDecrypted:strFinalData withKey:strKeys withLength:[strOriginalData length]/2];
+            NSString * strDecrypted = [NSString stringWithFormat:@"%@",updatedMFData.debugDescription];
             strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@" " withString:@""];
             strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@">" withString:@""];
             strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@"<" withString:@""];
@@ -1413,6 +1430,13 @@ static BLEManager    *sharedManager    = nil;
             {
                 
                 strKeys = [APP_DELEGATE getStringConvertedinUnsigned:[[NSUserDefaults standardUserDefaults]valueForKey:@"VDK"]];
+                 strFinalData = [APP_DELEGATE getStringConvertedinUnsigned:strOriginalData];
+                 updatedMFData = [APP_DELEGATE GetSocketManufactureDataDecrypted:strFinalData withKey:strKeys withLength:[strOriginalData length]/2];
+                
+                NSString * strDecrypted = [NSString stringWithFormat:@"%@",updatedMFData.debugDescription];
+                strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@" " withString:@""];
+                strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@">" withString:@""];
+                strDecrypted = [strDecrypted stringByReplacingOccurrencesOfString:@"<" withString:@""];
 
                 if ([strDecrypted length]>=34)
                 {

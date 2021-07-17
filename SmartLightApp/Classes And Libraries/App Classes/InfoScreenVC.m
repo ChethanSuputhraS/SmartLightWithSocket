@@ -7,6 +7,7 @@
 //
 
 #import "InfoScreenVC.h"
+#import "LoginVC.h"
 
 @interface InfoScreenVC ()
 
@@ -125,7 +126,6 @@
 //        [scrlContent setContentOffset:CGPointMake(DEVICE_WIDTH, 0) animated:YES];
         [[NSUserDefaults standardUserDefaults] setValue:@"yes" forKey:@"IS_INFO_SCREEN_VISIBLE_ONCE"];
         [[NSUserDefaults standardUserDefaults] synchronize];
-        
         
         if([CURRENT_USER_ID isEqual:[NSNull null]] || [CURRENT_USER_ID isEqualToString:@""] || CURRENT_USER_ID == nil || CURRENT_USER_ID == NULL || [CURRENT_USER_ID isEqualToString:@"(null)"])
         {

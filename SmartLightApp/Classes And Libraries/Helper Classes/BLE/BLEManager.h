@@ -21,6 +21,13 @@
 -(void) didDeviceDisconnectedCallback:(CBPeripheral *)peripheral;
 -(void) didDeviceConnectedCallback:(CBPeripheral *)peripheral;
 
+
+-(void) bluetoothPowerState:(NSString*)state;
+-(void)DeviceAddedSuccessfully:(NSDictionary *)dict;
+-(void)DeviceConnectedSuccessfully:(CBPeripheral *)peripheral;
+-(void)DeviceDiscConnectedSuccessfully:(CBPeripheral *)peripheral;
+-(void)DeviceScannedSuccessfully:(NSDictionary *)dictData;
+
 @required
 
 
